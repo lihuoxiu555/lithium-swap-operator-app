@@ -93,6 +93,13 @@
     { id: "busy", label: "站点繁忙度" },
   ];
 
+  /** 图表 Tab 时间：今日 / 近7日 + 自然月（decision-052） */
+  const BIZ_CHART_MODES = [
+    { id: "today", label: "今日" },
+    { id: "7d", label: "近7日" },
+    { id: "month", label: "自然月" },
+  ];
+
   function bizYears() {
     const years = [];
     for (let y = BIZ_YEAR_MIN; y <= DEMO_TODAY.year; y++) years.push(y);
@@ -121,16 +128,32 @@
     return arr;
   }
 
-  /** 2026-09 沿用原近 7 日 Mock，便于评审对照 */
+  /** 今日：按 4 小时段；实付合计 4690 对齐工作台摘要 */
+  const TODAY_PRESET = {
+    labels: ["0–4", "4–8", "8–12", "12–16", "16–20", "20–24"],
+    periodLabel: "今日",
+    yoyHint: "去年同期同日同时段",
+    rent: [210, 180, 920, 1480, 1260, 640],
+    swaps: [2, 4, 18, 28, 22, 12],
+    newUser: [0, 0, 1, 2, 1, 0],
+    orderNew: [0, 1, 3, 4, 2, 1],
+    dau: [4, 6, 12, 18, 16, 8],
+  };
+
+  /** 近 7 自然日 Mock */
+  const SEVEN_DAY_PRESET = {
+    labels: ["09-11", "09-12", "09-13", "09-14", "09-15", "09-16", "09-17"],
+    periodLabel: "近7日",
+    yoyHint: "去年同期同 7 自然日",
+    rent: [2860, 3120, 2980, 3340, 3010, 2760, 2480],
+    swaps: [78, 92, 84, 101, 88, 86, 83],
+    newUser: [3, 4, 2, 5, 3, 2, 4],
+    orderNew: [6, 8, 5, 9, 7, 4, 6],
+    dau: [18, 21, 19, 24, 20, 17, 19],
+  };
+
   const MONTH_PRESETS = {
-    "2026-09": {
-      labels: ["09-11", "09-12", "09-13", "09-14", "09-15", "09-16", "09-17"],
-      rent: [2860, 3120, 2980, 3340, 3010, 2760, 2480],
-      swaps: [78, 92, 84, 101, 88, 86, 83],
-      newUser: [3, 4, 2, 5, 3, 2, 4],
-      orderNew: [6, 8, 5, 9, 7, 4, 6],
-      dau: [18, 21, 19, 24, 20, 17, 19],
-    },
+    "2026-09": SEVEN_DAY_PRESET,
   };
 
   function mockMetric(year, month, day, kind) {
@@ -157,6 +180,7 @@
       return {
         ...preset,
         periodLabel: year + "年" + month + "月",
+        yoyHint: "去年同期同月",
       };
     }
     const dim = daysInMonth(year, month);
@@ -172,6 +196,7 @@
     return {
       labels,
       periodLabel: year + "年" + month + "月",
+      yoyHint: "去年同期同月",
       rent: days.map((d) => mockMetric(year, month, d, "rent")),
       swaps: days.map((d) => mockMetric(year, month, d, "swaps")),
       dau: days.map((d) => mockMetric(year, month, d, "dau")),
@@ -200,7 +225,10 @@
     };
   }
 
-  function bizCharts(year, month) {
+  function bizCharts(mode, year, month) {
+    const chartMode = mode || "7d";
+    if (chartMode === "today") return withYoy(TODAY_PRESET);
+    if (chartMode === "7d") return withYoy(SEVEN_DAY_PRESET);
     const y = Number(year) || DEMO_TODAY.year;
     const m = Number(month) || DEMO_TODAY.month;
     return withYoy(buildMonthChart(y, m));
@@ -293,6 +321,7 @@
     BIZ_YEAR_MIN,
     DEMO_TODAY,
     BIZ_TABS,
+    BIZ_CHART_MODES,
     BUSY_SITES,
     DEVICE_KPI,
     DEVICE_OVERVIEW,

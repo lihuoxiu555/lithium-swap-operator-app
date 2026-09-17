@@ -1,12 +1,12 @@
 # 运营商 APP 框架 · 产品需求文档
 
-> 版本：V1.45  
+> 版本：V1.46  
 > 日期：2026-09-17  
 > 阶段：框架 MVP（业务模块按注册表插拔）  
 > 配套原型：`../prototype/index.html`  
 > 验收标准：`./acceptance-criteria.md`  
 > 字段口径：`./字段口径-对齐PC一期.md`  
-> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md`
+> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md` · `decision-052.md`
 
 ---
 
@@ -587,8 +587,8 @@
 | KPI（页顶固定 · 实时快照） | **在线站点、在线电柜、在线电池、有效个人用户、有效渠道用户**。不随时间筛变化。**不含收入、换电次数、等待中** |
 | KPI Mock | 在线站点 4、在线电柜 3、在线电池 10；有效个人 **5 人（冻结中：1 人）** / 有效渠道 5（未结束换电单用户；冻结计入有效） |
 | Tab | 在 KPI **下方**：`图表`（默认）/ `站点繁忙度` |
-| 时间枚举 | 仅出现在 **图表 Tab 内**：按**自然月**展示。上方 **年份切换**（从 2026 年起，默认可选至演示当前年）+ **1–12 月**（当前年仅到演示当月）。**只作用于图表**。时区上海、自然日。KPI 与繁忙度不随月变化 |
-| 图表 | ① **套餐购买金额** ② **换电订单数** ③ **活跃用户** ④ **套餐新购** ⑤ **新增用户**。**每张图双柱**：彩色=本期、灰柱=**去年同期同月（同比）**。横轴为所选月内抽样日（Mock 约 7 点，当月仅到演示日）。**无**当日换电分时图 |
+| 时间枚举 | 仅出现在 **图表 Tab 内**：**今日** / **近7日**（默认）/ **自然月**。选自然月时才显年份切换（2026 起）+ 1–12 月。只作用于图表。时区上海。KPI 与繁忙度不随筛变 |
+| 图表 | ① **套餐购买金额** ② **换电订单数** ③ **活跃用户** ④ **套餐新购** ⑤ **新增用户**。**每张图双柱**：彩色=本期、灰柱=同比（今日=去年同日段，近7=去年同7日，自然月=去年同月）。今日横轴 4 小时段；近7/自然月横轴为日 |
 | 站点繁忙度 | 无时间筛。站点、地址、柜机在线/总数、格口占用、等待、高峰、最忙时段（HH:00 + 笔数）、繁忙度 |
 | 繁忙度枚举 | `低` / `中` / `高`（等待≥3 或占用≥85%→高；等待≥1 或占用≥60%→中）。占用≈柜内电池/仓口 |
 | 空态 | 无站点行时列表为空（本期 Mock 常有 4 站） |

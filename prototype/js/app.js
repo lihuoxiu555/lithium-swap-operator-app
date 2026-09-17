@@ -96,6 +96,7 @@
       fromCab: false,
     },
     ops: {
+      bizChartMode: "7d",
       bizYear: 2026,
       bizMonth: 9,
       bizTab: "charts",
@@ -3706,38 +3707,50 @@
     </section>`;
   }
 
-  function renderBizPeriodPicker() {
-    const year = state.ops.bizYear || OpsStats.DEMO_TODAY.year;
-    const month = state.ops.bizMonth || OpsStats.DEMO_TODAY.month;
-    const atMin = year <= OpsStats.BIZ_YEAR_MIN;
-    const atMax = year >= OpsStats.DEMO_TODAY.year;
-    const months = OpsStats.bizMonthsForYear(year);
-    const monthBar = months
-      .map((mo) => {
-        const active = mo === month ? " active" : "";
-        return `<button type="button" class="ops-month-chip${active}" data-action="biz-month" data-month="${mo}">${mo}月</button>`;
-      })
-      .join("");
-    return `<div class="ops-period">
-        <div class="ops-year-bar">
-          <button type="button" class="ops-year-nav" data-action="biz-year-prev" aria-label="上一年"${
-            atMin ? " disabled" : ""
-          }>‹</button>
-          <span class="ops-year-label">${year}年</span>
-          <button type="button" class="ops-year-nav" data-action="biz-year-next" aria-label="下一年"${
-            atMax ? " disabled" : ""
-          }>›</button>
-        </div>
-        <div class="ops-month-row">${monthBar}</div>
-      </div>`;
+  function renderBizChartPicker() {
+    const mode = state.ops.bizChartMode || "7d";
+    const chips = OpsStats.BIZ_CHART_MODES.map((m) => {
+      const active = m.id === mode ? " active" : "";
+      return `<button type="button" class="ops-chip${active}" data-action="biz-chart-mode" data-mode="${escapeAttr(
+        m.id
+      )}">${escapeHtml(m.label)}</button>`;
+    }).join("");
+    let monthPick = "";
+    if (mode === "month") {
+      const year = state.ops.bizYear || OpsStats.DEMO_TODAY.year;
+      const month = state.ops.bizMonth || OpsStats.DEMO_TODAY.month;
+      const atMin = year <= OpsStats.BIZ_YEAR_MIN;
+      const atMax = year >= OpsStats.DEMO_TODAY.year;
+      const months = OpsStats.bizMonthsForYear(year);
+      const monthBar = months
+        .map((mo) => {
+          const active = mo === month ? " active" : "";
+          return `<button type="button" class="ops-month-chip${active}" data-action="biz-month" data-month="${mo}">${mo}月</button>`;
+        })
+        .join("");
+      monthPick = `<div class="ops-period">
+          <div class="ops-year-bar">
+            <button type="button" class="ops-year-nav" data-action="biz-year-prev" aria-label="上一年"${
+              atMin ? " disabled" : ""
+            }>‹</button>
+            <span class="ops-year-label">${year}年</span>
+            <button type="button" class="ops-year-nav" data-action="biz-year-next" aria-label="下一年"${
+              atMax ? " disabled" : ""
+            }>›</button>
+          </div>
+          <div class="ops-month-row">${monthBar}</div>
+        </div>`;
+    }
+    return `<div class="ops-range">${chips}</div>${monthPick}`;
   }
 
   function renderBizStats() {
+    const mode = state.ops.bizChartMode || "7d";
     const year = state.ops.bizYear || OpsStats.DEMO_TODAY.year;
     const month = state.ops.bizMonth || OpsStats.DEMO_TODAY.month;
     const tab = state.ops.bizTab || "charts";
     const kpi = OpsStats.bizKpi();
-    const chart = OpsStats.bizCharts(year, month);
+    const chart = OpsStats.bizCharts(mode, year, month);
     const kpis = [
       { label: "在线站点", value: kpi.sitesOnline, unit: "个" },
       { label: "在线电柜", value: kpi.cabOnline, unit: "台" },
@@ -3778,10 +3791,12 @@
         dau: "#6366f1",
         yoy: "#cbd5e1",
       };
-      body = `${renderBizPeriodPicker()}
-        <p class="ops-hint">按<strong>自然月</strong>展示（${escapeHtml(
-          chart.periodLabel || year + "年" + month + "月"
-        )}）。套餐购买金额 = C 端实付合计，<strong>不按站点拆</strong>。彩色柱=本期，灰柱=去年同期同月（同比）。</p>
+      body = `${renderBizChartPicker()}
+        <p class="ops-hint">按<strong>${escapeHtml(
+          chart.periodLabel || "近7日"
+        )}</strong>展示。套餐购买金额 = C 端实付合计，<strong>不按站点拆</strong>。彩色柱=本期，灰柱=${escapeHtml(
+          chart.yoyHint || "去年同期"
+        )}（同比）。</p>
         ${renderBizChartCard(
           "套餐购买金额",
           "C 端实付 · 含同比",
@@ -6183,6 +6198,11 @@
         }
         case "sites-photo-dot":
           state.sites.previewIdx = Number(t.dataset.idx) || 0;
+          render();
+          break;
+        case "biz-chart-mode":
+          state.ops.bizChartMode = t.dataset.mode || "7d";
+          track("biz_chart_mode", { mode: state.ops.bizChartMode });
           render();
           break;
         case "biz-year-prev":
