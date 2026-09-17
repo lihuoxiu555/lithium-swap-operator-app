@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="锂电快换 · 运营商 APP 可插拔工作台框架原型">
+  <title>锂电快换 · 运营商工作台原型</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#screen-root">跳到手机页面</a>
+
+  <header class="prototype-header">
+    <div class="brand-block">
+      <span class="brand-mark" aria-hidden="true">锂</span>
+      <div>
+        <h1>锂电快换</h1>
+        <p>运营商工作台 · 登录 / 工作台 / 待办 / 我的 · 业务模块后置</p>
+      </div>
+    </div>
+    <nav class="doc-links" aria-label="交付文档">
+      <a href="../docs/PRD.md">PRD</a>
+      <a href="../docs/acceptance-criteria.md">验收标准</a>
+      <a href="../decisions/decision-001.md">决策 #001</a>
+    </nav>
+  </header>
+
+  <main class="prototype-workspace">
+    <aside class="review-panel" aria-label="原型场景">
+      <section class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">演示控制台</span>
+            <h2>切换评审场景</h2>
+          </div>
+          <button class="text-button" type="button" data-action="reset-demo">重置</button>
+        </div>
+        <p class="panel-hint">框架期主路径为登录→工作台。已接入：经营·换电订单/经营统计/设备统计；运维·站点/电柜管理；财务·账户；其他·用户管理/用户支付记录（短信验证码已屏蔽）。待办 Tab 含退款/逾期/充值与换电柜警告。</p>
+
+        <div class="scenario-group">
+          <h3>角色与主路径</h3>
+          <button class="scenario-button active" type="button" data-scenario="admin">
+            <span class="scenario-icon">管</span>
+            <span><strong>管理员已登录</strong><small>见经营/财务类占位槽</small></span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="staff">
+            <span class="scenario-icon">员</span>
+            <span><strong>员工已登录</strong><small>宫格按 roles 裁剪</small></span>
+          </button>
+        </div>
+
+        <div class="scenario-group">
+          <h3>空态与异常</h3>
+          <button class="scenario-button" type="button" data-scenario="emptyGrid">
+            <span class="scenario-icon neutral">空</span>
+            <span><strong>空宫格</strong><small>暂无可用应用</small></span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="unread">
+            <span class="scenario-icon">信</span>
+            <span><strong>系统消息有未读</strong><small>待办 Tab 下方消息红点</small></span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="loginFail">
+            <span class="scenario-icon warning">登</span>
+            <span><strong>登录失败</strong><small>回登录页演示错误</small></span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="weakNet">
+            <span class="scenario-icon danger">网</span>
+            <span><strong>弱网 / 失败</strong><small>错误条 + 重试</small></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel-card constraint-card">
+        <span class="eyebrow">框架约束</span>
+        <ul>
+          <li>底栏固定：工作台 / 待办 / 我的</li>
+          <li>待办+警告在「待办」Tab，工作台只留宫格</li>
+          <li>宫格只读 modules.js 注册表</li>
+          <li>placeholder 禁止假业务 KPI</li>
+          <li>不改外卖 PC / 骑手端原型</li>
+        </ul>
+      </section>
+    </aside>
+
+    <section class="phone-stage" aria-label="运营商 APP 原型">
+      <div class="preview-caption">
+        <span class="live-dot" aria-hidden="true"></span>
+        锂电快换 · 运营商端
+        <span class="mock-badge">Mock</span>
+      </div>
+
+      <article class="phone-shell" id="phone-shell">
+        <div class="phone-bezel">
+          <div class="dynamic-island" aria-hidden="true"></div>
+          <div class="status-bar" aria-label="手机状态">
+            <span id="status-time">13:42</span>
+            <span class="status-icons" aria-hidden="true">▮▮▮ 5G ◒</span>
+          </div>
+
+          <section class="screen-root" id="screen-root" tabindex="-1" aria-live="polite"></section>
+
+          <nav class="tab-bar hidden" id="tab-bar" aria-label="主导航">
+            <button class="tab-button active" type="button" data-tab="workbench">
+              <span class="tab-icon" aria-hidden="true">▦</span>
+              <span>工作台</span>
+            </button>
+            <button class="tab-button" type="button" data-tab="todos">
+              <span class="tab-icon" aria-hidden="true">▣</span>
+              <span>待办</span>
+              <span class="tab-badge hidden" data-tab-badge>0</span>
+            </button>
+            <button class="tab-button" type="button" data-tab="mine">
+              <span class="tab-icon" aria-hidden="true">☺</span>
+              <span>我的</span>
+            </button>
+          </nav>
+
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </article>
+
+      <p class="device-note">演示号 13800000005 / 123456（双身份）。</p>
+    </section>
+
+    <aside class="inspector-panel" aria-label="本页字段与设定">
+      <section class="panel-card spec-card">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">本页字段与设定</span>
+            <h2 id="spec-title">登录</h2>
+          </div>
+          <span class="status-pill" id="spec-source">PC 一期</span>
+        </div>
+        <p class="spec-note" id="spec-note"></p>
+        <div id="spec-body"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">当前状态</span>
+            <h2 id="status-title">未登录</h2>
+          </div>
+          <span class="status-pill neutral" id="status-pill">login</span>
+        </div>
+        <dl class="state-list" id="state-list"></dl>
+      </section>
+
+      <section class="panel-card event-card">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Mock 埋点</span>
+            <h2>事件流</h2>
+          </div>
+          <span class="event-count" id="event-count">0 条</span>
+        </div>
+        <div class="table-wrap">
+          <table id="event-log-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>事件</th>
+                <th>属性</th>
+              </tr>
+            </thead>
+            <tbody id="event-log-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel-card reviewer-note">
+        <span class="eyebrow">评审提示</span>
+        <p>右侧随中间手机页切换，展示本页字段、枚举、统计口径、空态/错误/权限。不必再打开 PRD。口径真源：PC 一期。</p>
+      </section>
+    </aside>
+  </main>
+
+  <script src="js/modules.js"></script>
+  <script src="js/mock.js"></script>
+  <script src="js/lease-orders.js"></script>
+  <script src="js/daypool-orders.js"></script>
+  <script src="js/ops-stats.js"></script>
+  <script src="js/cabinets.js"></script>
+  <script src="js/sites.js"></script>
+  <script src="js/todos.js"></script>
+  <script src="js/alerts.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/finance-account.js"></script>
+  <script src="js/batteries.js"></script>
+  <script src="js/page-specs.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
