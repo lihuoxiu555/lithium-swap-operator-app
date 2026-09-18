@@ -132,6 +132,8 @@
       wdTab: "all",
       wdId: null,
       applyAmount: "",
+      settleForm: null,
+      settleReturn: "home",
     },
   };
 
@@ -598,6 +600,8 @@
     state.finance.wdTab = "all";
     state.finance.wdId = null;
     state.finance.applyAmount = "";
+    state.finance.settleForm = null;
+    state.finance.settleReturn = "home";
     setHash("#/workbench");
 
     document.querySelectorAll(".scenario-button").forEach((btn) => {
@@ -4142,7 +4146,16 @@
 
   function renderFinanceApply() {
     const snap = Finance.snapshot();
-    const rec = snap.receive;
+    const col = snap.collect;
+    const st = snap.settle;
+    const blocked = snap.hasPending || snap.withdrawable <= 0 || !col.bound;
+    const blockHint = snap.hasPending
+      ? "当前有待审核提现，暂不可提交新申请"
+      : snap.withdrawable <= 0
+        ? "可提现余额不足，暂不可提交"
+        : !col.bound
+          ? "未绑定收款账户不可提现"
+          : "";
     return `
       <div class="sites-page">
         <div class="sites-header">
@@ -4151,43 +4164,95 @@
           <div class="sites-header-spacer"></div>
         </div>
         <div class="fin-apply">
-          <p class="fin-hint">可提现 ${Finance.yuan(snap.withdrawable)}。转入默认同收款账户；改其他对公卡请在 PC。</p>
+          <p class="fin-hint">可提现 ${Finance.yuan(snap.withdrawable)}。转出固定为收款账户；转入为<strong>提现账户</strong>，可在账户页变更。</p>
+          ${blockHint ? `<p class="fin-hint warn">${escapeHtml(blockHint)}</p>` : ""}
           <label class="fin-field">
             <span>提现金额（元）</span>
             <input id="fin-apply-amount" type="number" min="0.01" step="0.01" inputmode="decimal"
-              value="${escapeAttr(state.finance.applyAmount)}" placeholder="不得超过可提现余额" />
+              value="${escapeAttr(state.finance.applyAmount)}" placeholder="不得超过可提现余额"${
+                blocked ? " disabled" : ""
+              } />
           </label>
           <div class="user-card">
-            <div class="user-sec-hd">转出账户</div>
+            <div class="user-sec-hd">转出账户（收款账户）</div>
             <div class="lease-row"><span class="lk">开户名称</span><span class="lv">${escapeHtml(
-              rec.bankAccountName
+              col.bankAccountName
             )}</span></div>
             <div class="lease-row"><span class="lk">银行卡号</span><span class="lv">${escapeHtml(
-              Finance.maskBank(rec.bankAccount)
+              Finance.maskBank(col.bankAccount)
             )}</span></div>
             <div class="lease-row"><span class="lk">开户银行</span><span class="lv">${escapeHtml(
-              rec.bankName
+              col.bankName
             )}</span></div>
           </div>
           <div class="user-card" style="margin-top:10px">
-            <div class="user-sec-hd">转入账户</div>
+            <div class="user-sec-hd">转入账户（提现账户） <button type="button" class="kyc-link" data-action="fin-settle-change">变更</button></div>
             <div class="lease-row"><span class="lk">开户名称</span><span class="lv">${escapeHtml(
-              rec.bankAccountName
+              st.bankAccountName
             )}</span></div>
             <div class="lease-row"><span class="lk">银行卡号</span><span class="lv">${escapeHtml(
-              Finance.maskBank(rec.bankAccount)
+              Finance.maskBank(st.bankAccount)
             )}</span></div>
             <div class="lease-row"><span class="lk">开户银行</span><span class="lv">${escapeHtml(
-              rec.bankName
+              st.bankName
             )}</span></div>
             <div class="lease-row"><span class="lk">开户支行</span><span class="lv">${escapeHtml(
-              Finance.dash(rec.bankBranch)
+              Finance.dash(st.bankBranch)
             )}</span></div>
           </div>
         </div>
         <div class="sites-footer-bar">
           <button type="button" class="btn-secondary" data-action="fin-back">取消</button>
-          <button type="button" class="sites-confirm" data-action="fin-apply-submit">提交申请</button>
+          <button type="button" class="sites-confirm" data-action="fin-apply-submit"${
+            blocked ? " disabled" : ""
+          }>提交申请</button>
+        </div>
+      </div>`;
+  }
+
+  function renderFinanceSettleEdit() {
+    const col = Finance.snapshot().collect;
+    const f = state.finance.settleForm || Finance.settleFormDefaults();
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="fin-settle-cancel" aria-label="返回">‹</button>
+          <h1>变更提现账户</h1>
+          <div class="sites-header-spacer"></div>
+        </div>
+        <div class="sites-form-body fin-apply">
+          <p class="fin-hint">对公结算账户，钱将打到此卡。收款账户（${escapeHtml(
+            col.receiveBank
+          )} · ${escapeHtml(Finance.maskMerchant(col.merchantNo))}）由平台进件维护，不在此变更。</p>
+          <label class="sites-field">开户名称 <em class="req">*</em>
+            <input id="fin-settle-name" type="text" value="${escapeAttr(
+              f.bankAccountName
+            )}" placeholder="须与营业执照一致" />
+          </label>
+          <label class="sites-field">银行卡号 <em class="req">*</em>
+            <input id="fin-settle-account" type="tel" inputmode="numeric" value="${escapeAttr(
+              f.bankAccount
+            )}" placeholder="8～32 位数字" />
+          </label>
+          <label class="sites-field">开户银行 <em class="req">*</em>
+            <input id="fin-settle-bank" type="text" value="${escapeAttr(
+              f.bankName
+            )}" placeholder="如招商银行" />
+          </label>
+          <label class="sites-field">开户支行 <em class="req">*</em>
+            <input id="fin-settle-branch" type="text" value="${escapeAttr(
+              f.bankBranch
+            )}" placeholder="开户支行全称" />
+          </label>
+          <label class="sites-field">联行号（选填）
+            <input id="fin-settle-code" type="tel" inputmode="numeric" value="${escapeAttr(
+              f.bankCode
+            )}" placeholder="12 位数字" />
+          </label>
+        </div>
+        <div class="sites-footer-bar">
+          <button type="button" class="btn-secondary" data-action="fin-settle-cancel">取消</button>
+          <button type="button" class="sites-confirm" data-action="fin-settle-save">确认</button>
         </div>
       </div>`;
   }
@@ -4264,9 +4329,11 @@
 
   function renderFinanceAccount() {
     if (state.finance.view === "apply") return renderFinanceApply();
+    if (state.finance.view === "settle-edit") return renderFinanceSettleEdit();
     if (state.finance.view === "detail") return renderFinanceDetail();
     const snap = Finance.snapshot();
-    const rec = snap.receive;
+    const col = snap.collect;
+    const st = snap.settle;
     const tabs = Finance.WD_TABS.map((t) => {
       const on = state.finance.wdTab === t.id ? " active" : "";
       return `<button type="button" class="sites-tab${on}" data-action="fin-wd-tab" data-tab="${escapeAttr(
@@ -4316,42 +4383,77 @@
             </div>
           </div>
         </div>
-        <p class="fin-hint">总金额 = 可提现 + 冻结中。可提现 = 已清分 − 已提现 − 待审。一期不扣融资待还。</p>
+        <p class="fin-hint">总金额 = 可提现 + 冻结中。收款账户由平台进件维护；提现账户可单独变更。</p>
         <div class="fin-sec">收款账户</div>
         <div class="sites-list" style="padding-top:0">
           <article class="user-card">
             <div class="user-id">
-              <strong>对公银行卡 · 提现转出户</strong>
+              <strong>进件子商户 · 提现转出户</strong>
               <span class="user-tag ok">已绑定</span>
             </div>
             <div class="lease-fields">
+              <div class="lease-row"><span class="lk">收款开户银行</span><span class="lv">${escapeHtml(
+                col.receiveBank
+              )}</span></div>
+              <div class="lease-row"><span class="lk">收款户名</span><span class="lv">${escapeHtml(
+                col.receiveName
+              )}</span></div>
+              <div class="lease-row"><span class="lk">商户号</span><span class="lv">${escapeHtml(
+                Finance.maskMerchant(col.merchantNo)
+              )}</span></div>
+              <div class="lease-row"><span class="lk">门店号</span><span class="lv">${escapeHtml(
+                Finance.maskMerchant(col.storeNo)
+              )}</span></div>
+              <div class="lease-row"><span class="lk">用途</span><span class="lv">${escapeHtml(
+                col.purpose
+              )}</span></div>
+              <div class="user-sec-hd">转出银行卡</div>
               <div class="lease-row"><span class="lk">开户名称</span><span class="lv">${escapeHtml(
-                rec.bankAccountName
+                col.bankAccountName
               )}</span></div>
               <div class="lease-row"><span class="lk">银行卡号</span><span class="lv">${escapeHtml(
-                Finance.maskBank(rec.bankAccount)
-              )}</span></div>
-              <div class="lease-row"><span class="lk">开户银行</span><span class="lv">${escapeHtml(
-                rec.bankName
-              )}</span></div>
-              <div class="lease-row"><span class="lk">开户支行</span><span class="lv">${escapeHtml(
-                Finance.dash(rec.bankBranch)
-              )}</span></div>
-              <div class="lease-row"><span class="lk">联行号</span><span class="lv">${escapeHtml(
-                Finance.dash(rec.bankCode)
-              )}</span></div>
+                Finance.maskBank(col.bankAccount)
+              )} <button type="button" class="lease-copy" data-action="fin-copy" data-text="${escapeAttr(
+                col.bankAccount
+              )}">复制</button></span></div>
               <div class="lease-row"><span class="lk">绑定时间</span><span class="lv">${escapeHtml(
-                Finance.dash(rec.corpBoundAt)
+                Finance.dash(col.corpBoundAt)
               )}</span></div>
               <div class="lease-row"><span class="lk">托管协议</span><span class="lv">${escapeHtml(
-                rec.custody
+                col.custody
+              )}</span></div>
+            </div>
+          </article>
+        </div>
+        <div class="fin-sec">提现账户</div>
+        <div class="sites-list" style="padding-top:0">
+          <article class="user-card">
+            <div class="user-id">
+              <strong>对公结算账户 · 提现转入户</strong>
+              <span class="user-tag ok">已维护</span>
+            </div>
+            <div class="lease-fields">
+              <div class="lease-row"><span class="lk">开户名称</span><span class="lv">${escapeHtml(
+                st.bankAccountName
+              )}</span></div>
+              <div class="lease-row"><span class="lk">银行卡号</span><span class="lv">${escapeHtml(
+                Finance.maskBank(st.bankAccount)
+              )}</span></div>
+              <div class="lease-row"><span class="lk">开户银行</span><span class="lv">${escapeHtml(
+                st.bankName
+              )}</span></div>
+              <div class="lease-row"><span class="lk">开户支行</span><span class="lv">${escapeHtml(
+                Finance.dash(st.bankBranch)
+              )}</span></div>
+              <div class="lease-row"><span class="lk">联行号</span><span class="lv">${escapeHtml(
+                Finance.dash(st.bankCode)
+              )}</span></div>
+              <div class="lease-row"><span class="lk">更新时间</span><span class="lv">${escapeHtml(
+                Finance.dash(st.updatedAt)
               )}</span></div>
             </div>
             <div class="user-card-act">
-              <button type="button" class="user-phone-btn" data-action="fin-copy" data-text="${escapeAttr(
-                rec.bankAccount
-              )}">复制卡号</button>
-              <button type="button" class="btn-secondary" style="width:auto;margin:0 0 0 8px;padding:0 12px;height:32px" data-action="fin-acct-change">变更</button>
+              <button type="button" class="user-phone-btn" data-action="fin-settle-change">变更对公</button>
             </div>
           </article>
         </div>
@@ -6791,10 +6893,39 @@
           state.finance.wdId = null;
           render();
           break;
-        case "fin-acct-change":
-          toast("变更收款账户请在 PC 操作");
-          track("fin_acct_change", {});
+        case "fin-settle-change":
+          state.finance.settleForm = Finance.settleFormDefaults();
+          state.finance.settleReturn =
+            state.finance.view === "apply" ? "apply" : "home";
+          state.finance.view = "settle-edit";
+          track("fin_settle_change_open", {});
+          render();
           break;
+        case "fin-settle-cancel":
+          state.finance.settleForm = null;
+          state.finance.view = state.finance.settleReturn || "home";
+          render();
+          break;
+        case "fin-settle-save": {
+          const form = {
+            bankAccountName: ($("fin-settle-name") && $("fin-settle-name").value) || "",
+            bankAccount: ($("fin-settle-account") && $("fin-settle-account").value) || "",
+            bankName: ($("fin-settle-bank") && $("fin-settle-bank").value) || "",
+            bankBranch: ($("fin-settle-branch") && $("fin-settle-branch").value) || "",
+            bankCode: ($("fin-settle-code") && $("fin-settle-code").value) || "",
+          };
+          const res = Finance.updateSettle(form);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          toast("提现账户已更新");
+          track("fin_settle_change_save", {});
+          state.finance.settleForm = null;
+          state.finance.view = state.finance.settleReturn || "home";
+          render();
+          break;
+        }
         case "fin-copy": {
           const text = t.dataset.text || "";
           if (!text) {
@@ -6814,21 +6945,16 @@
         }
         case "fin-apply-open": {
           const snap = Finance.snapshot();
-          if (!snap.receive.bound) {
+          if (!snap.collect.bound) {
             toast("未绑定收款账户不可提现");
             break;
           }
-          if (snap.frozen > 0) {
-            toast("已有待审核提现");
-            break;
-          }
-          if (snap.withdrawable <= 0) {
-            toast("可提现余额不足");
-            break;
-          }
           state.finance.view = "apply";
-          state.finance.applyAmount = String(Math.min(snap.withdrawable, 100).toFixed(2));
-          track("fin_apply_open", {});
+          state.finance.applyAmount =
+            snap.withdrawable > 0
+              ? String(Math.min(snap.withdrawable, 100).toFixed(2))
+              : "";
+          track("fin_apply_open", { pending: snap.hasPending });
           render();
           break;
         }

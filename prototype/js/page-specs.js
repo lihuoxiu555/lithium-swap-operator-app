@@ -453,31 +453,44 @@
     }),
     financeAccount: S({
       title: "账户",
-      source: "PC 一期收款账户 + 提现申请",
+      source: "PC 收款账户 + 对公结算 + 提现申请",
       stats: [
         { name: "账户总金额", def: "已清分 − 已提现。= 可提现 + 冻结中。此刻快照" },
         { name: "冻结中", def: "待审核 / 审核通过 / 处理中的提现金额合计" },
         { name: "可提现", def: "已清分 − 已提现 − 冻结中。一期不扣融资待还" },
       ],
       fields: [
-        { name: "收款账户", def: "唯一招行对公卡：开户名称、卡号（脱敏）、开户银行、开户支行、联行号、绑定时间、托管协议。转出户" },
+        { name: "收款账户", def: "进件子商户只读：收款银行、户名、商户号、门店号、用途、转出招行卡、托管协议" },
+        { name: "提现账户", def: "对公结算账户：开户名称、卡号、银行、支行、联行号。APP 可「变更对公」" },
         { name: "提现明细", def: "工单、金额、申请时间、转入卡、状态。点进详情" },
       ],
       enums: ["今日 Mock：总金额 ¥40,480.00 / 冻结中 ¥3,000.00 / 可提现 ¥37,480.00", "状态：待审核 / 已提现 / 已驳回"],
-      empty: "无工单「暂无提现明细」；有待审时点发起提现 toast「已有待审核提现」",
-      error: "未绑定收款账户不可提现；可提现=0 不可申请",
+      empty: "无工单「暂无提现明细」",
+      error: "未绑收款账户不可进发起页；有待审/余额不足可进页但不可提交",
       roles: "仅管理员。员工宫格不可见，直链 toast「无权限」",
-      note: "变更收款账户、改转入他行卡留 PC。金额≠套餐购买金额（那是 C 端实付）。",
+      note: "收款账户由平台进件维护；提现账户单独维护。金额≠套餐购买金额。",
     }),
     "financeAccount:apply": S({
       title: "账户 · 发起提现",
       source: "PC 一期提现工单",
       fields: [
         { name: "提现金额", def: ">0 且 ≤ 可提现" },
-        { name: "转出", def: "只读，收款账户" },
-        { name: "转入", def: "APP 锁同收款账户；改其他对公卡请在 PC" },
+        { name: "转出", def: "只读，收款账户（招行转出户）" },
+        { name: "转入", def: "只读展示提现账户；可点变更对公" },
       ],
-      error: "超可提现 / 已有待审 / 未绑卡 → toast，不提交",
+      error: "超可提现 / 已有待审 / 未绑卡 → 不可提交",
+      roles: "仅管理员",
+    }),
+    "financeAccount:settle": S({
+      title: "账户 · 变更提现账户",
+      source: "PC 变更对公账户",
+      fields: [
+        { name: "开户名称", def: "2～64 字，须与营业执照一致" },
+        { name: "银行卡号", def: "8～32 位数字" },
+        { name: "开户银行 / 支行", def: "必填" },
+        { name: "联行号", def: "选填，12 位数字" },
+      ],
+      error: "校验失败 toast，不保存",
       roles: "仅管理员",
     }),
     "financeAccount:detail": S({
@@ -560,6 +573,7 @@
     if (sc === "financeAccount") {
       const v = (state.finance && state.finance.view) || "home";
       if (v === "apply") return "financeAccount:apply";
+      if (v === "settle-edit") return "financeAccount:settle";
       if (v === "detail") return "financeAccount:detail";
       return "financeAccount";
     }

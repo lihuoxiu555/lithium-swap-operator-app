@@ -1,12 +1,12 @@
 # 运营商 APP 框架 · 产品需求文档
 
-> 版本：V1.46  
+> 版本：V1.47  
 > 日期：2026-09-17  
 > 阶段：框架 MVP（业务模块按注册表插拔）  
 > 配套原型：`../prototype/index.html`  
 > 验收标准：`./acceptance-criteria.md`  
 > 字段口径：`./字段口径-对齐PC一期.md`  
-> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md` · `decision-052.md`
+> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md` · `decision-052.md` · `decision-053.md`
 
 ---
 
@@ -757,12 +757,13 @@
 | 账户总金额 | **已清分 − 已提现**（= 可提现 + 冻结中）。单位元，此刻快照。Mock **¥40,480.00** |
 | 冻结中 | 状态为 `待审核` / `审核通过` / `处理中` 的提现金额合计。Mock **¥3,000.00**（WD-260917） |
 | 可提现 | **已清分 − 已提现 − 冻结中**；一期**不扣**融资待还。Mock **¥37,480.00**。已清分 Mock 累计 52,480 |
-| 收款账户 | 唯一招行对公卡（转出户）：开户名称、银行卡号（脱敏）、开户银行、开户支行、联行号、绑定时间、托管协议。可复制卡号。**变更 toast「请在 PC 操作」** |
+| 收款账户 | **只读**。对齐 PC 进件子商户：收款开户银行、收款户名、商户号、门店号、用途；转出招行卡（脱敏、可复制）、绑定时间、托管协议。**不可变更**（平台进件维护） |
+| 提现账户 | **对公结算账户**，单独维护。开户名称、卡号、银行、支行、联行号、更新时间。操作 **变更对公** → 表单页（对齐 PC 变更对公弹窗） |
 | 提现明细 | Tab `全部` / `待审核` / `已提现` / `已驳回`。卡片：金额、状态、工单、申请时间、转入卡。点进详情 |
 | 详情字段 | 金额、申请时间、转出账户、转入开户名称/卡号/银行/支行/联行号、审核、到账时间、驳回原因 |
-| 发起提现 | 有待审 → toast「已有待审核提现」；未绑卡 →「未绑定收款账户不可提现」；可提现=0 →「可提现余额不足」。无待审时可填金额，转入锁同收款账户 |
+| 发起提现 | **可进入页面**查看转出/转入。未绑收款账户 → toast 拦截不进页。有待审或可提现=0 → 页内提示且**提交按钮禁用**；无待审且有余额可提交。转出=收款账户；转入=提现账户 |
 | 空态 | 筛空：「暂无提现明细」；未知工单：「未找到该工单」 |
-| 错误态 | 金额 ≤0 或超可提现，表单 toast，不提交 |
-| Non-goals | 不改收款账户；不改转入他行卡；不做资金实收/清分明细（支付记录已覆盖 C 端实收）；不做保证金/平台服务费；不扣融资待还；不改 PC / 骑手端 |
+| 错误态 | 金额 ≤0 或超可提现 / 变更对公校验失败 → toast，不提交 |
+| Non-goals | 不改进件收款账户；不做资金实收/清分明细；不做保证金/平台服务费；不扣融资待还；不改 PC / 骑手端 |
 
 口径全文见 `docs/字段口径-对齐PC一期.md`「财务 · 运营商账户」。依据：PC `docs/运营商提现规则.md` + decision-061 / 106 / 123 / 138 + **038**。

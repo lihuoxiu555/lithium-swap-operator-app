@@ -3443,6 +3443,16 @@ input:focus-visible,
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.fin-hint.warn {
+  color: #c2410c;
+  background: #fff7ed;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.sites-field .req {
+  color: #e11d48;
+  font-style: normal;
+}
 .fin-hint {
   margin: 8px 16px 0;
   font-size: 11px;
