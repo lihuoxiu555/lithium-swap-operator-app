@@ -335,14 +335,6 @@
       empty: "未绑定二维码「未绑定」",
       roles: "移柜仅管理员",
     }),
-    "cabinets:detail:charge": S({
-      title: "电柜详情 · 充电服务设置",
-      source: "PC 一期（原型有）",
-      fields: [
-        { name: "四项", def: "每格口充电签约比例、换电保留格口、专享已签约、共享已签约" },
-      ],
-      empty: "保存回本 Tab",
-    }),
     "cabinets:detail:more": S({
       title: "电柜详情 · 其他设置",
       source: "PC 一期告警 + 二期运维",
@@ -372,13 +364,6 @@
       ],
       error: "未解绑就绑定：「请先解绑当前站点，再绑定新站」",
       roles: "仅管理员",
-    }),
-    "cabinets:charge": S({
-      title: "充电服务设置表单",
-      source: "PC 一期",
-      fields: [
-        { name: "签约", def: "比例、保留格口、专享/共享已签约" },
-      ],
     }),
     "cabinets:opslog": S({
       title: "历史记录",

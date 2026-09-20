@@ -3625,7 +3625,6 @@
     { id: "cabinet", label: "电柜信息" },
     { id: "slots", label: "格口信息" },
     { id: "basic", label: "基础信息" },
-    { id: "charge", label: "充电服务设置" },
     { id: "more", label: "其他设置" },
   ];
 
@@ -4471,7 +4470,6 @@
     if (state.ops.cabView === "move") return renderCabinetMove();
     if (state.ops.cabView === "compose") return renderCabinetCompose();
     if (state.ops.cabView === "edit") return renderCabinetEdit();
-    if (state.ops.cabView === "charge") return renderCabinetCharge();
     if (state.ops.cabView === "opslog") return renderCabinetOpsLog();
     if (state.ops.cabView === "swaplog") return renderCabinetSwapLog();
     if (state.ops.cabView === "swapDetail") return renderCabinetSwapDetail();
@@ -4730,16 +4728,6 @@
       ["在线", st],
       ["上次换电", c.lastSwap],
     ]);
-    const charge = `<div class="cab-charge-grid">
-      <div><span>每格口充电签约比例</span><strong>${escapeHtml(c.slotChargeRatio)}</strong></div>
-      <div><span>换电保留格口</span><strong>${escapeHtml(String(c.swapReserveSlots))}</strong></div>
-      <div><span>专享已签约 / 可签约</span><strong>${escapeHtml(c.exclusiveSigned)} / ${escapeHtml(
-      c.exclusiveSignable
-    )}</strong></div>
-      <div><span>共享已签约 / 可签约</span><strong>${escapeHtml(c.sharedSigned)} / ${escapeHtml(
-      c.sharedSignable
-    )}</strong></div>
-    </div>`;
     const alerts = Alerts.byDeviceSn(c.sn);
     const alertBody =
       alerts.length === 0
@@ -4854,7 +4842,8 @@
         cmd.id
       )}">${escapeHtml(cmd.label)} ${cabP2()}</button>`;
     }).join("");
-    const detailTab = state.ops.cabDetailTab || "cabinet";
+    const detailTab =
+      state.ops.cabDetailTab === "charge" ? "cabinet" : state.ops.cabDetailTab || "cabinet";
     const tabBar = CAB_DETAIL_TABS.map((t) => {
       const on = detailTab === t.id ? " active" : "";
       return `<button type="button" class="cab-detail-tab${on}" data-action="cab-detail-tab" data-tab="${t.id}">${escapeHtml(
@@ -4905,12 +4894,6 @@
           <div class="cab-door-list">${doorCards}</div>`;
     } else if (detailTab === "basic") {
       tabBody = cabSec("基础信息", `<span>${escapeHtml(c.deviceId || c.sn)} · ${escapeHtml(st)}</span>`, info);
-    } else if (detailTab === "charge") {
-      tabBody = cabSec(
-        "充电服务设置",
-        ops ? `<button type="button" class="cab-mini" data-action="cab-charge">设置</button>` : "",
-        charge
-      );
     } else {
       tabBody = `${
         ops
@@ -5253,34 +5236,6 @@
           <button type="button" class="sites-footer-primary" data-action="cab-edit-save">保存</button>
         </div>
         ${renderCabDialog()}
-      </div>`;
-  }
-
-  function renderCabinetCharge() {
-    const c = currentCabinet();
-    if (!c) return renderCabinetList();
-    return `
-      <div class="sites-page sites-page-form">
-        ${cabSubHeader("充电服务设置")}
-        <div class="sites-form-body">
-          <p class="sites-hint">格口签约与保留策略（演示保存到本柜 Mock）。</p>
-          <label class="sites-field">每格口充电签约比例
-            <input id="cab-ch-ratio" type="text" value="${escapeAttr(c.slotChargeRatio)}" placeholder="80%" />
-          </label>
-          <label class="sites-field">换电保留格口
-            <input id="cab-ch-reserve" type="text" value="${escapeAttr(String(c.swapReserveSlots))}" />
-          </label>
-          <label class="sites-field">专享已签约
-            <input id="cab-ch-ex" type="text" value="${escapeAttr(String(c.exclusiveSigned))}" />
-          </label>
-          <label class="sites-field">共享已签约
-            <input id="cab-ch-sh" type="text" value="${escapeAttr(String(c.sharedSigned))}" />
-          </label>
-        </div>
-        <div class="sites-footer-bar">
-          <button type="button" class="sites-footer-ghost" data-action="cab-back-detail">取消</button>
-          <button type="button" class="sites-footer-primary" data-action="cab-charge-save">保存</button>
-        </div>
       </div>`;
   }
 
@@ -6595,28 +6550,6 @@
           toast("换电柜信息已保存（演示）");
           state.ops.cabView = state.ops.cabReturn === "list" ? "list" : "detail";
           render();
-          break;
-        }
-        case "cab-charge":
-          if (!canOperateCabinets()) break;
-          state.ops.cabDetailTab = "charge";
-          goCabView("charge");
-          break;
-        case "cab-charge-save": {
-          const result = Cabinets.saveCharge(state.ops.cabId, {
-            slotChargeRatio: ($("cab-ch-ratio") && $("cab-ch-ratio").value) || "",
-            swapReserveSlots: ($("cab-ch-reserve") && $("cab-ch-reserve").value) || "",
-            exclusiveSigned: ($("cab-ch-ex") && $("cab-ch-ex").value) || "",
-            sharedSigned: ($("cab-ch-sh") && $("cab-ch-sh").value) || "",
-          });
-          if (result.error) {
-            toast(result.error);
-            break;
-          }
-          track("cab_charge_save", { sn: state.ops.cabId });
-          toast("充电服务设置已保存（演示）");
-          state.ops.cabDetailTab = "charge";
-          goCabView("detail");
           break;
         }
         case "cab-swap-save": {

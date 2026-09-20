@@ -683,15 +683,6 @@
     return { cabinet: c };
   }
 
-  function saveCharge(id, patch) {
-    const c = getById(id);
-    if (!c) return { error: "电柜不存在" };
-    ["slotChargeRatio", "swapReserveSlots", "exclusiveSigned", "sharedSigned"].forEach((k) => {
-      if (patch[k] != null && String(patch[k]).trim() !== "") c[k] = String(patch[k]).trim();
-    });
-    return { cabinet: c };
-  }
-
   function setSwapMode(id, mode) {
     const c = getById(id);
     if (!c) return { error: "电柜不存在" };
@@ -767,7 +758,6 @@
     bindSiteOptions,
     moveCabinet,
     saveEdit,
-    saveCharge,
     setSwapMode,
     setBtType,
     refreshIccid,

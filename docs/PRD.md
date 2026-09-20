@@ -1,12 +1,12 @@
 # 运营商 APP 框架 · 产品需求文档
 
-> 版本：V1.47  
+> 版本：V1.48  
 > 日期：2026-09-17  
 > 阶段：框架 MVP（业务模块按注册表插拔）  
 > 配套原型：`../prototype/index.html`  
 > 验收标准：`./acceptance-criteria.md`  
 > 字段口径：`./字段口径-对齐PC一期.md`  
-> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md` · `decision-052.md` · `decision-053.md`
+> 决策：`../decisions/decision-001.md` · `decision-010.md` · `decision-012.md` · `decision-013.md` · `decision-014.md` · `decision-015.md` · `decision-016.md` · `decision-017.md` · `decision-018.md` · `decision-019.md` · `decision-020.md` · `decision-021.md` · `decision-022.md` · `decision-023.md` · `decision-024.md` · `decision-025.md` · `decision-026.md` · `decision-027.md` · `decision-028.md` · `decision-029.md` · `decision-030.md` · `decision-031.md` · `decision-032.md` · `decision-033.md` · `decision-034.md` · `decision-035.md` · `decision-036.md` · `decision-037.md` · `decision-038.md` · `decision-039.md` · `decision-040.md` · `decision-041.md` · `decision-042.md` · `decision-043.md` · `decision-044.md` · `decision-045.md` · `decision-046.md` · `decision-047.md` · `decision-048.md` · `decision-049.md` · `decision-050.md` · `decision-051.md` · `decision-052.md` · `decision-053.md` · `decision-054.md`
 
 ---
 
@@ -608,7 +608,7 @@
 | 列表字段 | 名称、启用/停用、**通电**、**在线/离线**、SN、站点、仓口、在柜电池、上次换电。未分配另标「未分配」 |
 | 色标 | **在线绿 / 离线红**；**已通电绿 / 未通电红**。停用仍用警示色；未分配灰 |
 | 列表操作 | **历史记录** · **换电记录** · **编辑**（仅管理员）。点卡片主体进详情 |
-| 详情 | **5 个 Tab**（电柜信息 / 格口信息 / 基础信息 / 充电服务设置 / 其他设置）。默认电柜信息。字段口径仍对齐 PC（§19.2.1） |
+| 详情 | **4 个 Tab**（电柜信息 / 格口信息 / 基础信息 / 其他设置）。默认电柜信息。**不含充电服务设置**（留 PC） |
 | 换电模式枚举 | `正常换电` / `MQTT离线换电` / `蓝牙换电`；详情可切并「确认切换」 |
 | 蓝牙类型枚举 | `类型1-0000FFE0` / `类型2-0000FFE1` |
 | 移柜 / 改站 | **先解绑、再绑定**。已上站不可直接改到另一站；解绑须确认，之后为未分配才能选新站绑定。电池不随站绑定。编辑页与移柜页同一规则 |
@@ -616,7 +616,7 @@
 | 错误态 | 电柜不存在；员工点编辑/移柜 toast「无权限」；离线开门 toast「电柜离线，无法开门」；锁仓空原因「请输入锁仓原因」 |
 | Non-goals | 不做「数据包含下级」；不电柜实景图；不补竞品灭火器/加热器等本原型没有的遥测 |
 
-#### 19.2.1 电柜详情（5 Tab）
+#### 19.2.1 电柜详情（4 Tab）
 
 | Tab | 字段 / 行为 | 空态 / 错误 / 权限 |
 |-----|-------------|-------------------|
@@ -624,7 +624,6 @@
 | **电柜信息**（默认） | 名称、启用、在线、SN、在柜电池、通电、已用电量、站点、地址；**刷新 / 一键开仓 / 锁定** | 离线柜仍可看；离线开仓被拦 |
 | **格口信息** | 仓位条（点跳对应仓）、每仓电量/开关/锁定/电池编号（可进详情）、开门确认、锁定填原因 | 空仓电池「—」。电流电压等点「展开字段」 |
 | **基础信息** | 设备编号、二维码、通讯板、ICCID、名称、类型、通电（已通电/未通电）、服务状态、硬件/软件/BOOT/4G、可换规格、已用电量、地址、SN、站点、权属（自有；融资标二期）、换电模式、蓝牙、城市、仓口、在线、上次换电 | 未绑定二维码「未绑定」。移柜仅管理员 |
-| **充电服务设置** | 每格口充电签约比例、换电保留格口、专享/共享已签约与可签约；点设置进表单 | 保存回本 Tab |
 | **其他设置** | 内含 **更多运维**（快照/通断电/风扇/重启等，标二期）、本柜告警、电柜组成/历史记录/换电记录 | 无告警「暂无本柜告警」 |
 
 依据：PC 换电柜详情字段 + 竞品现场操作 + decision-013 / 017 / 024 / **028**。
