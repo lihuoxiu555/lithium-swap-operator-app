@@ -286,38 +286,7 @@
           { key: "frozen", val: personalFrozen, lab: "冻结中" },
         ],
       },
-      batterySection: {
-        title: "电池数据",
-        link: { action: "open-module", id: "ops.deviceStats" },
-        cards: homeBatteryCards(),
-      },
     };
-  }
-
-  /** 首页电池四格 · 总数 = 使用中 + 空闲 + 其他（维修中 + 丢失） */
-  const HOME_BATTERY = {
-    batInUse: 5,
-    batIdle: 5,
-    batRepair: 1,
-    batLost: 1,
-    batOffline: 2,
-  };
-
-  function homeBatteryOther() {
-    return (HOME_BATTERY.batRepair || 0) + (HOME_BATTERY.batLost || 0);
-  }
-
-  function homeBatteryTotal() {
-    return HOME_BATTERY.batInUse + HOME_BATTERY.batIdle + homeBatteryOther();
-  }
-
-  function homeBatteryCards() {
-    return [
-      { key: "batTotal", val: homeBatteryTotal(), lab: "电池总数" },
-      { key: "batInUse", val: HOME_BATTERY.batInUse, lab: "使用中" },
-      { key: "batIdle", val: HOME_BATTERY.batIdle, lab: "空闲" },
-      { key: "batOther", val: homeBatteryOther(), lab: "其他" },
-    ];
   }
 
   const DEVICE_KPI = {

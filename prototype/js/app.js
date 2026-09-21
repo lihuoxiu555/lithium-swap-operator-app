@@ -758,18 +758,6 @@
     return `${summary}${userStats}`;
   }
 
-  function renderHomeBatterySnapshot() {
-    const home = OpsStats.homeSummary();
-    const bat = home.batterySection;
-    if (!bat) return "";
-    const batCards = bat.cards.map((c) => renderHomeStatCard(c, true)).join("");
-    return `
-      <div class="home-stats-block">
-        <div class="home-stats-title">${escapeHtml(bat.title)}</div>
-        <div class="summary-row home-stats-row home-stats-row-4">${batCards}</div>
-      </div>`;
-  }
-
   function renderDataStatsSubTabs() {
     const sub = state.dataStats.subTab || "biz";
     return ["biz", "asset"]
@@ -788,7 +776,7 @@
     const sub = state.dataStats.subTab || "biz";
     const body =
       sub === "asset"
-        ? `<div class="data-stats-body">${renderHomeBatterySnapshot()}${renderDeviceStatsBody()}</div>`
+        ? `<div class="data-stats-body">${renderDeviceStatsBody()}</div>`
         : `<div class="data-stats-body">${renderHomeBizSnapshot()}</div>`;
     return `
       <div class="data-stats-page">
