@@ -287,6 +287,7 @@
 | `prototype/js/users.js` | 其他·用户管理 / 短信验证码 / 用户支付记录 Mock |
 | `prototype/js/batteries.js` | 订单电池详情 Mock（定位 + 远程操作） |
 | `prototype/js/page-specs.js` | 评审右侧：本页字段 / 统计 / 空态错误权限 |
+| `prototype/js/changelog.js` | 评审左侧：版本更新记录（新条目置顶） |
 | `decisions/decision-001.md` | 框架决策卡片 |
 | `decisions/decision-002.md` | 租赁订单接入 |
 | `decisions/decision-003.md` | 租赁订单次页 |
