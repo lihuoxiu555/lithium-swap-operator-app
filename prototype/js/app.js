@@ -761,7 +761,7 @@
       batteryStats = `
       <div class="home-stats-block">
         ${batTitle}
-        <div class="summary-row home-stats-row">${batCards}</div>
+        <div class="summary-row home-stats-row home-stats-row-4">${batCards}</div>
       </div>`;
     }
 

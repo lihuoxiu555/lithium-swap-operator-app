@@ -5,6 +5,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.55",
+      date: "2026-09-21",
+      title: "电池数据 · 其他状态",
+      decisions: ["061"],
+      items: [
+        "电池数据新增第 4 格「其他」（维修中 + 丢失）",
+        "电池总数 = 使用中 + 空闲 + 其他",
+        "Mock：12 = 5 + 5 + 2（维修 1 · 丢失 1）",
+      ],
+    },
+    {
       version: "V1.54",
       date: "2026-09-21",
       title: "换电订单重构 · 套餐订单",
