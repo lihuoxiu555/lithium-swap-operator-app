@@ -31,6 +31,7 @@ cd 原型-运营商APP && python3 -m http.server 8788
 - 底栏待办 → 退款待审 / 逾期持电 / 渠道商充值申请（`js/todos.js`）
 - 底栏待办 · 警告 → 高温 / 设备异常；换电柜异常五类封闭枚举（`js/alerts.js`）
 - 经营 → **换电订单**（个人换电 / 人天池，`lease.orders`，`js/lease-orders.js` · `js/daypool-orders.js`）
+- 经营 → **套餐订单**（个人套餐购买，`biz.packageOrders`，`js/package-orders.js`）
 - 运营 → **经营统计 / 电柜管理 / 设备统计**（`js/ops-stats.js` · `js/cabinets.js`；电柜详情对齐 PC 全量区块）
 - 运维 → **站点**（`ops.sites`，`js/sites.js`；对齐 PC 站点信息一期）
 - 财务 → **账户**（`finance.account`，`js/finance-account.js`；总金额/冻结中/可提现、收款账户、提现明细）

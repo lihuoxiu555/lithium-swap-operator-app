@@ -1,12 +1,12 @@
 /**
  * 个人换电订单 · Mock 数据与展示辅助
- * 列表 + 次页（计费/支付/更换/延期/合同/表单）
+ * 列表 + 次页（逾期记录/延期/冻结/结束表单等；套餐购买见 package-orders.js）
  */
 (function (global) {
   const LEASE_STATUS = {
     pending: { id: "pending", label: "待确认" },
     active: { id: "active", label: "使用中" },
-    parked: { id: "parked", label: "暂存中" },
+    parked: { id: "parked", label: "冻结中" },
     arrears: { id: "arrears", label: "已欠费" },
     ended: { id: "ended", label: "已结束" },
   };
@@ -25,35 +25,22 @@
   ];
 
   const SUBPAGE_META = {
-    billing: { title: "订单计费记录", kind: "list" },
-    pay: { title: "订单支付记录", kind: "list" },
-    replace_log: { title: "更换记录", kind: "list" },
+    overdue_log: { title: "逾期记录", kind: "list" },
     extend_log: { title: "订单延期记录", kind: "list" },
-    contract: { title: "订单合同", kind: "doc" },
     end: { title: "结束订单", kind: "form" },
     abnormal_end: { title: "异常结束", kind: "form" },
-    replace_battery: { title: "电池更换", kind: "form" },
-    park: { title: "暂存订单", kind: "confirm" },
-    park_pickup: { title: "暂存取电", kind: "form" },
+    park: { title: "冻结记录", kind: "confirm" },
     gift_days: { title: "赠送天数", kind: "form" },
     confirm: { title: "确认订单", kind: "dialog" },
   };
 
   function actionsForStatus(status) {
-    const commonRecords = [
-      { id: "contract", label: "订单合同", color: "teal" },
-      { id: "pay", label: "支付记录", color: "mint" },
-      { id: "billing", label: "计费记录", color: "purple" },
-    ];
     switch (status) {
       case "active":
         return [
           { id: "end", label: "结束订单", color: "red" },
           { id: "abnormal_end", label: "异常结束", color: "yellow" },
-          { id: "replace_battery", label: "更换电池", color: "orange" },
-          { id: "replace_log", label: "更换记录", color: "blue" },
-          { id: "park", label: "暂存订单", color: "orange" },
-          ...commonRecords,
+          { id: "park", label: "冻结记录", color: "orange" },
         ];
       case "parked":
         return [
@@ -61,33 +48,46 @@
           { id: "abnormal_end", label: "异常结束", color: "yellow" },
           { id: "gift_days", label: "赠送天数", color: "cyan" },
           { id: "extend_log", label: "延期记录", color: "green" },
-          { id: "park_pickup", label: "暂存取电", color: "blue" },
-          ...commonRecords,
         ];
       case "arrears":
         return [
           { id: "end", label: "结束订单", color: "red" },
           { id: "abnormal_end", label: "异常结束", color: "yellow" },
-          { id: "replace_battery", label: "更换电池", color: "orange" },
-          { id: "replace_log", label: "更换记录", color: "blue" },
-          ...commonRecords,
+          { id: "overdue_log", label: "逾期记录", color: "purple" },
         ];
       case "ended":
-        return [
-          { id: "replace_log", label: "更换记录", color: "green" },
-          { id: "contract", label: "订单合同", color: "green" },
-          { id: "pay", label: "支付记录", color: "mint" },
-          { id: "billing", label: "计费记录", color: "purple" },
-        ];
+        return [];
       case "pending":
         return [
           { id: "confirm", label: "确认订单", color: "teal" },
           { id: "abnormal_end", label: "异常结束", color: "yellow" },
-          ...commonRecords,
         ];
       default:
-        return commonRecords;
+        return [];
     }
+  }
+
+  function buildOverdueLogs(totalAmount, dailyFee, startDate, days) {
+    const logs = [];
+    let remain = totalAmount;
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const pad = (n) => String(n).padStart(2, "0");
+      const dateStr =
+        d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+      const isLast = i === days - 1;
+      const amount = isLast ? +remain.toFixed(1) : dailyFee;
+      remain -= amount;
+      logs.push({
+        date: dateStr,
+        dayIndex: i + 1,
+        dailyFee,
+        amount,
+        note: isLast && amount !== dailyFee ? "不足一天按一天" : "电池占用费",
+      });
+    }
+    return logs;
   }
 
   /** @type {Array<object>} */
@@ -203,6 +203,40 @@
       extends: [],
     },
     {
+      id: "lo-8",
+      status: "ended",
+      userName: "周强",
+      phone: "13800138001",
+      orderNo: "xbl2605011000123456789",
+      store: "昆山运营",
+      model: "7260",
+      modelLabel: "72V 60AH",
+      deviceId: "BT7072060150025101148000",
+      batteryNo: "035211148000",
+      firstCabinetName: "陆家嘴一号柜",
+      firstCabinetCode: "352101100001",
+      rent: "389元/30天",
+      deposit: "10元",
+      depositPayTag: "微信支付",
+      refundableDeposit: "10",
+      partyA: "军盛新能源科技（苏州）有限公司",
+      createdAt: "2026-05-01 10:00:12",
+      expireAt: "2026-05-31 10:00:12",
+      endedAt: "2026-08-28 18:30:00",
+      remain: "",
+      overdue: "",
+      arrearsAmount: "",
+      parkStartAt: "",
+      parkDays: "",
+      accumRent: "389元",
+      remark: "用户归还电池,订单结束",
+      lastSwap: "",
+      billing: [],
+      payments: [],
+      replaces: [],
+      extends: [],
+    },
+    {
       id: "lo-3",
       status: "parked",
       userName: "李敏",
@@ -227,6 +261,7 @@
       overdue: "",
       arrearsAmount: "",
       parkStartAt: "2026-09-14 23:29:27",
+      freezeAppliedAt: "2026-09-14 23:29:27",
       parkDays: "1",
       accumRent: "999元",
       remark: "",
@@ -271,13 +306,11 @@
       overdue: "11天3小时40分钟",
       arrearsAmount: "131.6元",
       overdueFeeNormal: "131.6",
+      overdueLogs: buildOverdueLogs(131.6, 10, "2026-09-05", 12),
       parkStartAt: "",
       parkDays: "",
-      accumRent: "",
       remark: "用户机柜取电,生成订单",
       lastSwap: "",
-      billing: [],
-      payments: [],
       replaces: [],
       extends: [],
     },
@@ -359,6 +392,40 @@
       replaces: [],
       extends: [],
     },
+    {
+      id: "lo-7",
+      status: "pending",
+      userName: "何静",
+      phone: "13700002222",
+      orderNo: "xbl2609200900000000002",
+      store: "浦东骑手驿站",
+      model: "7260",
+      modelLabel: "72V 60AH",
+      deviceId: "",
+      batteryNo: "",
+      firstCabinetName: "浦东一号柜",
+      firstCabinetCode: "352101100002",
+      rent: "389元/30天",
+      deposit: "10元",
+      depositPayTag: "",
+      refundableDeposit: "10",
+      partyA: "军盛新能源科技（苏州）有限公司",
+      createdAt: "2026-09-20 09:00:00",
+      expireAt: "",
+      endedAt: "",
+      remain: "",
+      overdue: "",
+      arrearsAmount: "",
+      parkStartAt: "",
+      parkDays: "",
+      accumRent: "",
+      remark: "待确认开通",
+      lastSwap: "",
+      billing: [],
+      payments: [],
+      replaces: [],
+      extends: [],
+    },
   ];
 
   const TAB_COUNTS = {
@@ -374,13 +441,47 @@
     { id: "pending", label: "待确认", countKey: "pending" },
     { id: "all", label: "全部", countKey: "all" },
     { id: "active", label: "使用中", countKey: "active" },
-    { id: "parked", label: "暂存中", countKey: "parked" },
+    { id: "parked", label: "冻结中", countKey: "parked" },
     { id: "arrears", label: "已欠费", countKey: "arrears" },
     { id: "ended", label: "已结束", countKey: "ended" },
   ];
 
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function nowText() {
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      "-" +
+      pad2(d.getMonth() + 1) +
+      "-" +
+      pad2(d.getDate()) +
+      " " +
+      pad2(d.getHours()) +
+      ":" +
+      pad2(d.getMinutes()) +
+      ":" +
+      pad2(d.getSeconds())
+    );
+  }
+
   function getOrderById(id) {
     return LEASE_ORDERS.find((o) => o.id === id) || null;
+  }
+
+  /** 使用中 → 冻结中；写入冻结申请时间并同步订单区展示字段 */
+  function applyFreezeRecord(id) {
+    const order = getOrderById(id);
+    if (!order) return { error: "订单不存在" };
+    if (order.status !== "active") return { error: "仅使用中的订单可提交冻结申请" };
+    const appliedAt = nowText();
+    order.status = "parked";
+    order.freezeAppliedAt = appliedAt;
+    order.parkStartAt = appliedAt;
+    order.parkDays = "0";
+    return { order, appliedAt };
   }
 
   function filterOrders(orders, opts) {
@@ -402,7 +503,12 @@
     return list;
   }
 
+  /**
+   * 个人换电卡片：使用中/欠费等不再展示套餐购买信息（见套餐订单模块）。
+   * 待确认单仍展示开通前必要上下文（权益/套餐/押金/开通状态）。
+   */
   function profileRows(order) {
+    if (!order || order.status !== "pending") return [];
     const rows = [];
     const push = (label, value, opts = {}) => {
       if (value === undefined || value === null || value === "") return;
@@ -410,14 +516,8 @@
     };
     push("权益来源", "个人套餐");
     push("套餐", order.modelLabel || order.model);
-    push("租金", order.rent);
-    if (order.deposit) push("押金", order.deposit, { tag: order.depositPayTag || "" });
-    push("到期时间", order.expireAt);
-    if (order.status === "arrears") {
-      push("逾期时长", order.overdue, { warn: true });
-    } else if (order.remain) {
-      push("剩余时长", order.remain);
-    }
+    push("押金", order.deposit);
+    push("开通状态", "待确认开通", { warn: true });
     return rows;
   }
 
@@ -436,13 +536,13 @@
     push("创建时间", order.createdAt);
     if (order.status === "ended") push("结束时间", order.endedAt);
     if (order.status === "parked") {
-      push("暂存开始时间", order.parkStartAt);
-      push("已暂存天数", order.parkDays);
+      push("冻结申请时间", order.freezeAppliedAt || order.parkStartAt);
+      push("已冻结天数", order.parkDays);
     }
     if (order.status === "arrears") {
+      push("逾期时长", order.overdue, { warn: true });
       push("欠费金额", order.arrearsAmount, { warn: true });
     }
-    push("累积租金金额", order.accumRent);
     push("订单备注", order.remark);
     if (order.status === "ended" || order.status === "active" || order.lastSwap) {
       push("上次换电时间", order.lastSwap);
@@ -474,8 +574,7 @@
     return {
       meta,
       order,
-      billing: order.billing || [],
-      payments: order.payments || [],
+      overdueLogs: order.overdueLogs || [],
       replaces: order.replaces || [],
       extends: order.extends || [],
       deviceCode: deviceDisplayCode(order),
@@ -502,5 +601,6 @@
     getOrderById,
     getSubpageData,
     deviceDisplayCode,
+    applyFreezeRecord,
   };
 })(window);

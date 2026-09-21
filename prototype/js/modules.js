@@ -33,6 +33,15 @@
       route: "#/module/lease.orders",
     },
     {
+      id: "biz.packageOrders",
+      name: "套餐订单",
+      group: "经营",
+      icon: "🧾",
+      status: "ready",
+      roles: ["admin", "staff"],
+      route: "#/module/biz.packageOrders",
+    },
+    {
       id: "biz.stats",
       name: "经营统计",
       group: "经营",

@@ -907,6 +907,16 @@ input:focus-visible,
 .lease-card.arrears {
   box-shadow: 0 0 0 1px #e74c3c, 0 1px 4px rgba(15, 23, 42, 0.04);
 }
+.lease-card.lease-card-record {
+  padding-top: 10px;
+}
+.lease-card.lease-card-record > .lease-card-sec:first-child {
+  margin-top: 0;
+}
+.lease-quick-tabs {
+  margin: 8px 0 2px;
+  padding: 0;
+}
 .lease-card-hd {
   display: flex;
   align-items: flex-start;

@@ -6,6 +6,7 @@
     window.OperatorAppModules;
   const { findAccount, SYSTEM_MESSAGES } = window.OperatorAppMock;
   const Lease = window.OperatorAppLease;
+  const PackageOrders = window.OperatorAppPackageOrders;
   const Daypool = window.OperatorAppDaypool;
   const OpsStats = window.OperatorAppOpsStats;
   const Cabinets = window.OperatorAppCabinets;
@@ -50,6 +51,7 @@
       searchType: "phone",
       keyword: "",
       siteId: "all",
+      problemFilter: "all", // all | pending | problem
       searchOpen: false,
       sub: null, // { type, orderId } | null
       listScroll: 0,
@@ -121,6 +123,10 @@
       smsKw: "",
       payKw: "",
       payTab: "success",
+    },
+    packageOrders: {
+      tab: "all",
+      kw: "",
     },
     battery: {
       sn: null,
@@ -378,6 +384,9 @@
       if (trackClick) state.lease.kind = "personal";
       state.lease.menuKey = null;
       state.lease.sub = null;
+      state.lease.keyword = "";
+      state.lease.siteId = "all";
+      state.lease.problemFilter = "all";
       state.daypool.sub = null;
       state.screen = "leaseOrders";
       setHash("#/module/lease.orders");
@@ -401,6 +410,14 @@
       state.screen = "bizStats";
       setHash(mod.route);
       track("biz_stats_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "biz.packageOrders") {
+      state.placeholderModule = mod;
+      state.screen = "packageOrders";
+      setHash(mod.route);
+      track("package_orders_open", {});
       render();
       return;
     }
@@ -1057,20 +1074,17 @@
     return order.createdAt || order.openedAt || order.endedAt || "";
   }
 
-  function latestSwapRows() {
+  function swapRowKey(row) {
+    return row.kind + ":" + row.order.id;
+  }
+
+  /** 全部换电记录（个人 + 人天），有问题单靠前 */
+  function allSwapRows() {
     const rows = [];
     Lease.LEASE_ORDERS.forEach((o) => rows.push({ kind: "personal", order: o }));
     Daypool.DAYPOOL_ORDERS.forEach((o) => rows.push({ kind: "daypool", order: o }));
-    const byPhone = new Map();
-    rows.forEach((row) => {
-      const key = row.order.phone;
-      const prev = byPhone.get(key);
-      if (!prev || swapOrderTime(row.order) > swapOrderTime(prev.order)) {
-        byPhone.set(key, row);
-      }
-    });
     const rank = { arrears: 0, return_due: 1, pending: 2, parked: 3 };
-    return Array.from(byPhone.values()).sort((a, b) => {
+    return rows.sort((a, b) => {
       const ra = rank[a.order.status] != null ? rank[a.order.status] : 8;
       const rb = rank[b.order.status] != null ? rank[b.order.status] : 8;
       if (ra !== rb) return ra - rb;
@@ -1078,19 +1092,51 @@
     });
   }
 
-  function filterLatestSwapRows(rows) {
+  /** 同一用户仅最新一条展示用户信息（在可见列表内按时间判定） */
+  function attachUserHeaders(rows) {
+    const latestByPhone = new Map();
+    rows.forEach((row) => {
+      const phone = row.order.phone;
+      const t = swapOrderTime(row.order);
+      const hit = latestByPhone.get(phone);
+      if (!hit || t > hit.t) {
+        latestByPhone.set(phone, { key: swapRowKey(row), t });
+      }
+    });
+    const headerKeys = new Set(
+      Array.from(latestByPhone.values()).map((x) => x.key)
+    );
+    return rows.map((row) => ({
+      ...row,
+      showUserHeader: headerKeys.has(swapRowKey(row)),
+    }));
+  }
+
+  function swapPendingCount(rows) {
+    return rows.filter(({ kind, order }) => kind === "personal" && order.status === "pending")
+      .length;
+  }
+
+  function filterSwapRows(rows) {
     const siteLabel = leaseSiteLabel();
     const type = state.lease.searchType;
     const kw = String(state.lease.keyword || "").trim().toLowerCase();
-    return rows.filter(({ order }) => {
+    const pf = state.lease.problemFilter || "all";
+    const filtered = rows.filter(({ kind, order }) => {
       if (siteLabel && siteLabel !== "全部" && order.store !== siteLabel) return false;
+      if (pf === "pending" && !(kind === "personal" && order.status === "pending")) {
+        return false;
+      }
+      if (pf === "problem" && !swapProblemBadge(kind, order)) return false;
       if (!kw) return true;
       if (type === "battery") return String(order.batteryNo || "").toLowerCase().includes(kw);
       return (
         String(order.phone || "").includes(kw) ||
-        String(order.userName || "").toLowerCase().includes(kw)
+        String(order.userName || "").toLowerCase().includes(kw) ||
+        String(order.orderNo || "").toLowerCase().includes(kw)
       );
     });
+    return attachUserHeaders(filtered);
   }
 
   function swapProblemBadge(kind, order) {
@@ -1128,12 +1174,29 @@
   function renderLeaseOrders() {
     const L = state.lease;
     const searchMeta = leaseSearchMeta();
-    const list = filterLatestSwapRows(latestSwapRows());
+    const allRows = allSwapRows();
+    const pendingN = swapPendingCount(allRows);
+    const list = filterSwapRows(allRows);
+    const pf = L.problemFilter || "all";
+    const quickFilters = [
+      { id: "all", label: "全部" },
+      { id: "pending", label: pendingN ? `待确认 ${pendingN}` : "待确认" },
+      { id: "problem", label: "有问题" },
+    ]
+      .map((f) => {
+        const on = pf === f.id ? " active" : "";
+        return `<button type="button" class="sites-tab${on}" data-action="lease-problem-filter" data-filter="${escapeAttr(
+          f.id
+        )}">${escapeHtml(f.label)}</button>`;
+      })
+      .join("");
 
     const cards =
       list.length === 0
         ? `<div class="empty-full"><div class="icon">📋</div>暂无换电订单</div>`
-        : list.map((row) => renderSwapUserCard(row.kind, row.order)).join("");
+        : list
+            .map((row) => renderSwapUserCard(row.kind, row.order, row.showUserHeader))
+            .join("");
 
     const siteOptions = allSwapSites()
       .map(
@@ -1174,10 +1237,73 @@
               <select id="lease-site" class="lease-select store" aria-label="站点">${siteOptions}</select>
             </label>
           </div>
+          <div class="sites-tabs lease-quick-tabs">${quickFilters}</div>
         </div>
         <div class="lease-list">${cards}</div>
         ${renderConfirmDialog()}
         ${renderDaypoolConfirmDialog()}
+      </div>`;
+  }
+
+  function renderPackageOrders() {
+    const po = state.packageOrders;
+    const list = PackageOrders.filterOrders(po.tab, po.kw);
+    const tabs = PackageOrders.TABS.map((t) => {
+      const on = po.tab === t.id ? " active" : "";
+      return `<button type="button" class="sites-tab${on}" data-action="pkg-tab" data-tab="${escapeAttr(
+        t.id
+      )}">${escapeHtml(t.label)}</button>`;
+    }).join("");
+    const cards =
+      list.length === 0
+        ? `<div class="empty-full"><div class="icon">🧾</div>暂无套餐订单</div>`
+        : list
+            .map((o) => {
+              const paid = o.status === "paid";
+              return `<article class="user-card">
+          <div class="user-id">
+            <strong>${escapeHtml(o.userName)} ${escapeHtml(o.phone)}</strong>
+            <span class="user-tag ${paid ? "ok" : "refund"}">${escapeHtml(
+                PackageOrders.statusLabel(o.status)
+              )}</span>
+          </div>
+          <div class="lease-fields">
+            <div class="lease-row"><span class="lk">套餐单号</span><span class="lv">${escapeHtml(o.orderNo)}</span></div>
+            <div class="lease-row"><span class="lk">套餐</span><span class="lv">${escapeHtml(o.packageName)}</span></div>
+            <div class="lease-row"><span class="lk">金额</span><span class="lv">¥${Number(o.amount).toLocaleString(
+                "zh-CN"
+              )}</span></div>
+            <div class="lease-row"><span class="lk">站点</span><span class="lv">${escapeHtml(o.site)}</span></div>
+            <div class="lease-row"><span class="lk">关联换电单</span><span class="lv">${escapeHtml(
+              o.swapOrderNo || "—"
+            )}</span></div>
+            <div class="lease-row"><span class="lk">支付通道</span><span class="lv">${escapeHtml(o.channel)}</span></div>
+            <div class="lease-row"><span class="lk">下单时间</span><span class="lv">${escapeHtml(o.createdAt)}</span></div>
+            ${
+              paid
+                ? `<div class="lease-row"><span class="lk">支付时间</span><span class="lv">${escapeHtml(
+                    o.paidAt
+                  )}</span></div>`
+                : `<div class="lease-row"><span class="lk">待支付</span><span class="lv warn">用户端待完成支付</span></div>`
+            }
+          </div>
+        </article>`;
+            })
+            .join("");
+    return `
+      <div class="sites-page">
+        ${opsHeader("套餐订单")}
+        <p class="ops-hint" style="margin:0 14px 8px">个人套餐<strong>购买</strong>订单，与换电订单分离。已支付 / 待支付 Tab 筛选。</p>
+        <div class="sites-filters">
+          <div class="sites-search-row">
+            <input id="pkg-kw" type="search" value="${escapeAttr(
+              po.kw
+            )}" placeholder="套餐单号 / 换电单号 / 姓名 / 手机号" />
+            <button type="button" class="sites-confirm" data-action="pkg-search">确定</button>
+          </div>
+        </div>
+        <div class="sites-tabs">${tabs}</div>
+        <div class="sites-list">${cards}</div>
       </div>`;
   }
 
@@ -1412,11 +1538,16 @@
     return renderSwapUserCard("personal", order);
   }
 
-  function renderSwapUserCard(kind, order) {
+  function renderSwapUserCard(kind, order, showUserHeader) {
+    const withUser = showUserHeader !== false;
     const badge = swapProblemBadge(kind, order);
     const problem = kind === "personal" ? order.status === "arrears" : order.status === "return_due";
     const profile =
-      kind === "daypool" ? Daypool.profileRows(order) : Lease.profileRows(order);
+      withUser && kind === "daypool"
+        ? Daypool.profileRows(order)
+        : withUser
+          ? Lease.profileRows(order)
+          : [];
     const orderFields =
       kind === "daypool" ? Daypool.orderRows(order) : Lease.orderRows(order);
     const actions =
@@ -1424,9 +1555,9 @@
         ? Daypool.actionsForStatus(order.status)
         : Lease.actionsForStatus(order.status);
     const callAction = kind === "daypool" ? "daypool-call" : "lease-call";
-    return `
-      <article class="lease-card${problem ? " arrears" : ""}">
-        <div class="lease-card-hd">
+    const recordClass = withUser ? "" : " lease-card-record";
+    const userBlock = withUser
+      ? `<div class="lease-card-hd">
           <div class="lease-user">
             <strong>${escapeHtml(order.userName)}</strong>
             <span>${escapeHtml(order.phone)}</span>
@@ -1441,12 +1572,20 @@
                 : ""
             }
             <button type="button" class="lease-icon-btn call" data-action="${callAction}" data-phone="${escapeAttr(
-      order.phone
-    )}" aria-label="拨打">☎</button>
+              order.phone
+            )}" aria-label="拨打">☎</button>
           </div>
-        </div>
-        <h2 class="lease-card-sec">用户信息</h2>
-        <div class="lease-fields">${profile.map(renderLeaseFieldRow).join("")}</div>
+        </div>`
+      : "";
+    const profileBlock =
+      profile.length
+        ? `<h2 class="lease-card-sec">用户信息</h2>
+        <div class="lease-fields">${profile.map(renderLeaseFieldRow).join("")}</div>`
+        : "";
+    return `
+      <article class="lease-card${problem ? " arrears" : ""}${recordClass}">
+        ${userBlock}
+        ${profileBlock}
         <h2 class="lease-card-sec">换电订单</h2>
         <div class="lease-fields">${orderFields.map(renderLeaseFieldRow).join("")}</div>
         ${renderOrderOpBar(kind, order.id, actions)}
@@ -1471,10 +1610,6 @@
           depositRefund: "",
           remark: "",
         };
-      case "replace_battery":
-        return { newCode: "", reason: "" };
-      case "park_pickup":
-        return { newCode: "", reason: "" };
       case "gift_days":
         return { op: "add", days: "", remark: "" };
       case "park":
@@ -1546,20 +1681,6 @@
         return;
       }
     }
-    if (type === "replace_battery" || type === "park_pickup") {
-      if (!String(f.newCode || "").trim()) {
-        toast("请输入新设备编码");
-        return;
-      }
-      if (!String(f.reason || "").trim()) {
-        toast("请输入更换原因");
-        return;
-      }
-      if (String(f.reason).length > 100) {
-        toast("更换原因最多 100 字");
-        return;
-      }
-    }
     if (type === "gift_days") {
       const days = String(f.days || "").trim();
       if (!/^[1-9]\d*$/.test(days)) {
@@ -1572,12 +1693,18 @@
     const titles = {
       end: "结束订单已提交（原型示意）",
       abnormal_end: "异常结束已提交（原型示意）",
-      replace_battery: "更换已提交（原型示意）",
-      park: "暂存已生效（原型示意）",
-      park_pickup: "暂存取电已提交（原型示意）",
+      park: "冻结记录已生效（原型示意）",
       gift_days: "赠送天数已提交（原型示意）",
     };
     let msg = titles[type] || "已提交（原型示意）";
+    if (type === "park") {
+      const fr = Lease.applyFreezeRecord(sub.orderId);
+      if (fr.error) {
+        toast(fr.error);
+        return;
+      }
+      msg = `冻结记录已生效（${fr.appliedAt}）`;
+    }
     if (type === "end") {
       const endData = Lease.getSubpageData(order, "end");
       const normalFee = parseFloat((endData && endData.overdueFeeNormal) || "0") || 0;
@@ -1622,26 +1749,16 @@
       return renderLeaseOrders();
     }
     switch (sub.type) {
-      case "billing":
-        return renderSubBilling(data);
-      case "pay":
-        return renderSubPay(data);
-      case "replace_log":
-        return renderSubReplaceLog(data);
+      case "overdue_log":
+        return renderSubOverdueLog(data);
       case "extend_log":
         return renderSubExtendLog(data);
-      case "contract":
-        return renderSubContract(data);
       case "end":
         return renderSubEnd(data);
       case "abnormal_end":
         return renderSubAbnormal(data);
-      case "replace_battery":
-        return renderSubReplaceBattery(data);
       case "park":
         return renderSubPark(data);
-      case "park_pickup":
-        return renderSubParkPickup(data);
       case "gift_days":
         return renderSubGiftDays(data);
       default:
@@ -1649,54 +1766,44 @@
     }
   }
 
-  function renderSubBilling(data) {
-    const { order, billing } = data;
+  function renderSubOverdueLog(data) {
+    const { order, overdueLogs } = data;
+    if (order.status !== "arrears") {
+      return `<div class="lease-page">${leaseSubHeader("逾期记录")}<div class="empty-full"><div class="icon">⏱</div>仅已欠费订单可查看逾期记录</div></div>`;
+    }
     const list =
-      billing.length === 0
-        ? leaseEmptyState("查询结果为空~")
-        : billing
-            .map((b) => {
-              const badge = b.status
-                ? `<span class="lease-ok-badge">${escapeHtml(b.status)}</span>`
-                : "";
-              const startEnd =
-                b.purpose === "租金"
-                  ? `<div class="lease-row"><span class="lk">开始日期</span><span class="lv">${escapeHtml(
-                      b.startAt
-                    )}</span></div>
-                     <div class="lease-row"><span class="lk">结束日期</span><span class="lv">${escapeHtml(
-                       b.endAt
-                     )}</span></div>`
-                  : "";
-              return `
+      overdueLogs.length === 0
+        ? leaseEmptyState("暂无逾期记录~")
+        : overdueLogs
+            .map(
+              (row) => `
               <article class="lease-card">
                 <div class="lease-card-hd">
-                  <div class="lease-user"><strong>${escapeHtml(
-                    order.userName
-                  )}-${escapeHtml(order.phone)}</strong></div>
-                  ${badge}
+                  <div class="lease-user"><strong>第 ${row.dayIndex} 天</strong><span>${escapeHtml(
+                row.date
+              )}</span></div>
+                  <span class="lease-ok-badge">¥${Number(row.amount).toFixed(1)}</span>
                 </div>
                 <div class="lease-fields">
-                  <div class="lease-row"><span class="lk">订单编号</span><span class="lv">${escapeHtml(
-                    order.orderNo
-                  )}</span></div>
-                  <div class="lease-row"><span class="lk">用途</span><span class="lv">${escapeHtml(
-                    b.purpose
-                  )}</span></div>
-                  <div class="lease-row"><span class="lk">记账日期</span><span class="lv">${escapeHtml(
-                    b.bookedAt
-                  )}</span></div>
-                  ${startEnd}
-                  <div class="lease-row"><span class="lk">备注</span><span class="lv">${escapeHtml(
-                    b.remark
+                  <div class="lease-row"><span class="lk">日费率</span><span class="lv">¥${escapeHtml(
+                    String(row.dailyFee)
+                  )}/天</span></div>
+                  <div class="lease-row"><span class="lk">当日计费</span><span class="lv warn">¥${Number(
+                    row.amount
+                  ).toFixed(1)}</span></div>
+                  <div class="lease-row"><span class="lk">说明</span><span class="lv">${escapeHtml(
+                    row.note
                   )}</span></div>
                 </div>
-              </article>`;
-            })
+              </article>`
+            )
             .join("");
+    const total = overdueLogs.reduce((s, r) => s + Number(r.amount), 0);
     return `<div class="lease-page">${leaseSubHeader(
-      "订单计费记录"
-    )}<div class="lease-list">${list}</div></div>`;
+      "逾期记录"
+    )}<p class="ops-hint">逾期后<strong>按自然日</strong>逐条计费（电池占用费）。合计 <strong>¥${total.toFixed(
+      1
+    )}</strong>，与换电订单欠费金额对齐。</p><div class="lease-list">${list}</div></div>`;
   }
 
   function renderSubPay(data) {
@@ -2063,58 +2170,22 @@
   function renderSubPark(data) {
     return `
       <div class="lease-page lease-page-form">
-        ${leaseSubHeader("暂存订单")}
+        ${leaseSubHeader("冻结记录")}
         <div class="lease-form-body">
           <div class="lease-info-card">
             <div class="lease-dev-icon" aria-hidden="true">▣</div>
             <div class="lease-pill">${batterySnButton(data.deviceCode)}</div>
           </div>
           <section class="lease-form-section">
-            <h3><i></i>暂存使用说明：</h3>
+            <h3><i></i>冻结使用说明：</h3>
             <div class="lease-step">
               <span class="lease-step-no">01</span>
-              <p>暂存订单实时生效，生效后不消耗订单剩余天数。</p>
+              <p>冻结记录实时生效，生效后不消耗订单剩余天数。</p>
             </div>
           </section>
         </div>
         <div class="lease-footer-bar dual">
           <button type="button" class="lease-footer-ghost" data-action="lease-sub-back">取消</button>
-          <button type="button" class="lease-footer-primary" data-action="lease-sub-submit">确定</button>
-        </div>
-      </div>`;
-  }
-
-  function renderSubParkPickup(data) {
-    const f = state.lease.form;
-    const { order } = data;
-    return `
-      <div class="lease-page lease-page-form">
-        ${leaseSubHeader("暂存取电")}
-        <div class="lease-form-body">
-          <div class="lease-info-card">
-            <div class="lease-dev-icon" aria-hidden="true">🔋</div>
-            <div>
-              <div class="lease-info-line">
-                <span>订单编号</span>
-                <em class="lease-pill">${escapeHtml(order.orderNo)}</em>
-              </div>
-              <p class="lease-meta">站点：${escapeHtml(order.store)}</p>
-              <p class="lease-meta">设备型号：${escapeHtml(data.modelLabel)}</p>
-            </div>
-          </div>
-          <div class="lease-input-card">
-            <input type="text" data-form-key="newCode" value="${escapeAttr(
-              f.newCode || ""
-            )}" placeholder="请输入新设备编码" />
-            <button type="button" class="lease-scan-in" data-action="lease-scan" aria-label="扫码">▦</button>
-          </div>
-          <div class="lease-input-card tall">
-            <textarea data-form-key="reason" maxlength="100" placeholder="请输入更换原因（最多输入 100 字）">${escapeHtml(
-              f.reason || ""
-            )}</textarea>
-          </div>
-        </div>
-        <div class="lease-footer-bar">
           <button type="button" class="lease-footer-primary" data-action="lease-sub-submit">确定</button>
         </div>
       </div>`;
@@ -2130,10 +2201,6 @@
           <div class="lease-info-card compact">
             <div class="lease-dev-icon" aria-hidden="true">▣</div>
             <div>订单编号 ${escapeHtml(order.orderNo)}</div>
-          </div>
-          <div class="lease-info-card compact">
-            <div class="lease-dev-icon" aria-hidden="true">▣</div>
-            <div>设备编号 ${batterySnButton(data.deviceCode)}</div>
           </div>
           <section class="lease-form-section">
             <h3><i></i>选择操作</h3>
@@ -5523,6 +5590,7 @@
       state.screen === "userSms" ||
       state.screen === "userPay" ||
       state.screen === "financeAccount" ||
+      state.screen === "packageOrders" ||
       state.screen === "batteryDetail" ||
       (state.screen === "todos" && state.todos.type) ||
       state.screen === "alerts" ||
@@ -5616,6 +5684,9 @@
         break;
       case "financeAccount":
         html = renderFinanceAccount();
+        break;
+      case "packageOrders":
+        html = renderPackageOrders();
         break;
       case "batteryDetail":
         html = renderBatteryDetail();
@@ -5890,6 +5961,19 @@
         if (e.key === "Enter") {
           e.preventDefault();
           track("pay_search", { kw: state.users.payKw, tab: state.users.payTab });
+          render();
+        }
+      });
+    }
+    const pkgKw = $("pkg-kw");
+    if (pkgKw) {
+      pkgKw.addEventListener("input", () => {
+        state.packageOrders.kw = pkgKw.value;
+      });
+      pkgKw.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          track("pkg_search", { kw: state.packageOrders.kw, tab: state.packageOrders.tab });
           render();
         }
       });
@@ -6176,6 +6260,12 @@
           });
           render();
           toast(state.lease.keyword.trim() ? "已筛选" : "已刷新列表");
+          break;
+        case "lease-problem-filter":
+          state.lease.problemFilter = t.dataset.filter || "all";
+          state.lease.menuKey = null;
+          track("lease_problem_filter", { filter: state.lease.problemFilter });
+          render();
           break;
         case "lease-scan":
           toast("请手动输入，扫码暂未开放");
@@ -6919,6 +7009,16 @@
         case "pay-tab":
           state.users.payTab = t.dataset.tab || "success";
           track("pay_tab", { tab: state.users.payTab });
+          render();
+          break;
+        case "pkg-search":
+          track("pkg_search", { kw: state.packageOrders.kw, tab: state.packageOrders.tab });
+          render();
+          toast(state.packageOrders.kw.trim() ? "已筛选" : "已刷新列表");
+          break;
+        case "pkg-tab":
+          state.packageOrders.tab = t.dataset.tab || "all";
+          track("pkg_tab", { tab: state.packageOrders.tab });
           render();
           break;
         case "fin-wd-tab":
