@@ -464,6 +464,16 @@ input:focus-visible,
 }
 .summary-card.stat-blue .val { color: #fff; }
 .summary-card.stat-blue .lab { color: rgba(255, 255, 255, 0.92); }
+.data-stats-page {
+  min-height: 100%;
+  background: var(--phone-bg);
+}
+.data-stats-subtabs {
+  margin: 0 14px 10px;
+}
+.data-stats-body {
+  padding-bottom: 4px;
+}
 .home-stats-block { margin: 10px 14px 0; }
 .home-stats-title {
   font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 8px 2px;

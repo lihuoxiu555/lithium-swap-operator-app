@@ -29,8 +29,11 @@
   const state = {
     session: null, // { account, role, roleLabel, dataScope, dataScopeLabel, siteIds? }
     pendingAccount: null,
-    screen: "login", // login | pickRole | workbench | messages | mine | msgDetail | placeholder | about | account | financeAccount
-    tab: "workbench",
+    screen: "login", // login | pickRole | dataStats | workbench | todosHub | ...
+    tab: "dataStats",
+    dataStats: {
+      subTab: "biz", // biz | asset
+    },
     activeScenario: "admin",
     forceEmptyGrid: false,
     loadError: false,
@@ -196,9 +199,14 @@
     return state.session;
   }
 
+  /** 已迁入「数据统计」Tab 的模块，工作台宫格不重复展示 */
+  const WORKBENCH_GRID_EXCLUDE = new Set(["biz.stats", "ops.deviceStats"]);
+
   function visibleModules() {
     if (!state.session) return [];
-    return modulesForRole(state.session.role, { forceEmpty: state.forceEmptyGrid });
+    return modulesForRole(state.session.role, { forceEmpty: state.forceEmptyGrid }).filter(
+      (m) => !WORKBENCH_GRID_EXCLUDE.has(m.id)
+    );
   }
 
   function setHash(hash) {
@@ -218,7 +226,9 @@
     if (h === "#/pick-role") return { type: "pickRole" };
     if (h === "#/messages" || h === "#/todos") return { type: "tab", tab: "todos" };
     if (h === "#/mine") return { type: "tab", tab: "mine" };
-    if (h === "#/workbench" || h === "#/") return { type: "tab", tab: "workbench" };
+    if (h === "#/dataStats") return { type: "tab", tab: "dataStats" };
+    if (h === "#/workbench") return { type: "tab", tab: "workbench" };
+    if (h === "#/") return { type: "tab", tab: "dataStats" };
     if (h === "#/about") return { type: "about" };
     if (h === "#/account") return { type: "account" };
     if (h.startsWith("#/msg/")) return { type: "msg", id: h.slice(6) };
@@ -250,9 +260,9 @@
     }
 
     if (route.type === "unknown") {
-      state.tab = "workbench";
-      state.screen = "workbench";
-      setHash("#/workbench");
+      state.tab = "dataStats";
+      state.screen = "dataStats";
+      setHash("#/dataStats");
       render();
       return;
     }
@@ -413,6 +423,12 @@
       render();
       return;
     }
+    if (mod.status === "ready" && mod.id === "ops.deviceStats") {
+      state.dataStats.subTab = "asset";
+      goTab("dataStats");
+      track("device_stats_open", { via: "module_redirect" });
+      return;
+    }
     if (mod.status === "ready" && mod.id === "biz.packageOrders") {
       state.placeholderModule = mod;
       state.screen = "packageOrders";
@@ -428,14 +444,6 @@
       state.screen = "cabinets";
       setHash(mod.route);
       track("cabinets_open", {});
-      render();
-      return;
-    }
-    if (mod.status === "ready" && mod.id === "ops.deviceStats") {
-      state.placeholderModule = mod;
-      state.screen = "deviceStats";
-      setHash(mod.route);
-      track("device_stats_open", {});
       render();
       return;
     }
@@ -565,7 +573,7 @@
     };
     state.pendingAccount = null;
     track("role_selected", { role: identity.role });
-    goTab("workbench");
+    goTab("dataStats");
   }
 
   function logout() {
@@ -573,7 +581,8 @@
     state.session = null;
     state.pendingAccount = null;
     state.screen = "login";
-    state.tab = "workbench";
+    state.tab = "dataStats";
+    state.dataStats.subTab = "biz";
     setHash("#/login");
     render();
   }
@@ -613,15 +622,16 @@
       siteIds: identity.siteIds || null,
     };
     state.pendingAccount = null;
-    state.screen = "workbench";
-    state.tab = "workbench";
+    state.screen = "dataStats";
+    state.tab = "dataStats";
+    state.dataStats.subTab = "biz";
     state.finance.view = "home";
     state.finance.wdTab = "all";
     state.finance.wdId = null;
     state.finance.applyAmount = "";
     state.finance.settleForm = null;
     state.finance.settleReturn = "home";
-    setHash("#/workbench");
+    setHash("#/dataStats");
 
     document.querySelectorAll(".scenario-button").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.scenario === key);
@@ -729,11 +739,7 @@
       </div>`;
   }
 
-  function renderWorkbench() {
-    const s = state.session;
-    const modules = visibleModules();
-    const groups = groupModules(modules);
-
+  function renderHomeBizSnapshot() {
     const home = OpsStats.homeSummary();
     const bizCards = (home.bizCards || home.cards || [])
       .map(
@@ -745,25 +751,60 @@
       )
       .join("");
     const summary = `
-      <button type="button" class="summary-wrap" data-action="open-module" data-id="biz.stats" aria-label="进入经营统计">
+      <button type="button" class="summary-wrap" data-action="open-module" data-id="biz.stats" aria-label="进入经营统计详情">
         <div class="summary-row">${bizCards}</div>
       </button>`;
     const userStats = home.userSection ? renderHomeStatSection(home.userSection, true) : "";
-    let batteryStats = "";
-    if (home.batterySection) {
-      const bat = home.batterySection;
-      const batCards = bat.cards.map((c) => renderHomeStatCard(c, true)).join("");
-      const batTitle = bat.link
-        ? `<button type="button" class="home-stats-title as-btn" data-action="open-module" data-id="${escapeAttr(
-            bat.link.id
-          )}">${escapeHtml(bat.title)}</button>`
-        : `<div class="home-stats-title">${escapeHtml(bat.title)}</div>`;
-      batteryStats = `
+    return `${summary}${userStats}`;
+  }
+
+  function renderHomeBatterySnapshot() {
+    const home = OpsStats.homeSummary();
+    const bat = home.batterySection;
+    if (!bat) return "";
+    const batCards = bat.cards.map((c) => renderHomeStatCard(c, true)).join("");
+    return `
       <div class="home-stats-block">
-        ${batTitle}
+        <div class="home-stats-title">${escapeHtml(bat.title)}</div>
         <div class="summary-row home-stats-row home-stats-row-4">${batCards}</div>
       </div>`;
-    }
+  }
+
+  function renderDataStatsSubTabs() {
+    const sub = state.dataStats.subTab || "biz";
+    return ["biz", "asset"]
+      .map((id) => {
+        const label = id === "biz" ? "经营统计" : "资产统计";
+        const on = sub === id ? " active" : "";
+        return `<button type="button" class="ops-subtab${on}" data-action="data-stats-tab" data-tab="${id}" role="tab" aria-selected="${
+          sub === id ? "true" : "false"
+        }">${label}</button>`;
+      })
+      .join("");
+  }
+
+  function renderDataStats() {
+    const s = state.session;
+    const sub = state.dataStats.subTab || "biz";
+    const body =
+      sub === "asset"
+        ? `<div class="data-stats-body">${renderHomeBatterySnapshot()}${renderDeviceStatsBody()}</div>`
+        : `<div class="data-stats-body">${renderHomeBizSnapshot()}</div>`;
+    return `
+      <div class="data-stats-page">
+        <div class="wb-top">
+          <div class="tenant">${escapeHtml(s.account.operatorName)}</div>
+        </div>
+        <div class="ops-subtabs data-stats-subtabs" role="tablist">${renderDataStatsSubTabs()}</div>
+        ${body}
+        <div style="height:12px"></div>
+      </div>`;
+  }
+
+  function renderWorkbench() {
+    const s = state.session;
+    const modules = visibleModules();
+    const groups = groupModules(modules);
 
     let gridHtml = "";
     if (state.loadError) {
@@ -798,9 +839,6 @@
       <div class="wb-top">
         <div class="tenant">${escapeHtml(s.account.operatorName)}</div>
       </div>
-      ${summary}
-      ${userStats}
-      ${batteryStats}
       ${gridHtml}
       <div style="height:12px"></div>
     `;
@@ -4058,7 +4096,7 @@
       </div>`;
   }
 
-  function renderDeviceStats() {
+  function renderDeviceStatsBody() {
     const groups = OpsStats.DEVICE_OVERVIEW.map((g) => {
       const n = g.items.length;
       const gridCls =
@@ -4092,12 +4130,17 @@
       </article>`
     ).join("");
     return `
-      <div class="sites-page ops-page">
-        ${opsHeader("设备统计")}
-        <p class="ops-hint">实时快照 · 本主体。口径见右侧。</p>
+        <p class="ops-hint" style="margin:0 14px 10px">设备概况 · 实时快照 · 本主体</p>
         ${groups}
         <h2 class="ops-sec">按站点</h2>
-        <div class="sites-list">${sites}</div>
+        <div class="sites-list">${sites}</div>`;
+  }
+
+  function renderDeviceStats() {
+    return `
+      <div class="sites-page ops-page">
+        ${opsHeader("设备统计")}
+        ${renderDeviceStatsBody()}
       </div>`;
   }
 
@@ -5625,6 +5668,9 @@
       case "pickRole":
         html = renderPickRole();
         break;
+      case "dataStats":
+        html = renderDataStats();
+        break;
       case "workbench":
         html = renderWorkbench();
         break;
@@ -6119,6 +6165,16 @@
           break;
         case "open-module":
           openModule(t.dataset.id, true);
+          break;
+        case "data-stats-tab":
+          state.dataStats.subTab = t.dataset.tab === "asset" ? "asset" : "biz";
+          if (state.tab !== "dataStats") {
+            state.tab = "dataStats";
+            state.screen = "dataStats";
+            setHash("#/dataStats");
+          }
+          track("data_stats_subtab", { tab: state.dataStats.subTab });
+          render();
           break;
         case "open-todo":
           openTodoType(t.dataset.type);

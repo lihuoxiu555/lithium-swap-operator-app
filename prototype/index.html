@@ -15,7 +15,7 @@
       <span class="brand-mark" aria-hidden="true">锂</span>
       <div>
         <h1>锂电快换</h1>
-        <p>运营商工作台 · 登录 / 工作台 / 待办 / 我的 · 业务模块后置</p>
+        <p>运营商工作台 · 登录 / 数据统计 / 待办 / 工作台 / 我的 · 业务模块后置</p>
       </div>
     </div>
     <nav class="doc-links" aria-label="交付文档">
@@ -73,8 +73,9 @@
       <section class="panel-card constraint-card">
         <span class="eyebrow">框架约束</span>
         <ul>
-          <li>底栏固定：工作台 / 待办 / 我的</li>
-          <li>待办+警告在「待办」Tab，工作台只留宫格</li>
+          <li>底栏固定：数据统计 / 待办 / 工作台 / 我的</li>
+          <li>数据统计含经营统计+资产统计；工作台只留操作宫格</li>
+          <li>待办+警告在「待办」Tab</li>
           <li>宫格只读 modules.js 注册表</li>
           <li>placeholder 禁止假业务 KPI</li>
           <li>不改外卖 PC / 骑手端原型</li>
@@ -87,7 +88,7 @@
             <span class="eyebrow">版本迭代</span>
             <h2>更新记录</h2>
           </div>
-          <span class="status-pill" id="changelog-latest">V1.55</span>
+          <span class="status-pill" id="changelog-latest">V1.56</span>
         </div>
         <p class="panel-hint">原型左侧同步 PRD 主要变更；新条目置顶。详版见 <a href="../docs/PRD.md">PRD</a> 与各 <a href="../decisions/decision-060.md">决策卡片</a>。</p>
         <div id="changelog-root" class="changelog-list"></div>
@@ -112,14 +113,18 @@
           <section class="screen-root" id="screen-root" tabindex="-1" aria-live="polite"></section>
 
           <nav class="tab-bar hidden" id="tab-bar" aria-label="主导航">
-            <button class="tab-button active" type="button" data-tab="workbench">
-              <span class="tab-icon" aria-hidden="true">▦</span>
-              <span>工作台</span>
+            <button class="tab-button active" type="button" data-tab="dataStats">
+              <span class="tab-icon" aria-hidden="true">📊</span>
+              <span>数据统计</span>
             </button>
             <button class="tab-button" type="button" data-tab="todos">
               <span class="tab-icon" aria-hidden="true">▣</span>
               <span>待办</span>
               <span class="tab-badge hidden" data-tab-badge>0</span>
+            </button>
+            <button class="tab-button" type="button" data-tab="workbench">
+              <span class="tab-icon" aria-hidden="true">▦</span>
+              <span>工作台</span>
             </button>
             <button class="tab-button" type="button" data-tab="mine">
               <span class="tab-icon" aria-hidden="true">☺</span>

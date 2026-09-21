@@ -5,6 +5,18 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.56",
+      date: "2026-09-21",
+      title: "底栏新增「数据统计」Tab",
+      decisions: ["062"],
+      items: [
+        "底栏顺序：数据统计 / 待办 / 工作台 / 我的",
+        "数据统计子 Tab：经营统计（今日三卡+用户数据）、资产统计（电池+设备概况）",
+        "工作台仅保留操作宫格；经营统计/设备统计从宫格移除",
+        "登录默认进入数据统计",
+      ],
+    },
+    {
       version: "V1.55",
       date: "2026-09-21",
       title: "电池数据 · 其他状态",

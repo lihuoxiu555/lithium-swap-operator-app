@@ -43,27 +43,34 @@
       empty: "单身份账号跳过本页",
       roles: "双身份才出现",
     }),
-    workbench: S({
-      title: "工作台",
-      source: "框架 + 经营口径 decision-036 / 037",
-      stats: [
-        { name: "换电次数", def: "completed_at；成功+失败。单位次。与图表「换电订单数」同口径" },
-        { name: "换电人数", def: "区间内成功换电骑手去重。单位人。≠活跃用户（活跃还含服务中未换电且未冻结）" },
-        { name: "套餐收入", def: "paid_at；C 端实付。单位元。不含退款、占用费、额度池、清分" },
-        { name: "用户快照", def: "decision-055：新增/续费/到期/未换电/退租退电/逾期/有效总分/冻结" },
-        { name: "电池快照", def: "总数=使用中+空闲+其他；其他=维修中+丢失；离线另计不进四格" },
-      ],
+    dataStats: S({
+      title: "数据统计",
+      source: "decision-062 · 原工作台快照迁入",
       fields: [
-        { name: "分组", def: "经营 / 运维 / 财务 / 其他。经营含换电订单、套餐订单、经营统计、设备统计；运维含站点、电柜管理。无「运营」组" },
-        { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。placeholder 不进宫格" },
-        { name: "摘要槽", def: "固定今日三卡：换电次数 / 换电人数 / 套餐收入。无时间筛。点整区进经营统计" },
-        { name: "用户数据", def: "9 格 3×3。3天内到期仅个人；未换电不含冻结；总用户总数+个人·渠道分项；已逾期点待办" },
-        { name: "电池数据", def: "总数 / 使用中 / 空闲 / 其他。标题点设备统计" },
-        { name: "Mock", def: "三卡 86/18/4690；用户见 decision-055；电池 12/5/5/2（其他=维修1+丢失1）" },
+        { name: "子 Tab", def: "经营统计 · 资产统计" },
+        { name: "经营统计", def: "今日三卡 + 用户数据 9 格；三卡点进经营统计详情（图表/KPI）" },
+        { name: "资产统计", def: "电池数据 4 格 + 原设备统计概况（柜/电池/站点/仓口 + 按站点）" },
       ],
       enums: ["今日：[今日0点,明日0点)"],
-      empty: "空宫格场景：「暂无可用应用」；摘要为 0 仍展示 0",
-      roles: "管理员与员工摘要同数；员工不见财务待办入口；宫格按角色裁",
+      note: "经营统计/设备统计宫格已从工作台移除，避免重复入口",
+    }),
+    "dataStats:asset": S({
+      title: "数据统计 · 资产统计",
+      source: "decision-055 + 设备统计",
+      fields: [
+        { name: "电池数据", def: "总数=使用中+空闲+其他；其他=维修+丢失" },
+        { name: "设备概况", def: "同原设备统计页：柜机/电池/站点/仓口 + 按站点" },
+      ],
+    }),
+    workbench: S({
+      title: "工作台",
+      source: "框架 · 操作入口",
+      fields: [
+        { name: "分组", def: "经营 / 运维 / 财务 / 其他。不含经营统计/设备统计（已迁数据统计 Tab）" },
+        { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。placeholder 不进宫格" },
+      ],
+      empty: "空宫格场景：「暂无可用应用」",
+      roles: "管理员与员工宫格按 roles 裁；员工不见财务账户",
     }),
     todosHub: S({
       title: "待办 Tab",
@@ -561,6 +568,10 @@
         return "cabinets:detail:" + ((state.ops && state.ops.cabDetailTab) || "cabinet");
       }
       return "cabinets:" + v;
+    }
+    if (sc === "dataStats") {
+      const sub = (state.dataStats && state.dataStats.subTab) || "biz";
+      return sub === "asset" ? "dataStats:asset" : "dataStats";
     }
     if (sc === "bizStats") {
       return "bizStats:" + ((state.ops && state.ops.bizTab) || "charts");
