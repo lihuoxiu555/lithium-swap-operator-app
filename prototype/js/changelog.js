@@ -5,6 +5,26 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.58",
+      date: "2026-09-21",
+      title: "同比柱顶补数字",
+      decisions: ["064"],
+      items: [
+        "经营统计双柱图：本期、同比柱顶各标对应数值（覆盖仅标本期）",
+        "深色数字贴彩色柱，灰色数字贴同比灰柱",
+      ],
+    },
+    {
+      version: "V1.57",
+      date: "2026-09-21",
+      title: "今日三卡可点击引导",
+      decisions: ["063"],
+      items: [
+        "经营统计今日三卡增加「点击查看近7日趋势」引导",
+        "进入页时卡片轻脉冲 + 点击涟漪，文案常驻；点三卡仍进经营统计详情",
+      ],
+    },
+    {
       version: "V1.56",
       date: "2026-09-21",
       title: "底栏新增「数据统计」Tab",

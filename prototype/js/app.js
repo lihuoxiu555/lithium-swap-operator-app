@@ -751,8 +751,12 @@
       )
       .join("");
     const summary = `
-      <button type="button" class="summary-wrap" data-action="open-module" data-id="biz.stats" aria-label="进入经营统计详情">
-        <div class="summary-row">${bizCards}</div>
+      <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
+        <div class="summary-tap-stage">
+          <div class="summary-row">${bizCards}</div>
+          <span class="summary-tap-finger" aria-hidden="true"></span>
+        </div>
+        <span class="summary-tap-hint">点击查看近7日趋势 <i>›</i></span>
       </button>`;
     const userStats = home.userSection ? renderHomeStatSection(home.userSection, true) : "";
     return `${summary}${userStats}`;
@@ -3852,23 +3856,23 @@
 
   function renderBizBarPlot(labels, series, opts = {}) {
     const max = Math.max(1, ...series.flatMap((s) => s.values || []));
-    const showVal =
-      !opts.hideValue &&
-      (series.length === 1 || (opts.showPrimaryValue && series[0]));
+    const showVal = !opts.hideValue;
     const cols = labels
       .map((lb, i) => {
         const bars = series
           .map((s) => {
             const v = Number(s.values[i]) || 0;
             const h = Math.max(v ? 8 : 2, Math.round((v / max) * 100));
-            return `<i style="height:${h}%;background:${s.color}" title="${escapeAttr(
+            const yoy = s.name === "同比";
+            const lab = showVal
+              ? `<small class="${yoy ? "is-yoy" : "is-cur"}">${v}</small>`
+              : "";
+            return `<span class="biz-bar-stack">${lab}<i style="height:${h}%;background:${s.color}" title="${escapeAttr(
               s.name + " " + v
-            )}"></i>`;
+            )}"></i></span>`;
           })
           .join("");
-        const top =
-          showVal && series[0] ? `<small>${series[0].values[i]}</small>` : "";
-        return `<div class="biz-col">${top}<div class="biz-bars">${bars}</div><em>${escapeHtml(
+        return `<div class="biz-col"><div class="biz-bars">${bars}</div><em>${escapeHtml(
           lb
         )}</em></div>`;
       })
@@ -3992,14 +3996,13 @@
           chart.periodLabel || "近7日"
         )}</strong>展示。套餐购买金额 = C 端实付合计，<strong>不按站点拆</strong>。彩色柱=本期，灰柱=${escapeHtml(
           chart.yoyHint || "去年同期"
-        )}（同比）。</p>
+        )}（同比）。柱顶数字：深色=本期，灰色=同比。</p>
         ${renderBizChartCard(
           "套餐购买金额",
           "C 端实付 · 含同比",
           renderBizBarPlot(
             chart.labels,
-            bizChartSeries("实付", C.rent, C.yoy, chart.rent, chart.rentYoy),
-            { showPrimaryValue: true }
+            bizChartSeries("实付", C.rent, C.yoy, chart.rent, chart.rentYoy)
           )
         )}
         ${renderBizChartCard(
@@ -4007,8 +4010,7 @@
           "成功 + 失败 · 含同比",
           renderBizBarPlot(
             chart.labels,
-            bizChartSeries("换电订单", C.swap, C.yoy, chart.swaps, chart.swapsYoy),
-            { showPrimaryValue: true }
+            bizChartSeries("换电订单", C.swap, C.yoy, chart.swaps, chart.swapsYoy)
           )
         )}
         ${renderBizChartCard(
@@ -4016,8 +4018,7 @@
           "去重骑手 · 含同比",
           renderBizBarPlot(
             chart.labels,
-            bizChartSeries("活跃用户", C.dau, C.yoy, chart.dau, chart.dauYoy),
-            { showPrimaryValue: true }
+            bizChartSeries("活跃用户", C.dau, C.yoy, chart.dau, chart.dauYoy)
           )
         )}
         ${renderBizChartCard(
@@ -4025,8 +4026,7 @@
           "新购订单 · 含同比",
           renderBizBarPlot(
             chart.labels,
-            bizChartSeries("新购订单", C.orderNew, C.yoy, chart.orderNew, chart.orderNewYoy),
-            { showPrimaryValue: true }
+            bizChartSeries("新购订单", C.orderNew, C.yoy, chart.orderNew, chart.orderNewYoy)
           )
         )}
         ${renderBizChartCard(
@@ -4034,8 +4034,7 @@
           "去重新增 · 含同比",
           renderBizBarPlot(
             chart.labels,
-            bizChartSeries("新增用户", C.newUser, C.yoy, chart.newUser, chart.newUserYoy),
-            { showPrimaryValue: true }
+            bizChartSeries("新增用户", C.newUser, C.yoy, chart.newUser, chart.newUserYoy)
           )
         )}`;
     } else {
