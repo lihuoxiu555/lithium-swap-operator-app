@@ -378,6 +378,31 @@ input:focus-visible,
   padding: 2px 6px; border-radius: 4px;
   background: var(--warning-soft); color: var(--warning);
 }
+.summary-card .sub {
+  font-size: 9px; color: rgba(255, 255, 255, 0.85); margin-top: 4px; line-height: 1.3;
+}
+.summary-card.stat-blue {
+  background: linear-gradient(160deg, #3d7bff, var(--brand-dark));
+  border: none; color: #fff;
+}
+.summary-card.stat-blue .val { color: #fff; }
+.summary-card.stat-blue .lab { color: rgba(255, 255, 255, 0.92); }
+.home-stats-block { margin: 10px 14px 0; }
+.home-stats-title {
+  font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 8px 2px;
+}
+.home-stats-title.as-btn {
+  display: block; width: 100%; padding: 0 0 8px 2px; margin: 0;
+  border: none; background: transparent; text-align: left; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-stats-row { margin: 0; }
+.home-stat-btn {
+  display: block; width: 100%; padding: 0; margin: 0; border: none;
+  background: transparent; cursor: pointer; text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-stat-btn:active .summary-card.stat-blue { opacity: 0.92; }
 
 .card-block {
   margin: 12px 14px; background: #fff; border-radius: 14px;
@@ -1678,6 +1703,13 @@ input:focus-visible,
   color: var(--ink);
   line-height: 1.4;
 }
+.todo-kv em.link {
+  display: flex;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+}
+.todo-kv em.link .lease-bat-link { text-align: right; }
 .todo-page-detail { padding-bottom: 8px; }
 .todo-footer-bar {
   position: sticky;

@@ -26,7 +26,7 @@
   };
 
   const state = {
-    session: null, // { account, role, roleLabel, dataScope, dataScopeLabel }
+    session: null, // { account, role, roleLabel, dataScope, dataScopeLabel, siteIds? }
     pendingAccount: null,
     screen: "login", // login | pickRole | workbench | messages | mine | msgDetail | placeholder | about | account | financeAccount
     tab: "workbench",
@@ -544,6 +544,7 @@
       roleLabel: identity.roleLabel,
       dataScope: identity.dataScope,
       dataScopeLabel: identity.dataScopeLabel,
+      siteIds: identity.siteIds || null,
     };
     state.pendingAccount = null;
     track("role_selected", { role: identity.role });
@@ -592,6 +593,7 @@
       roleLabel: identity.roleLabel,
       dataScope: identity.dataScope,
       dataScopeLabel: identity.dataScopeLabel,
+      siteIds: identity.siteIds || null,
     };
     state.pendingAccount = null;
     state.screen = "workbench";
@@ -674,13 +676,49 @@
     `;
   }
 
+  function renderHomeStatCard(c, blue) {
+    const cls = blue ? "summary-card stat-blue" : "summary-card";
+    const sub = c.sub
+      ? `<div class="sub">${escapeHtml(c.sub)}</div>`
+      : "";
+    const inner = `
+          <div class="${cls}">
+            <div class="val">${Number(c.val).toLocaleString("zh-CN")}</div>
+            <div class="lab">${escapeHtml(c.lab)}</div>
+            ${sub}
+          </div>`;
+    if (!c.link) return inner;
+    if (c.link.action === "open-todo") {
+      return `<button type="button" class="home-stat-btn" data-action="open-todo" data-type="${escapeAttr(
+        c.link.type
+      )}">${inner}</button>`;
+    }
+    if (c.link.action === "open-module") {
+      return `<button type="button" class="home-stat-btn" data-action="open-module" data-id="${escapeAttr(
+        c.link.id
+      )}">${inner}</button>`;
+    }
+    return inner;
+  }
+
+  function renderHomeStatSection(section, blue) {
+    const cards = section.cards
+      .map((c) => renderHomeStatCard(c, blue))
+      .join("");
+    return `
+      <div class="home-stats-block">
+        <div class="home-stats-title">${escapeHtml(section.title)}</div>
+        <div class="summary-row home-stats-row">${cards}</div>
+      </div>`;
+  }
+
   function renderWorkbench() {
     const s = state.session;
     const modules = visibleModules();
     const groups = groupModules(modules);
 
     const home = OpsStats.homeSummary();
-    const cards = home.cards
+    const bizCards = (home.bizCards || home.cards || [])
       .map(
         (c) => `
           <div class="summary-card">
@@ -691,8 +729,24 @@
       .join("");
     const summary = `
       <button type="button" class="summary-wrap" data-action="open-module" data-id="biz.stats" aria-label="进入经营统计">
-        <div class="summary-row">${cards}</div>
+        <div class="summary-row">${bizCards}</div>
       </button>`;
+    const userStats = home.userSection ? renderHomeStatSection(home.userSection, true) : "";
+    let batteryStats = "";
+    if (home.batterySection) {
+      const bat = home.batterySection;
+      const batCards = bat.cards.map((c) => renderHomeStatCard(c, true)).join("");
+      const batTitle = bat.link
+        ? `<button type="button" class="home-stats-title as-btn" data-action="open-module" data-id="${escapeAttr(
+            bat.link.id
+          )}">${escapeHtml(bat.title)}</button>`
+        : `<div class="home-stats-title">${escapeHtml(bat.title)}</div>`;
+      batteryStats = `
+      <div class="home-stats-block">
+        ${batTitle}
+        <div class="summary-row home-stats-row">${batCards}</div>
+      </div>`;
+    }
 
     let gridHtml = "";
     if (state.loadError) {
@@ -728,6 +782,8 @@
         <div class="tenant">${escapeHtml(s.account.operatorName)}</div>
       </div>
       ${summary}
+      ${userStats}
+      ${batteryStats}
       ${gridHtml}
       <div style="height:12px"></div>
     `;
@@ -1402,9 +1458,10 @@
     switch (type) {
       case "end":
         return {
-          rentMode: "day",
-          guaranteeMode: "day",
-          depositMode: "system",
+          batStatus: "recovered",
+          overdueFeeMode: "normal",
+          overdueFeeCustom: "",
+          depositMode: "full",
           depositRefund: "",
           remark: "",
         };
@@ -1478,6 +1535,10 @@
         toast("请输入实退押金金额");
         return;
       }
+      if (f.overdueFeeMode === "custom" && !String(f.overdueFeeCustom || "").trim()) {
+        toast("请输入逾期费用金额");
+        return;
+      }
     }
     if (type === "abnormal_end") {
       if (f.depositMode === "refund" && !String(f.depositRefund || "").trim()) {
@@ -1516,7 +1577,19 @@
       park_pickup: "暂存取电已提交（原型示意）",
       gift_days: "赠送天数已提交（原型示意）",
     };
-    toast(titles[type] || "已提交（原型示意）");
+    let msg = titles[type] || "已提交（原型示意）";
+    if (type === "end") {
+      const endData = Lease.getSubpageData(order, "end");
+      const normalFee = parseFloat((endData && endData.overdueFeeNormal) || "0") || 0;
+      const fee =
+        f.overdueFeeMode === "custom"
+          ? parseFloat(String(f.overdueFeeCustom || "").trim()) || 0
+          : normalFee;
+      if (fee > 0) {
+        msg += `。骑手端仍有 ¥${fee} 逾期费用待支付（无需归还电池）`;
+      }
+    }
+    toast(msg);
     closeLeaseSub({});
   }
 
@@ -1828,6 +1901,7 @@
   function renderSubEnd(data) {
     const f = state.lease.form;
     const code = data.deviceCode;
+    const overdueNormal = data.overdueFeeNormal || "0";
     return `
       <div class="lease-page lease-page-form">
         ${leaseSubHeader("结束订单")}
@@ -1841,15 +1915,27 @@
             </div>
           </div>
           <section class="lease-form-section">
-            <h3><i></i>租金</h3>
-            ${radioRow("rentMode", "month", f.rentMode === "month", "按整月计费")}
-            ${radioRow("rentMode", "day", f.rentMode === "day", "按天计费")}
-            <p class="lease-hint">1天内可选选择按月或按天结束订单,大于1天后只能选择按月计费</p>
+            <h3><i></i>电池状态</h3>
+            ${radioRow("batStatus", "recovered", f.batStatus === "recovered", "已回收电池")}
+            ${radioRow("batStatus", "lost", f.batStatus === "lost", "电池丢失")}
           </section>
           <section class="lease-form-section">
-            <h3><i></i>丢失服务保障金</h3>
-            ${radioRow("guaranteeMode", "full", f.guaranteeMode === "full", "按全额计费")}
-            ${radioRow("guaranteeMode", "day", f.guaranteeMode === "day", "按天计费")}
+            <h3><i></i>逾期费用</h3>
+            ${radioRow(
+              "overdueFeeMode",
+              "normal",
+              f.overdueFeeMode === "normal",
+              "正常计费：" + overdueNormal + "元"
+            )}
+            ${radioRow("overdueFeeMode", "custom", f.overdueFeeMode === "custom", "自定义")}
+            <div class="lease-inline-input ${
+              f.overdueFeeMode === "custom" ? "" : "is-dim"
+            }">
+              <input type="text" id="lease-overdue-fee" data-form-key="overdueFeeCustom"
+                value="${escapeAttr(f.overdueFeeCustom || "")}" placeholder="请输入" inputmode="decimal" />
+              <p class="lease-hint">单位：元</p>
+            </div>
+            <p class="lease-hint">若存在逾期费用，结束订单后骑手仍须在用户端完成支付，无需归还电池。</p>
           </section>
           <section class="lease-form-section">
             <h3><i></i>押金</h3>
@@ -1875,7 +1961,6 @@
                 data.refundableDeposit
               )} 元,不填则按正常订单扣费</p>
             </div>
-            ${radioRow("depositMode", "system", f.depositMode === "system", "跟随系统")}
           </section>
           <section class="lease-form-section">
             <h3><i></i>备注</h3>
@@ -3227,12 +3312,15 @@
 
   function renderKv(rows) {
     return rows
-      .map(
-        ([k, v]) =>
-          `<div class="todo-kv"><span>${escapeHtml(k)}</span><em>${escapeHtml(
-            v
-          )}</em></div>`
-      )
+      .map((row) => {
+        const k = row[0];
+        const v = row[1];
+        const opts = row[2] || {};
+        const valHtml =
+          opts.link && v && v !== "—" ? batterySnButton(v) : escapeHtml(v);
+        const emAttr = opts.link ? ' class="link"' : "";
+        return `<div class="todo-kv"><span>${escapeHtml(k)}</span><em${emAttr}>${valHtml}</em></div>`;
+      })
       .join("");
   }
 
@@ -3345,7 +3433,9 @@
           ["占用时间", item.days + " 天（不足一天按 1 人天）"],
           ["已扣人天", item.quota + " 人天"],
           ["池可用（扣后）", String(item.poolAfter) + (item.poolAfter < 0 ? " 欠人天" : "")],
-          ["电池", item.batSn + " · " + item.model],
+          ["电池编码", item.batCode || "—"],
+          ["电池编号", item.batSn || "—", { link: true }],
+          ["型号", item.model || "—"],
           ["最后换电", item.lastSwap],
           ["站点", item.site],
         ]
@@ -3358,7 +3448,9 @@
           ["结束原因", item.reason],
           ["已逾期", item.days + " 天（不足一天按一天）"],
           ["占用费", "¥" + item.due + "（日费 ¥" + item.dayFee + "/天）"],
-          ["电池", item.batSn + " · " + item.model],
+          ["电池编码", item.batCode || "—"],
+          ["电池编号", item.batSn || "—", { link: true }],
+          ["型号", item.model || "—"],
           ["最后换电", item.lastSwap],
           ["站点", item.site],
         ];
@@ -3378,8 +3470,8 @@
           <div class="todo-kv-block">${renderKv(rows)}</div>
           <p class="sites-hint">${
             isDay
-              ? "个人剩余人天 = 0 仍持电：从渠道额度池扣人天，不向骑手收现金。"
-              : "个人套餐结束仍持电：按日收取占用费。催还后仍须还电完结。"
+              ? "个人剩余人天 = 0 仍持有电池：从渠道额度池扣人天，不向骑手收现金。"
+              : "个人套餐结束仍持有电池：按日收取占用费。催还后仍须还电完结。"
           }</p>
           ${item.reminded ? `<p class="sites-hint">已发送催还（原型示意）</p>` : ""}
         </div>
@@ -3747,12 +3839,20 @@
     return `<div class="ops-range">${chips}</div>${monthPick}`;
   }
 
+  function sessionBusyScope() {
+    const s = state.session;
+    if (!s || s.role === "admin" || s.dataScope === "all") return { mode: "all" };
+    return { mode: "sites", siteIds: s.siteIds || [] };
+  }
+
   function renderBizStats() {
     const mode = state.ops.bizChartMode || "7d";
     const year = state.ops.bizYear || OpsStats.DEMO_TODAY.year;
     const month = state.ops.bizMonth || OpsStats.DEMO_TODAY.month;
     const tab = state.ops.bizTab || "charts";
     const kpi = OpsStats.bizKpi();
+    const busyScope = sessionBusyScope();
+    const busySites = OpsStats.busySitesForScope(busyScope);
     const chart = OpsStats.bizCharts(mode, year, month);
     const kpis = [
       { label: "在线站点", value: kpi.sitesOnline, unit: "个" },
@@ -3846,7 +3946,14 @@
           )
         )}`;
     } else {
-      const rows = OpsStats.BUSY_SITES.map((s) => {
+      const scopeHint =
+        busyScope.mode === "sites" && state.session
+          ? `<p class="ops-hint scope">数据范围：${escapeHtml(
+              state.session.dataScopeLabel
+            )}。仅展示指定站点；页顶 KPI 仍为主体全量快照。</p>`
+          : "";
+      const rows = busySites
+        .map((s) => {
         const level = OpsStats.busyLevel(s);
         const util = OpsStats.slotUtil(s);
         return `<article class="sites-card">
@@ -3867,9 +3974,13 @@
           <div><span>最忙时段</span><em>${escapeHtml(s.hotHour)}（${s.hotCount} 笔）</em></div>
         </div>
       </article>`;
-      }).join("");
-      body = `<p class="ops-hint">口径对齐 PC：等待人数 + 格口占用（≈柜内电池/仓口）。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入</strong>。</p>
-        <div class="sites-list">${rows}</div>`;
+        })
+        .join("");
+      const listHtml = busySites.length
+        ? `<div class="sites-list">${rows}</div>`
+        : `<div class="empty-inline compact">暂无指定站点的繁忙度数据</div>`;
+      body = `${scopeHint}<p class="ops-hint">口径对齐 PC：等待人数 + 格口占用（≈柜内电池/仓口）。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入</strong>。</p>
+        ${listHtml}`;
     }
     return `
       <div class="sites-page ops-page">
@@ -5721,7 +5832,7 @@
         if (el.type === "radio") {
           if (el.checked) {
             form[key] = el.value;
-            if (key === "depositMode" || key === "op") render();
+            if (key === "depositMode" || key === "overdueFeeMode" || key === "op") render();
           }
           return;
         }

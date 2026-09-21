@@ -84,6 +84,19 @@
     return "低";
   }
 
+  /** 员工 dataScope=sites 时按 siteIds 裁列表；管理员全量。KPI 仍主体全量。 */
+  function busySitesForScope(scope) {
+    const all = BUSY_SITES.slice();
+    if (!scope || scope.mode === "all") return all;
+    const ids = scope.siteIds;
+    if (!ids || !ids.length) return [];
+    const set = {};
+    ids.forEach((id) => {
+      set[id] = true;
+    });
+    return all.filter((s) => set[s.id]);
+  }
+
   function bizKpi() {
     return BIZ_KPI;
   }
@@ -235,18 +248,63 @@
   }
 
   /**
-   * 工作台摘要槽：固定今日三卡，无时间筛。点整区进经营统计。
-   * 次数=今日换电成功+失败；人数=今日成功换电去重（≠活跃用户）；收入=今日 C 端实付。
+   * 工作台摘要：今日三卡 + 用户数据 + 电池数据（decision-055）
+   * 三卡无时间筛，点整区进经营统计。
    */
   function homeSummary() {
+    const personalUsers = BIZ_KPI.personalUsers;
+    const channelUsers = BIZ_KPI.channelUsers;
+    const personalFrozen = BIZ_KPI.personalFrozen;
     return {
-      cards: [
+      bizCards: [
         { key: "swaps", val: 86, lab: "今日换电次数（次）" },
         { key: "riders", val: 18, lab: "今日换电人数（人）" },
         { key: "pay", val: 4690, lab: "今日套餐收入（元）" },
       ],
+      userSection: {
+        title: "用户数据",
+        cards: [
+          { key: "newToday", val: 2, lab: "今日新增" },
+          { key: "renewToday", val: 5, lab: "今日续费" },
+          { key: "expire3d", val: 3, lab: "3天内到期" },
+          { key: "noSwap3d", val: 6, lab: "3天未换电" },
+          { key: "terminateToday", val: 1, lab: "今日退租" },
+          { key: "returnBatToday", val: 2, lab: "今日退电" },
+          {
+            key: "overdue",
+            val: 4,
+            lab: "已逾期",
+            link: { action: "open-todo", type: "overdue" },
+          },
+          {
+            key: "validUsers",
+            val: personalUsers + channelUsers,
+            lab: "总用户（有效）",
+            sub: `个人 ${personalUsers} · 渠道 ${channelUsers}`,
+            link: { action: "open-module", id: "biz.stats" },
+          },
+          { key: "frozen", val: personalFrozen, lab: "冻结中" },
+        ],
+      },
+      batterySection: {
+        title: "电池数据",
+        link: { action: "open-module", id: "ops.deviceStats" },
+        cards: [
+          { key: "batTotal", val: HOME_BATTERY.batTotal, lab: "电池总数" },
+          { key: "batInUse", val: HOME_BATTERY.batInUse, lab: "使用中" },
+          { key: "batIdle", val: HOME_BATTERY.batIdle, lab: "空闲" },
+        ],
+      },
     };
   }
+
+  /** 首页电池三指标 · 总数 = 使用中 + 空闲 + 离线/维修 */
+  const HOME_BATTERY = {
+    batTotal: 12,
+    batInUse: 5,
+    batIdle: 5,
+    batOffline: 2,
+  };
 
   const DEVICE_KPI = {
     cabTotal: 6,
@@ -260,7 +318,8 @@
     batInCab: 8,
     batHeld: 1,
     batOut: 3,
-    batIdle: 7,
+    batIdle: 5,
+    batInUse: 5,
     healthOk: 11,
     healthWarn: 1,
   };
@@ -333,5 +392,6 @@
     homeSummary,
     slotUtil,
     busyLevel,
+    busySitesForScope,
   };
 })(window);

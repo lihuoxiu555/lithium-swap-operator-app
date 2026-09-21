@@ -270,6 +270,7 @@
       remain: "",
       overdue: "11天3小时40分钟",
       arrearsAmount: "131.6元",
+      overdueFeeNormal: "131.6",
       parkStartAt: "",
       parkDays: "",
       accumRent: "",
@@ -458,6 +459,14 @@
     return order.batteryNo || order.deviceId || "—";
   }
 
+  function overdueFeeNormal(order) {
+    if (order.overdueFeeNormal != null && String(order.overdueFeeNormal).trim() !== "") {
+      return String(order.overdueFeeNormal);
+    }
+    const m = String(order.arrearsAmount || "").match(/[\d.]+/);
+    return m ? m[0] : "0";
+  }
+
   function getSubpageData(order, type) {
     if (!order) return null;
     const meta = SUBPAGE_META[type];
@@ -472,6 +481,7 @@
       deviceCode: deviceDisplayCode(order),
       modelLabel: order.modelLabel || order.model || "—",
       refundableDeposit: order.refundableDeposit || "0",
+      overdueFeeNormal: overdueFeeNormal(order),
       partyA: order.partyA || "军盛新能源科技（苏州）有限公司",
     };
   }
