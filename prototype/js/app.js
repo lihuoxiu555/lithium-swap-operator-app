@@ -4114,24 +4114,26 @@
             .map((t) => `<li>${escapeHtml(t)}</li>`)
             .join("")}</ul></section>`
         : "";
-    const actions = `<div class="site-busy-actions">
-      <button type="button" class="btn-secondary" data-action="site-busy-go-orders" data-site-id="${escapeAttr(
+    const actions = `<div class="site-busy-actions" role="toolbar" aria-label="站点快捷操作">
+      <button type="button" class="site-busy-action-btn" data-action="site-busy-go-orders" data-site-id="${escapeAttr(
         site.id
       )}">本站换电订单</button>
-      <button type="button" class="btn-secondary" data-action="site-busy-go-cabs" data-site-id="${escapeAttr(
+      <button type="button" class="site-busy-action-btn" data-action="site-busy-go-cabs" data-site-id="${escapeAttr(
         site.id
       )}">电柜管理</button>
-      <button type="button" class="btn-secondary" data-action="open-module" data-id="ops.sites">站点档案</button>
+      <button type="button" class="site-busy-action-btn" data-action="open-module" data-id="ops.sites">站点档案</button>
     </div>`;
     return `
       <div class="sites-page ops-page site-busy-detail">
-        ${header}
-        <p class="ops-hint">${escapeHtml(site.address)} · 实时快照，不展示站点收入</p>
-        ${kpi}
-        ${peak}
-        ${hourSec}
-        ${cabSec}
-        ${tips}
+        <div class="site-busy-detail-body">
+          ${header}
+          <p class="ops-hint">${escapeHtml(site.address)} · 实时快照，不展示站点收入</p>
+          ${kpi}
+          ${peak}
+          ${hourSec}
+          ${cabSec}
+          ${tips}
+        </div>
         ${actions}
       </div>`;
   }

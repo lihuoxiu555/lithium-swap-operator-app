@@ -3082,11 +3082,46 @@ input:focus-visible,
   margin: 6px 0 0;
   padding-left: 16px;
 }
+.site-busy-detail {
+  min-height: 100%;
+  padding-bottom: 0;
+}
+.site-busy-detail-body {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 8px;
+}
 .site-busy-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  flex-shrink: 0;
+  margin-top: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   gap: 8px;
-  padding: 16px 14px 28px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(28, 39, 61, 0.06);
+}
+.site-busy-action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+.site-busy-action-btn:active {
+  opacity: 0.88;
 }
 .site-busy-detail .sites-header .ops-busy {
   align-self: center;
