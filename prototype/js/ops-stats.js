@@ -26,7 +26,6 @@
       cabTotal: 3,
       slotUsed: 24,
       slotTotal: 36,
-      waiting: 2,
       peak: "11:00–14:00",
       hotHour: "12:00",
       hotCount: 18,
@@ -35,15 +34,14 @@
         todaySwapsFail: 2,
         emptyReady: 4,
         offlineCabs: 1,
-        avgWaitMin: 3,
         lastSwapAt: "14:32",
         hourly: [0, 0, 0, 1, 2, 4, 8, 12, 18, 16, 14, 12, 18, 15, 11, 9, 7, 5, 4, 3, 2, 1, 0, 0],
         cabinets: [
-          { id: "CAB-22018", name: "浦东 1 号柜", online: true, slotUsed: 10, slotTotal: 12, waiting: 1 },
-          { id: "CAB-22019", name: "浦东 2 号柜", online: false, slotUsed: 0, slotTotal: 12, waiting: 0 },
-          { id: "CAB-22020", name: "浦东 3 号柜", online: true, slotUsed: 8, slotTotal: 12, waiting: 0 },
+          { id: "CAB-22018", name: "浦东 1 号柜", online: true, slotUsed: 10, slotTotal: 12 },
+          { id: "CAB-22019", name: "浦东 2 号柜", online: false, slotUsed: 0, slotTotal: 12 },
+          { id: "CAB-22020", name: "浦东 3 号柜", online: true, slotUsed: 8, slotTotal: 12 },
         ],
-        tips: ["1 号柜排队，可引导至 3 号柜空仓"],
+        tips: ["1 号柜格口较满，可引导至 3 号柜空仓"],
       },
     },
     {
@@ -54,7 +52,6 @@
       cabTotal: 1,
       slotUsed: 8,
       slotTotal: 12,
-      waiting: 0,
       peak: "17:00–19:00",
       hotHour: "18:00",
       hotCount: 7,
@@ -63,10 +60,9 @@
         todaySwapsFail: 0,
         emptyReady: 2,
         offlineCabs: 0,
-        avgWaitMin: 0,
         lastSwapAt: "17:48",
         hourly: [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 4, 5, 6, 7, 7, 6, 4, 2, 1, 0, 0],
-        cabinets: [{ id: "CAB-33001", name: "世博 1 号柜", online: true, slotUsed: 8, slotTotal: 12, waiting: 0 }],
+        cabinets: [{ id: "CAB-33001", name: "世博 1 号柜", online: true, slotUsed: 8, slotTotal: 12 }],
         tips: [],
       },
     },
@@ -78,7 +74,6 @@
       cabTotal: 4,
       slotUsed: 18,
       slotTotal: 32,
-      waiting: 1,
       peak: "07:00–09:00",
       hotHour: "08:00",
       hotCount: 11,
@@ -87,12 +82,11 @@
         todaySwapsFail: 1,
         emptyReady: 6,
         offlineCabs: 0,
-        avgWaitMin: 1,
         lastSwapAt: "08:15",
         hourly: [0, 0, 0, 0, 0, 2, 11, 9, 6, 4, 3, 2, 2, 2, 3, 4, 5, 4, 3, 2, 1, 0, 0, 0],
         cabinets: [
-          { id: "CAB-44001", name: "京东 1 号柜", online: true, slotUsed: 5, slotTotal: 8, waiting: 0 },
-          { id: "CAB-44002", name: "京东 2 号柜", online: true, slotUsed: 6, slotTotal: 8, waiting: 1 },
+          { id: "CAB-44001", name: "京东 1 号柜", online: true, slotUsed: 5, slotTotal: 8 },
+          { id: "CAB-44002", name: "京东 2 号柜", online: true, slotUsed: 6, slotTotal: 8 },
         ],
         tips: ["早高峰已过，格口仍有余量"],
       },
@@ -105,7 +99,6 @@
       cabTotal: 2,
       slotUsed: 6,
       slotTotal: 16,
-      waiting: 0,
       peak: "12:00–13:00",
       hotHour: "12:00",
       hotCount: 3,
@@ -114,10 +107,9 @@
         todaySwapsFail: 0,
         emptyReady: 5,
         offlineCabs: 0,
-        avgWaitMin: 0,
         lastSwapAt: "12:05",
         hourly: [0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-        cabinets: [{ id: "CAB-55001", name: "临港 1 号柜", online: true, slotUsed: 6, slotTotal: 16, waiting: 0 }],
+        cabinets: [{ id: "CAB-55001", name: "临港 1 号柜", online: true, slotUsed: 6, slotTotal: 16 }],
         tips: [],
       },
     },
@@ -134,8 +126,8 @@
 
   function busyLevel(row) {
     const util = slotUtil(row);
-    if (row.waiting >= 3 || util >= 85) return "高";
-    if (row.waiting >= 1 || util >= 60) return "中";
+    if (util >= 85) return "高";
+    if (util >= 60) return "中";
     return "低";
   }
 

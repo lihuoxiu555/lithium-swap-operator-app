@@ -17,6 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.60",
+      date: "2026-10-13 15:21",
+      title: "移除等待相关展示",
+      decisions: ["066"],
+      items: [
+        "站点繁忙度：列表/详情/经营统计 Tab 去掉等待字段",
+        "繁忙度仅按格口占用（≥85% 高 / ≥60% 中）",
+        "站点详情去掉「等待中」；柜机一览不再展示柜机等待",
+      ],
+    },
+    {
       version: "V1.59",
       date: "2026-10-13 15:12",
       title: "工作台 · 站点繁忙度",

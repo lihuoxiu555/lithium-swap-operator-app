@@ -3060,7 +3060,6 @@
       ["定位坐标", coord],
       ["换电柜", String(site.cabinets)],
       ["电池", String(site.batteries)],
-      ["等待中", String(site.waitingCount || 0)],
       ["营业状态", site.status],
     ]
       .map(
@@ -3986,7 +3985,6 @@
         <div class="sites-card-rows">
           <div><span>柜机</span><em>${s.cabOnline}/${s.cabTotal}</em></div>
           <div><span>格口</span><em>${s.slotUsed}/${s.slotTotal} · ${util}%</em></div>
-          <div><span>等待</span><em>${s.waiting}</em></div>
           <div><span>高峰</span><em>${escapeHtml(s.peak)}</em></div>
           <div><span>最忙时段</span><em>${escapeHtml(s.hotHour)}（${s.hotCount} 笔）</em></div>
         </div>
@@ -4003,7 +4001,7 @@
     const listHtml = busySites.length
       ? `<div class="sites-list">${rows}</div>`
       : `<div class="empty-inline compact">暂无指定站点的繁忙度数据</div>`;
-    return `${scopeHint}<p class="ops-hint">口径对齐 PC：等待人数 + 格口占用（≈柜内电池/仓口）。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入</strong>。</p>
+    return `${scopeHint}<p class="ops-hint">口径对齐 PC：格口占用（≈柜内电池/仓口）。高：占用≥85%；中：≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入、不展示等待人数</strong>。</p>
         ${listHtml}`;
   }
 
@@ -4039,8 +4037,8 @@
         <section class="site-busy-roadmap">
           <strong>详情页 · 待定字段建议（评审用）</strong>
           <ul>
-            <li><b>一期必做</b>：与列表同口径的繁忙度、柜机/格口/等待、高峰与最忙时段；今日成功/失败换电笔数。</li>
-            <li><b>现场调度</b>：空仓可换数、离线柜数、最近一笔换电时间、柜机级等待；调度提示（如引导换柜）。</li>
+            <li><b>一期必做</b>：与列表同口径的繁忙度、柜机/格口、高峰与最忙时段；今日成功/失败换电笔数。</li>
+            <li><b>现场调度</b>：空仓可换数、离线柜数、最近一笔换电时间；调度提示（如引导换柜）。</li>
             <li><b>跳转</b>：本站换电订单、电柜管理（带站筛）、站点档案（运维）。</li>
             <li><b>二期候选</b>：24h 分时热力、近 7 日高峰对比（对齐 PC 统计日回放）；仍<strong>不按站点拆收入</strong>。</li>
           </ul>
@@ -4079,9 +4077,8 @@
           level
         )}</span>
       </div>`;
-    const kpi = `<div class="site-busy-kpi">
+    const kpi = `<div class="site-busy-kpi n-3">
       <div><span>今日换电</span><strong>${d.todaySwapsOk || 0}<small> 成功</small></strong><em>失败 ${d.todaySwapsFail || 0}</em></div>
-      <div><span>等待</span><strong>${site.waiting}<small> 人</small></strong><em>均 ${d.avgWaitMin || 0} 分</em></div>
       <div><span>格口占用</span><strong>${util}<small> %</small></strong><em>${site.slotUsed}/${site.slotTotal}</em></div>
       <div><span>空仓可换</span><strong>${d.emptyReady || 0}<small> 仓</small></strong><em>离线柜 ${d.offlineCabs || 0}</em></div>
     </div>`;
@@ -4103,7 +4100,7 @@
         <div><strong>${escapeHtml(c.name)}</strong><span>${escapeHtml(c.id)} · ${
           c.online ? "在线" : "离线"
         }</span></div>
-        <em>格口 ${c.slotUsed}/${c.slotTotal} · 等待 ${c.waiting}</em>
+        <em>格口 ${c.slotUsed}/${c.slotTotal}</em>
       </div>`
       )
       .join("");

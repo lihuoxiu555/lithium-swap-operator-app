@@ -243,7 +243,7 @@
       title: "站点详情",
       source: "PC 一期站点信息",
       fields: [
-        { name: "基础", def: "编号、地址、坐标、柜/电、等待中、开放范围" },
+        { name: "基础", def: "编号、地址、坐标、柜/电、开放范围" },
         { name: "实景", def: "最多 9 张；无图用系统默认背景" },
         { name: "二期能力", def: "详情不展示场费电费 / 站点合伙人 / 站点支出" },
       ],
@@ -300,7 +300,7 @@
       title: "经营统计 · 站点繁忙度",
       source: "PC 站点经营分析",
       stats: [
-        { name: "繁忙度", def: "实时。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%；否则低" },
+        { name: "繁忙度", def: "实时。高：占用≥85%；中：≥60%；否则低。不展示等待人数" },
         { name: "占用", def: "≈ 柜内电池 / 仓口" },
         { name: "高峰 / 最忙", def: "当天成功换电。APP 不做历史统计日回放" },
       ],
@@ -321,6 +321,16 @@
       ],
       empty: "员工无 siteIds 匹配则空列表；详情无权则提示",
       roles: "管理员全站列表；员工裁 siteIds",
+    }),
+    "siteBusy:detail": S({
+      title: "站点繁忙度 · 详情",
+      source: "decision-065",
+      fields: [
+        { name: "现场三格", def: "今日换电成功/失败、格口占用、空仓可换+离线柜" },
+        { name: "分时", def: "今日 24h 成功换电笔数（自然日，非统计日回放）" },
+        { name: "跳转", def: "换电订单 / 电柜管理 / 站点档案（原型 toast 或进模块）" },
+      ],
+      note: "二期候选：近7日高峰、排队 ETA",
     }),
     deviceStats: S({
       title: "设备统计",
@@ -585,6 +595,9 @@
     }
     if (sc === "bizStats") {
       return "bizStats:" + ((state.ops && state.ops.bizTab) || "charts");
+    }
+    if (sc === "siteBusy") {
+      return state.ops && state.ops.siteBusyId ? "siteBusy:detail" : "siteBusy";
     }
     if (sc === "userList") return "userList";
     if (sc === "todos") {

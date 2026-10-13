@@ -2975,6 +2975,14 @@ input:focus-visible,
   gap: 8px;
   margin: 12px 14px 0;
 }
+.site-busy-kpi.n-3 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 360px) {
+  .site-busy-kpi.n-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 .site-busy-kpi > div {
   background: #fff;
   border-radius: 12px;
