@@ -5,6 +5,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.59",
+      date: "2026-09-22",
+      title: "工作台 · 站点繁忙度",
+      decisions: ["065"],
+      items: [
+        "经营栏目新增「站点繁忙度」，列表与经营统计繁忙度 Tab 同口径",
+        "点站点进详情：现场四格、今日分时、柜机一览、调度提示与跳转",
+        "经营统计繁忙度 Tab 卡片可点进同一详情",
+      ],
+    },
+    {
       version: "V1.58",
       date: "2026-09-21",
       title: "同比柱顶补数字",

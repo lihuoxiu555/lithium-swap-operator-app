@@ -65,7 +65,7 @@
       title: "工作台",
       source: "框架 · 操作入口",
       fields: [
-        { name: "分组", def: "经营 / 运维 / 财务 / 其他。不含经营统计/设备统计（已迁数据统计 Tab）" },
+        { name: "分组", def: "经营 / 运维 / 财务 / 其他。经营含站点繁忙度；不含经营统计/设备统计宫格（已迁数据统计 Tab）" },
         { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。placeholder 不进宫格" },
       ],
       empty: "空宫格场景：「暂无可用应用」",
@@ -310,6 +310,17 @@
         { name: "不做", def: "站点收入、用户主站、用电量" },
       ],
       empty: "无站点行则空列表",
+      note: "卡片可点进 biz.siteBusy 详情",
+    }),
+    siteBusy: S({
+      title: "站点繁忙度",
+      source: "decision-065 · 同 bizStats:busy 列表",
+      fields: [
+        { name: "列表", def: "与经营统计繁忙度 Tab 同字段与同口径" },
+        { name: "详情", def: "四格现场指标、高峰、24h 分时、柜机一览、调度提示、跳转订单/电柜/站点" },
+      ],
+      empty: "员工无 siteIds 匹配则空列表；详情无权则提示",
+      roles: "管理员全站列表；员工裁 siteIds",
     }),
     deviceStats: S({
       title: "设备统计",

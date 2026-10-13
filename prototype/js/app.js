@@ -105,6 +105,7 @@
       bizYear: 2026,
       bizMonth: 9,
       bizTab: "charts",
+      siteBusyId: null,
       cabTab: "all",
       cabKeyword: "",
       cabFilterSite: "all",
@@ -420,6 +421,15 @@
       state.screen = "bizStats";
       setHash(mod.route);
       track("biz_stats_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "biz.siteBusy") {
+      state.placeholderModule = mod;
+      state.ops.siteBusyId = null;
+      state.screen = "siteBusy";
+      setHash(mod.route);
+      track("site_busy_open", {});
       render();
       return;
     }
@@ -3942,6 +3952,193 @@
     return { mode: "sites", siteIds: s.siteIds || [] };
   }
 
+  function renderBusyScopeHint(busyScope) {
+    if (busyScope.mode === "sites" && state.session) {
+      return `<p class="ops-hint scope">数据范围：${escapeHtml(
+        state.session.dataScopeLabel
+      )}。仅展示指定站点；与经营统计·站点繁忙度 Tab 同口径。</p>`;
+    }
+    return "";
+  }
+
+  function renderBusySitesCards(busySites, opts) {
+    const linkDetail = opts && opts.linkDetail;
+    return busySites
+      .map((s) => {
+        const level = OpsStats.busyLevel(s);
+        const util = OpsStats.slotUtil(s);
+        const tag = linkDetail ? "button" : "article";
+        const typeAttr = linkDetail ? ' type="button"' : "";
+        const actionAttr = linkDetail
+          ? ` data-action="open-site-busy" data-id="${escapeAttr(s.id)}"`
+          : "";
+        const extraCls = linkDetail ? " is-tappable" : "";
+        return `<${tag} class="sites-card${extraCls}"${typeAttr}${actionAttr}>
+        <div class="sites-card-hd">
+          <div>
+            <strong>${escapeHtml(s.name)}</strong>
+            <div class="sites-meta">${escapeHtml(s.address)}</div>
+          </div>
+          <span class="ops-busy ${level === "高" ? "high" : level === "中" ? "mid" : "low"}">${escapeHtml(
+            level
+          )}</span>
+        </div>
+        <div class="sites-card-rows">
+          <div><span>柜机</span><em>${s.cabOnline}/${s.cabTotal}</em></div>
+          <div><span>格口</span><em>${s.slotUsed}/${s.slotTotal} · ${util}%</em></div>
+          <div><span>等待</span><em>${s.waiting}</em></div>
+          <div><span>高峰</span><em>${escapeHtml(s.peak)}</em></div>
+          <div><span>最忙时段</span><em>${escapeHtml(s.hotHour)}（${s.hotCount} 笔）</em></div>
+        </div>
+        ${linkDetail ? `<div class="sites-card-foot">查看站点详情 ›</div>` : ""}
+      </${tag}>`;
+      })
+      .join("");
+  }
+
+  function renderBusySitesBody(busySites, opts) {
+    const linkDetail = opts && opts.linkDetail;
+    const scopeHint = (opts && opts.scopeHintHtml) || "";
+    const rows = renderBusySitesCards(busySites, { linkDetail });
+    const listHtml = busySites.length
+      ? `<div class="sites-list">${rows}</div>`
+      : `<div class="empty-inline compact">暂无指定站点的繁忙度数据</div>`;
+    return `${scopeHint}<p class="ops-hint">口径对齐 PC：等待人数 + 格口占用（≈柜内电池/仓口）。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入</strong>。</p>
+        ${listHtml}`;
+  }
+
+  function renderSiteBusyHourPlot(hourly) {
+    const vals = hourly || [];
+    const max = Math.max(1, ...vals);
+    const cols = vals
+      .map((v, h) => {
+        const pct = Math.round((v / max) * 100);
+        const show = h % 3 === 0 ? String(h).padStart(2, "0") : "";
+        return `<div class="site-busy-hour-col" title="${h}:00 · ${v} 笔">
+          <div class="site-busy-hour-bar" style="height:${pct}%"></div>
+          <span>${show}</span>
+        </div>`;
+      })
+      .join("");
+    return `<div class="site-busy-hour-plot">${cols}</div>`;
+  }
+
+  function renderSiteBusy() {
+    const siteId = state.ops.siteBusyId;
+    if (siteId) return renderSiteBusyDetail(siteId);
+    const busyScope = sessionBusyScope();
+    const busySites = OpsStats.busySitesForScope(busyScope);
+    const body = renderBusySitesBody(busySites, {
+      linkDetail: true,
+      scopeHintHtml: renderBusyScopeHint(busyScope),
+    });
+    return `
+      <div class="sites-page ops-page">
+        ${opsHeader("站点繁忙度")}
+        ${body}
+        <section class="site-busy-roadmap">
+          <strong>详情页 · 待定字段建议（评审用）</strong>
+          <ul>
+            <li><b>一期必做</b>：与列表同口径的繁忙度、柜机/格口/等待、高峰与最忙时段；今日成功/失败换电笔数。</li>
+            <li><b>现场调度</b>：空仓可换数、离线柜数、最近一笔换电时间、柜机级等待；调度提示（如引导换柜）。</li>
+            <li><b>跳转</b>：本站换电订单、电柜管理（带站筛）、站点档案（运维）。</li>
+            <li><b>二期候选</b>：24h 分时热力、近 7 日高峰对比（对齐 PC 统计日回放）；仍<strong>不按站点拆收入</strong>。</li>
+          </ul>
+        </section>
+      </div>`;
+  }
+
+  function renderSiteBusyDetail(siteId) {
+    const site = OpsStats.busySiteById(siteId);
+    if (!site) {
+      return `
+        <div class="sites-page ops-page">
+          ${opsHeader("站点繁忙度")}
+          <div class="empty-inline compact">站点不存在或无权查看</div>
+          <button type="button" class="btn-secondary" data-action="back-site-busy-list">返回列表</button>
+        </div>`;
+    }
+    const busyScope = sessionBusyScope();
+    const allowed = OpsStats.busySitesForScope(busyScope).some((s) => s.id === siteId);
+    if (!allowed) {
+      return `
+        <div class="sites-page ops-page">
+          ${opsHeader("站点繁忙度")}
+          <div class="empty-inline compact">无权查看该站点</div>
+          <button type="button" class="btn-secondary" data-action="back-site-busy-list">返回列表</button>
+        </div>`;
+    }
+    const level = OpsStats.busyLevel(site);
+    const util = OpsStats.slotUtil(site);
+    const d = site.detail || {};
+    const header = `
+      <div class="sites-header">
+        <button type="button" class="sites-back" data-action="back-site-busy-list" aria-label="返回">‹</button>
+        <h1>${escapeHtml(site.name)}</h1>
+        <span class="ops-busy ${level === "高" ? "high" : level === "中" ? "mid" : "low"}">${escapeHtml(
+          level
+        )}</span>
+      </div>`;
+    const kpi = `<div class="site-busy-kpi">
+      <div><span>今日换电</span><strong>${d.todaySwapsOk || 0}<small> 成功</small></strong><em>失败 ${d.todaySwapsFail || 0}</em></div>
+      <div><span>等待</span><strong>${site.waiting}<small> 人</small></strong><em>均 ${d.avgWaitMin || 0} 分</em></div>
+      <div><span>格口占用</span><strong>${util}<small> %</small></strong><em>${site.slotUsed}/${site.slotTotal}</em></div>
+      <div><span>空仓可换</span><strong>${d.emptyReady || 0}<small> 仓</small></strong><em>离线柜 ${d.offlineCabs || 0}</em></div>
+    </div>`;
+    const peak = `<section class="devstat-sec">
+      <div class="devstat-hd"><strong>高峰 · 今日</strong><em>最近换电 ${escapeHtml(d.lastSwapAt || "—")}</em></div>
+      <div class="sites-card-rows inline">
+        <div><span>高峰段</span><em>${escapeHtml(site.peak)}</em></div>
+        <div><span>最忙</span><em>${escapeHtml(site.hotHour)}（${site.hotCount} 笔）</em></div>
+        <div><span>柜机在线</span><em>${site.cabOnline}/${site.cabTotal}</em></div>
+      </div>
+    </section>`;
+    const hourSec = `<section class="devstat-sec">
+      <div class="devstat-hd"><strong>今日换电分时</strong><em>成功笔数 · 自然日</em></div>
+      ${renderSiteBusyHourPlot(d.hourly)}
+    </section>`;
+    const cabs = (d.cabinets || [])
+      .map(
+        (c) => `<div class="site-busy-cab-row">
+        <div><strong>${escapeHtml(c.name)}</strong><span>${escapeHtml(c.id)} · ${
+          c.online ? "在线" : "离线"
+        }</span></div>
+        <em>格口 ${c.slotUsed}/${c.slotTotal} · 等待 ${c.waiting}</em>
+      </div>`
+      )
+      .join("");
+    const cabSec = `<section class="devstat-sec">
+      <div class="devstat-hd"><strong>柜机一览</strong></div>
+      <div class="site-busy-cab-list">${cabs || `<div class="empty-inline compact">暂无柜机</div>`}</div>
+    </section>`;
+    const tips =
+      d.tips && d.tips.length
+        ? `<section class="site-busy-tips"><strong>调度提示</strong><ul>${d.tips
+            .map((t) => `<li>${escapeHtml(t)}</li>`)
+            .join("")}</ul></section>`
+        : "";
+    const actions = `<div class="site-busy-actions">
+      <button type="button" class="btn-secondary" data-action="site-busy-go-orders" data-site-id="${escapeAttr(
+        site.id
+      )}">本站换电订单</button>
+      <button type="button" class="btn-secondary" data-action="site-busy-go-cabs" data-site-id="${escapeAttr(
+        site.id
+      )}">电柜管理</button>
+      <button type="button" class="btn-secondary" data-action="open-module" data-id="ops.sites">站点档案</button>
+    </div>`;
+    return `
+      <div class="sites-page ops-page site-busy-detail">
+        ${header}
+        <p class="ops-hint">${escapeHtml(site.address)} · 实时快照，不展示站点收入</p>
+        ${kpi}
+        ${peak}
+        ${hourSec}
+        ${cabSec}
+        ${tips}
+        ${actions}
+      </div>`;
+  }
+
   function renderBizStats() {
     const mode = state.ops.bizChartMode || "7d";
     const year = state.ops.bizYear || OpsStats.DEMO_TODAY.year;
@@ -4044,35 +4241,7 @@
               state.session.dataScopeLabel
             )}。仅展示指定站点；页顶 KPI 仍为主体全量快照。</p>`
           : "";
-      const rows = busySites
-        .map((s) => {
-        const level = OpsStats.busyLevel(s);
-        const util = OpsStats.slotUtil(s);
-        return `<article class="sites-card">
-        <div class="sites-card-hd">
-          <div>
-            <strong>${escapeHtml(s.name)}</strong>
-            <div class="sites-meta">${escapeHtml(s.address)}</div>
-          </div>
-          <span class="ops-busy ${level === "高" ? "high" : level === "中" ? "mid" : "low"}">${escapeHtml(
-            level
-          )}</span>
-        </div>
-        <div class="sites-card-rows">
-          <div><span>柜机</span><em>${s.cabOnline}/${s.cabTotal}</em></div>
-          <div><span>格口</span><em>${s.slotUsed}/${s.slotTotal} · ${util}%</em></div>
-          <div><span>等待</span><em>${s.waiting}</em></div>
-          <div><span>高峰</span><em>${escapeHtml(s.peak)}</em></div>
-          <div><span>最忙时段</span><em>${escapeHtml(s.hotHour)}（${s.hotCount} 笔）</em></div>
-        </div>
-      </article>`;
-        })
-        .join("");
-      const listHtml = busySites.length
-        ? `<div class="sites-list">${rows}</div>`
-        : `<div class="empty-inline compact">暂无指定站点的繁忙度数据</div>`;
-      body = `${scopeHint}<p class="ops-hint">口径对齐 PC：等待人数 + 格口占用（≈柜内电池/仓口）。高：等待≥3 或占用≥85%；中：等待≥1 或≥60%。高峰=成功换电分时≥当日峰值 65% 的连续小时。<strong>不展示站点收入</strong>。</p>
-        ${listHtml}`;
+      body = renderBusySitesBody(busySites, { linkDetail: true, scopeHintHtml: scopeHint });
     }
     return `
       <div class="sites-page ops-page">
@@ -5614,6 +5783,7 @@
       state.screen === "daypoolSub" ||
       state.screen === "sites" ||
       state.screen === "bizStats" ||
+      state.screen === "siteBusy" ||
       state.screen === "cabinets" ||
       state.screen === "deviceStats" ||
       state.screen === "userList" ||
@@ -5699,6 +5869,9 @@
         break;
       case "bizStats":
         html = renderBizStats();
+        break;
+      case "siteBusy":
+        html = renderSiteBusy();
         break;
       case "cabinets":
         html = renderCabinets();
@@ -6537,6 +6710,28 @@
           state.ops.bizTab = t.dataset.tab || "charts";
           track("biz_tab", { tab: state.ops.bizTab });
           render();
+          break;
+        case "open-site-busy":
+          state.ops.siteBusyId = t.dataset.id || null;
+          state.placeholderModule = getModuleById("biz.siteBusy");
+          state.screen = "siteBusy";
+          setHash("#/module/biz.siteBusy");
+          track("site_busy_detail", { site_id: state.ops.siteBusyId });
+          render();
+          break;
+        case "back-site-busy-list":
+          state.ops.siteBusyId = null;
+          state.screen = "siteBusy";
+          setHash("#/module/biz.siteBusy");
+          render();
+          break;
+        case "site-busy-go-orders":
+          openModule("lease.orders", true);
+          toast("已打开换电订单（原型：可按站点名筛选）");
+          break;
+        case "site-busy-go-cabs":
+          openModule("ops.cabinets", true);
+          toast("已打开电柜管理（原型：请选站点下拉）");
           break;
         case "cab-tab":
           state.ops.cabTab = t.dataset.tab;

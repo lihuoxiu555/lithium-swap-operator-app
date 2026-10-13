@@ -42,6 +42,15 @@
       route: "#/module/biz.packageOrders",
     },
     {
+      id: "biz.siteBusy",
+      name: "站点繁忙度",
+      group: "经营",
+      icon: "⏱",
+      status: "ready",
+      roles: ["admin", "staff"],
+      route: "#/module/biz.siteBusy",
+    },
+    {
       id: "biz.stats",
       name: "经营统计",
       group: "经营",
