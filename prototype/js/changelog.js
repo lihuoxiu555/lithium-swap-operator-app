@@ -1,12 +1,24 @@
 /**
  * 原型 · 更新记录（评审侧栏展示，新条目置顶）
+ *
+ * 新增条目时 date 必须写**本机本地**时间：YYYY-MM-DD HH:mm（与浏览器/评审机时区一致，勿填 UTC 或虚构日期）。
  */
 (function (global) {
+  function formatLocalDateTime(d) {
+    const dt = d instanceof Date ? d : new Date();
+    const y = dt.getFullYear();
+    const mo = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    const h = String(dt.getHours()).padStart(2, "0");
+    const mi = String(dt.getMinutes()).padStart(2, "0");
+    return y + "-" + mo + "-" + day + " " + h + ":" + mi;
+  }
+
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
       version: "V1.59",
-      date: "2026-09-22",
+      date: "2026-10-13 15:12",
       title: "工作台 · 站点繁忙度",
       decisions: ["065"],
       items: [
@@ -153,9 +165,16 @@
 
   function mount() {
     renderChangelog(document.getElementById("changelog-root"));
+    const pill = document.getElementById("changelog-latest");
+    if (pill && ENTRIES.length) pill.textContent = ENTRIES[0].version;
   }
 
-  global.OperatorAppChangelog = { ENTRIES, renderChangelog, mount };
+  global.OperatorAppChangelog = {
+    ENTRIES,
+    renderChangelog,
+    mount,
+    formatLocalDateTime,
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", mount);
