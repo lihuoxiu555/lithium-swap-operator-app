@@ -301,6 +301,13 @@
     return (m / 1000).toFixed(1) + " km";
   }
 
+  function truncateLocText(str, maxLen) {
+    const s = String(str || "").trim();
+    if (!s) return "—";
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen - 1) + "…";
+  }
+
   function remoteLocationSummary(sw, user) {
     const cab = cabLocation(sw.cabinetId, sw);
     const ul = user && user.location;
@@ -642,16 +649,11 @@
 
     const selectedSlot = slots.find((s) => s.sn === selectedSn);
     const loc = remoteLocationSummary(sw, user);
-    const cabCoord =
-      loc.cab.lat != null && loc.cab.lng != null
-        ? `${loc.cab.lat.toFixed(4)}, ${loc.cab.lng.toFixed(4)}`
-        : "—";
-    const userLocBlock = loc.user
-      ? `<p>${escapeHtml(loc.user.address || "—")}</p>
-          <p class="offcab-loc-meta">${escapeHtml(
-            loc.user.lat.toFixed(4) + ", " + loc.user.lng.toFixed(4)
-          )} · ${escapeHtml(loc.user.source || "LBS")} · ${escapeHtml(loc.user.reportedAt || "—")}</p>`
-      : `<p class="offcab-loc-meta">暂无用户定位（Mock）</p>`;
+    const cabLine = truncateLocText(loc.cab.address, 26);
+    const userLine = loc.user
+      ? truncateLocText(loc.user.address, 22) +
+        (loc.user.reportedAt ? " · " + loc.user.reportedAt : "")
+      : "暂无定位";
 
     return `
       <div class="sites-page ops-page">
@@ -673,24 +675,15 @@
             <div><span>还入记录</span><em>${sw.returnRecorded ? "有（R1）" : "无（R2）"}</em></div>
           </div>
         </section>
-        <section class="devstat-sec offcab-loc-sec">
-          <div class="devstat-hd"><strong>定位与距离</strong></div>
-          <div class="offcab-loc-dist">
-            <span>直线距离</span>
-            <strong>${escapeHtml(loc.distanceLabel)}</strong>
+        <section class="devstat-sec offcab-loc-sec" title="球面直线估算">
+          <div class="offcab-loc-bar">
+            <span class="offcab-loc-title">定位 · 直线距离</span>
+            <strong class="offcab-loc-km">${escapeHtml(loc.distanceLabel)}</strong>
           </div>
-          <div class="offcab-loc-cards">
-            <div class="offcab-loc-card">
-              <strong>柜机定位</strong>
-              <p>${escapeHtml(loc.cab.address || "—")}</p>
-              <p class="offcab-loc-meta">${escapeHtml(cabCoord)} · ${escapeHtml(loc.cab.source || "—")}</p>
-            </div>
-            <div class="offcab-loc-card">
-              <strong>用户定位</strong>
-              ${userLocBlock}
-            </div>
+          <div class="offcab-loc-rows">
+            <div class="offcab-loc-row"><span>柜机</span><em>${escapeHtml(cabLine)}</em></div>
+            <div class="offcab-loc-row"><span>用户</span><em>${escapeHtml(userLine)}</em></div>
           </div>
-          <p class="ops-hint">球面直线估算，供远程出电前核对用户是否在柜机附近。</p>
         </section>
         <section class="devstat-sec offcab-sec">
           <div class="devstat-hd"><strong>C · 选择格口并远程出电</strong></div>
