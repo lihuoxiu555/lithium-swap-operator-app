@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.64",
+      date: "2026-10-28 18:53",
+      title: "柜外作业 · 去掉蓝牙、远程入口规则",
+      decisions: ["067"],
+      items: [
+        "回收/绑定不再做蓝牙校验，仅输入 SN + 业务校验",
+        "用户持电时不展示「远程出电」；无持电且有套餐才展示",
+      ],
+    },
+    {
       version: "V1.63",
       date: "2026-10-28 18:48",
       title: "柜外作业 · 对齐运维框架样式",

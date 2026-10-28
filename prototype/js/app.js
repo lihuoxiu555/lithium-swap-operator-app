@@ -153,7 +153,6 @@
       flowType: null,
       flowSteps: [],
       draftSn: {},
-      btOk: {},
       recycledThisSession: false,
       pendingUserConfirm: null,
       lastOrder: null,
@@ -477,7 +476,6 @@
       state.offCab.flowType = null;
       state.offCab.flowSteps = [];
       state.offCab.draftSn = {};
-      state.offCab.btOk = {};
       state.offCab.recycledThisSession = false;
       state.offCab.lastOrder = null;
       state.screen = "offCabinet";
@@ -4892,14 +4890,10 @@
     );
   }
 
-  function offCabRequireBt(stepKey) {
+  function offCabRequireSn(stepKey) {
     const sn = String((state.offCab.draftSn && state.offCab.draftSn[stepKey]) || "").trim();
     if (!sn) {
       toast("请输入电池编码");
-      return null;
-    }
-    if (!state.offCab.btOk || !state.offCab.btOk[stepKey]) {
-      toast("请先完成蓝牙校验");
       return null;
     }
     state.offCab.draftSn[stepKey] = sn;
@@ -6083,7 +6077,6 @@
         if (!step) return;
         if (!state.offCab.draftSn) state.offCab.draftSn = {};
         state.offCab.draftSn[step] = el.value;
-        if (state.offCab.btOk) delete state.offCab.btOk[step];
       });
     });
 
@@ -6837,7 +6830,6 @@
           state.offCab.flowType = flow;
           state.offCab.flowSteps = [];
           state.offCab.draftSn = {};
-          state.offCab.btOk = {};
           state.offCab.recycledThisSession = false;
           state.offCab.lastOrder = null;
           track("off_cab_flow", { flow, user_id: uid });
@@ -6865,30 +6857,12 @@
           state.offCab.flowType = null;
           state.offCab.flowSteps = [];
           state.offCab.draftSn = {};
-          state.offCab.btOk = {};
           state.offCab.recycledThisSession = false;
           render();
           break;
-        case "offcab-bt": {
-          const step = t.dataset.step;
-          const sn = String((state.offCab.draftSn && state.offCab.draftSn[step]) || "").trim();
-          if (!sn) {
-            toast("请输入电池编码");
-            break;
-          }
-          if (!OffCab.mockBluetoothOk(sn)) {
-            toast("蓝牙校验失败：编码不存在（体系外）");
-            break;
-          }
-          if (!state.offCab.btOk) state.offCab.btOk = {};
-          state.offCab.btOk[step] = true;
-          toast("蓝牙校验通过（Mock）");
-          render();
-          break;
-        }
         case "offcab-recycle-only":
         case "offcab-recycle-step": {
-          const sn = offCabRequireBt("recycle");
+          const sn = offCabRequireSn("recycle");
           if (!sn) break;
           const user = OffCab.userById(state.offCab.userId);
           if (!user) {
@@ -6904,7 +6878,6 @@
           state.offCab.flowSteps.push(offCabLogStep(res.log));
           state.offCab.recycledThisSession = true;
           delete state.offCab.draftSn.recycle;
-          delete state.offCab.btOk.recycle;
           if (action === "offcab-recycle-only") {
             state.offCab.lastOrder = OffCab.createOffOrder(
               "off_return",
@@ -6921,7 +6894,7 @@
           break;
         }
         case "offcab-bind": {
-          const sn = offCabRequireBt("bind");
+          const sn = offCabRequireSn("bind");
           if (!sn) break;
           const user = OffCab.userById(state.offCab.userId);
           if (!user) {
@@ -6944,7 +6917,6 @@
           }
           state.offCab.flowSteps.push(offCabLogStep(res.log));
           delete state.offCab.draftSn.bind;
-          delete state.offCab.btOk.bind;
           toast("绑定成功");
           render();
           break;

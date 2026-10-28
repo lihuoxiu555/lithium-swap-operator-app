@@ -273,10 +273,6 @@
     };
   }
 
-  function mockBluetoothOk(sn) {
-    return !!BATTERIES[sn];
-  }
-
   function render(state, ctx) {
     const { escapeHtml, escapeAttr, session } = ctx;
     const oc = state.offCab || {};
@@ -349,7 +345,7 @@
             )}">柜外领电</button>`
           );
         }
-        if (u.packageOk) {
+        if (u.packageOk && !u.heldSn) {
           actions.push(
             `<button type="button" data-action="offcab-remote" data-uid="${escapeAttr(
               u.id
@@ -379,7 +375,7 @@
           <h1>柜外电池作业</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">搜索用户后操作（输入后按 Enter 筛选）。回收确认后用户可待领取；远程出电 R1/R2 均展示。Mock 蓝牙：手动输入后点「蓝牙校验」。</p>
+        <p class="ops-hint">搜索用户后操作（输入后按 Enter 或点确定）。持电用户仅柜外退/换电；无持电且有套餐可见远程出电（R1/R2）。</p>
         <div class="sites-filters">
           <div class="sites-search-row">
             <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
@@ -394,15 +390,11 @@
 
   function renderSnInput(stepKey, oc, escapeAttr) {
     const v = (oc.draftSn && oc.draftSn[stepKey]) || "";
-    return `<div class="sites-search-row offcab-sn-row">
+    return `<div class="offcab-sn-row">
       <input type="text" class="offcab-sn" data-action="offcab-sn" data-step="${escapeAttr(
         stepKey
       )}" placeholder="扫码或手动输入电池编码" value="${escapeAttr(v)}" />
-      <button type="button" class="sites-confirm" data-action="offcab-bt" data-step="${escapeAttr(
-        stepKey
-      )}">蓝牙校验</button>
-    </div>
-    ${oc.btOk && oc.btOk[stepKey] ? `<p class="offcab-bt-ok">蓝牙校验通过</p>` : ""}`;
+    </div>`;
   }
 
   function renderFlow(state, ctx, operatorName) {
@@ -528,7 +520,6 @@
     remoteEligibility,
     remoteOpenPort,
     simulateUserConfirm,
-    mockBluetoothOk,
     getOffOrders: () => OFF_ORDERS.slice(),
     getCabinetSwaps: () => CABINET_SWAPS.slice(),
     render,
