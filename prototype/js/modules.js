@@ -96,6 +96,15 @@
       route: "#/module/ops.cabinets",
     },
     {
+      id: "ops.offCabinet",
+      name: "柜外电池作业",
+      group: "运维",
+      icon: "🔋",
+      status: "ready",
+      roles: ["admin", "staff"],
+      route: "#/module/ops.offCabinet",
+    },
+    {
       id: "users.list",
       name: "用户管理",
       group: "其他",

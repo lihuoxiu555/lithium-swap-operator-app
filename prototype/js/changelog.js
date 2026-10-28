@@ -17,6 +17,26 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.62",
+      date: "2026-10-28 18:39",
+      title: "柜外电池作业",
+      decisions: ["067"],
+      items: [
+        "运维宫格：柜外换电 / 退电 / 领电 + 远程出电（R1/R2 标签）",
+        "回收与绑定：手输/扫码 + 蓝牙校验 Mock；可选用户确认留痕",
+        "远程出电：5 分钟超时态「出电超时-退电」样例（李骑手）",
+      ],
+    },
+    {
+      version: "V1.61",
+      date: "2026-10-13 15:33",
+      title: "站点繁忙度 · 底栏操作",
+      items: [
+        "详情页三键（换电订单/电柜/站点档案）固定底栏、同一行横排",
+        "内容区可滚动，底栏 sticky 贴屏底",
+      ],
+    },
+    {
       version: "V1.60",
       date: "2026-10-13 15:21",
       title: "移除等待相关展示",

@@ -344,6 +344,42 @@
       empty: "0 值灰字占位，不隐藏",
       note: "手机页只留数字格子；公式在本栏。电池 3+3 格。**无告警电柜组**；柜异常见待办 Tab·警告、电柜详情·本柜告警。",
     }),
+    offCabinet: S({
+      title: "柜外电池作业 · 搜索",
+      source: "decision-067 · 10-28 纪要",
+      fields: [
+        { name: "搜索", def: "手机号/姓名；Enter 刷新。Mock：史建国/王骑手/陈晓/李骑手" },
+        { name: "柜外退电", def: "持电用户；回收 SN + 蓝牙校验 → 用户待领取" },
+        { name: "柜外换电", def: "A 回收可断开；B 绑定新电；可选用户确认留痕" },
+        { name: "柜外领电", def: "有套餐无持电；绑定 SN" },
+        { name: "远程出电", def: "最近换电；R1/R2 标签；5min 超时「出电超时-退电」" },
+      ],
+      empty: "无匹配用户",
+      error: "体系外 SN、持电不一致、在柜电池、未蓝牙校验",
+      roles: "管理员 / 员工无差异",
+    }),
+    "offCabinet:flow": S({
+      title: "柜外电池作业 · 流程",
+      source: "decision-067",
+      fields: [
+        { name: "步骤", def: "回收/绑定各需蓝牙校验 Mock；完成并生成订单" },
+        { name: "订单类型", def: "柜外换电 / 柜外退电 / 柜外领电" },
+      ],
+    }),
+    "offCabinet:remote": S({
+      title: "柜外电池作业 · 远程出电",
+      source: "decision-067",
+      fields: [
+        { name: "R1", def: "已还入未取新（有还电记录）" },
+        { name: "R2", def: "出电失败仍在柜、无还电记录" },
+        { name: "远程开门", def: "绑用户并完结换电 Mock" },
+      ],
+    }),
+    "offCabinet:result": S({
+      title: "柜外电池作业 · 完成",
+      source: "decision-067",
+      fields: [{ name: "留痕", def: "单号、操作人、步骤（含用户确认）" }],
+    }),
     cabinets: S({
       title: "电柜列表",
       source: "PC 一期换电柜",
@@ -598,6 +634,13 @@
     }
     if (sc === "siteBusy") {
       return state.ops && state.ops.siteBusyId ? "siteBusy:detail" : "siteBusy";
+    }
+    if (sc === "offCabinet") {
+      const oc = state.offCab || {};
+      if (oc.view === "result") return "offCabinet:result";
+      if (oc.view === "remote") return "offCabinet:remote";
+      if (oc.view === "flow") return "offCabinet:flow";
+      return "offCabinet";
     }
     if (sc === "userList") return "userList";
     if (sc === "todos") {

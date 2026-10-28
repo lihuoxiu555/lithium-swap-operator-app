@@ -16,6 +16,7 @@
   const Todos = window.OperatorAppTodos;
   const Alerts = window.OperatorAppAlerts;
   const Batteries = window.OperatorAppBatteries;
+  const OffCab = window.OperatorAppOffCabinet;
 
   const SCENARIOS = {
     admin: { label: "管理员已登录", forceEmptyGrid: false, unread: false, loadError: false },
@@ -144,6 +145,18 @@
       applyAmount: "",
       settleForm: null,
       settleReturn: "home",
+    },
+    offCab: {
+      view: "search",
+      kw: "",
+      userId: null,
+      flowType: null,
+      flowSteps: [],
+      draftSn: {},
+      btOk: {},
+      recycledThisSession: false,
+      pendingUserConfirm: null,
+      lastOrder: null,
     },
   };
 
@@ -454,6 +467,22 @@
       state.screen = "cabinets";
       setHash(mod.route);
       track("cabinets_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "ops.offCabinet") {
+      state.placeholderModule = mod;
+      state.offCab.view = "search";
+      state.offCab.userId = null;
+      state.offCab.flowType = null;
+      state.offCab.flowSteps = [];
+      state.offCab.draftSn = {};
+      state.offCab.btOk = {};
+      state.offCab.recycledThisSession = false;
+      state.offCab.lastOrder = null;
+      state.screen = "offCabinet";
+      setHash(mod.route);
+      track("off_cabinet_open", {});
       render();
       return;
     }
@@ -4841,6 +4870,47 @@
       </div>`;
   }
 
+  function offCabCtx() {
+    return { escapeHtml, escapeAttr, session: state.session };
+  }
+
+  function offCabOperatorName() {
+    const s = state.session;
+    if (!s) return "运营商";
+    const id = s.identity;
+    return (id && (id.name || id.label)) || s.roleLabel || "运营商";
+  }
+
+  function offCabLogStep(log, extra) {
+    return Object.assign(
+      {
+        label: log.label,
+        sn: log.sn || "",
+        operatorName: log.operatorName || offCabOperatorName(),
+      },
+      extra || {}
+    );
+  }
+
+  function offCabRequireBt(stepKey) {
+    const sn = String((state.offCab.draftSn && state.offCab.draftSn[stepKey]) || "").trim();
+    if (!sn) {
+      toast("请输入电池编码");
+      return null;
+    }
+    if (!state.offCab.btOk || !state.offCab.btOk[stepKey]) {
+      toast("请先完成蓝牙校验");
+      return null;
+    }
+    state.offCab.draftSn[stepKey] = sn;
+    return sn;
+  }
+
+  function renderOffCabinet() {
+    if (!OffCab) return `<div class="empty-full">模块未加载</div>`;
+    return OffCab.render(state, offCabCtx());
+  }
+
   function renderCabinets() {
     if (state.ops.cabView === "detail") return renderCabinetDetail();
     if (state.ops.cabView === "move") return renderCabinetMove();
@@ -5783,6 +5853,7 @@
       state.screen === "sites" ||
       state.screen === "bizStats" ||
       state.screen === "siteBusy" ||
+      state.screen === "offCabinet" ||
       state.screen === "cabinets" ||
       state.screen === "deviceStats" ||
       state.screen === "userList" ||
@@ -5874,6 +5945,9 @@
         break;
       case "cabinets":
         html = renderCabinets();
+        break;
+      case "offCabinet":
+        html = renderOffCabinet();
         break;
       case "deviceStats":
         html = renderDeviceStats();
@@ -5990,6 +6064,28 @@
         render();
       });
     }
+
+    const offcabKw = document.querySelector(".offcab-kw");
+    if (offcabKw) {
+      offcabKw.addEventListener("input", () => {
+        state.offCab.kw = offcabKw.value;
+      });
+      offcabKw.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          render();
+        }
+      });
+    }
+    document.querySelectorAll(".offcab-sn").forEach((el) => {
+      el.addEventListener("input", () => {
+        const step = el.dataset.step;
+        if (!step) return;
+        if (!state.offCab.draftSn) state.offCab.draftSn = {};
+        state.offCab.draftSn[step] = el.value;
+        if (state.offCab.btOk) delete state.offCab.btOk[step];
+      });
+    });
 
     const sitesKw = $("sites-keyword");
     if (sitesKw) {
@@ -6732,6 +6828,192 @@
           openModule("ops.cabinets", true);
           toast("已打开电柜管理（原型：请选站点下拉）");
           break;
+        case "offcab-start": {
+          const uid = t.dataset.uid;
+          const flow = t.dataset.flow;
+          if (!uid || !flow || !OffCab) break;
+          state.offCab.view = "flow";
+          state.offCab.userId = uid;
+          state.offCab.flowType = flow;
+          state.offCab.flowSteps = [];
+          state.offCab.draftSn = {};
+          state.offCab.btOk = {};
+          state.offCab.recycledThisSession = false;
+          state.offCab.lastOrder = null;
+          track("off_cab_flow", { flow, user_id: uid });
+          render();
+          break;
+        }
+        case "offcab-remote": {
+          const uid = t.dataset.uid;
+          if (!uid || !OffCab) break;
+          state.offCab.view = "remote";
+          state.offCab.userId = uid;
+          state.offCab.flowSteps = [];
+          state.offCab.lastOrder = null;
+          track("off_cab_remote", { user_id: uid });
+          render();
+          break;
+        }
+        case "offcab-back-search":
+          state.offCab.view = "search";
+          state.offCab.userId = null;
+          state.offCab.flowType = null;
+          state.offCab.flowSteps = [];
+          state.offCab.draftSn = {};
+          state.offCab.btOk = {};
+          state.offCab.recycledThisSession = false;
+          render();
+          break;
+        case "offcab-bt": {
+          const step = t.dataset.step;
+          const sn = String((state.offCab.draftSn && state.offCab.draftSn[step]) || "").trim();
+          if (!sn) {
+            toast("请输入电池编码");
+            break;
+          }
+          if (!OffCab.mockBluetoothOk(sn)) {
+            toast("蓝牙校验失败：编码不存在（体系外）");
+            break;
+          }
+          if (!state.offCab.btOk) state.offCab.btOk = {};
+          state.offCab.btOk[step] = true;
+          toast("蓝牙校验通过（Mock）");
+          render();
+          break;
+        }
+        case "offcab-recycle-only":
+        case "offcab-recycle-step": {
+          const sn = offCabRequireBt("recycle");
+          if (!sn) break;
+          const user = OffCab.userById(state.offCab.userId);
+          if (!user) {
+            toast("用户不存在");
+            break;
+          }
+          const op = offCabOperatorName();
+          const res = OffCab.doRecycle(sn, user, op);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          state.offCab.flowSteps.push(offCabLogStep(res.log));
+          state.offCab.recycledThisSession = true;
+          delete state.offCab.draftSn.recycle;
+          delete state.offCab.btOk.recycle;
+          if (action === "offcab-recycle-only") {
+            state.offCab.lastOrder = OffCab.createOffOrder(
+              "off_return",
+              user,
+              op,
+              state.offCab.flowSteps
+            );
+            state.offCab.view = "result";
+            track("off_cab_order", { type: "off_return" });
+          } else {
+            toast("已回收，可继续绑定新电或稍后再领");
+          }
+          render();
+          break;
+        }
+        case "offcab-bind": {
+          const sn = offCabRequireBt("bind");
+          if (!sn) break;
+          const user = OffCab.userById(state.offCab.userId);
+          if (!user) {
+            toast("用户不存在");
+            break;
+          }
+          if (
+            state.offCab.flowType === "off_swap" &&
+            user.waitPickup &&
+            !state.offCab.recycledThisSession
+          ) {
+            toast("请先回收原电池");
+            break;
+          }
+          const op = offCabOperatorName();
+          const res = OffCab.doBind(sn, user, op);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          state.offCab.flowSteps.push(offCabLogStep(res.log));
+          delete state.offCab.draftSn.bind;
+          delete state.offCab.btOk.bind;
+          toast("绑定成功");
+          render();
+          break;
+        }
+        case "offcab-user-confirm": {
+          const step = t.dataset.step || "bind";
+          let sn = "";
+          if (step === "remote") {
+            const user = OffCab.userById(state.offCab.userId);
+            const sw = user && OffCab.latestCabinetSwap(user.id);
+            sn = (sw && sw.outboundSn) || "";
+          } else {
+            sn =
+              String((state.offCab.draftSn && state.offCab.draftSn[step]) || "").trim() ||
+              (OffCab.userById(state.offCab.userId) || {}).heldSn ||
+              "";
+          }
+          if (!sn) {
+            toast("暂无待确认电池");
+            break;
+          }
+          const conf = OffCab.simulateUserConfirm(sn);
+          state.offCab.flowSteps.push(
+            offCabLogStep(conf, { userConfirm: true, label: conf.label })
+          );
+          toast("已记录用户确认（Mock）");
+          render();
+          break;
+        }
+        case "offcab-finish-flow": {
+          const user = OffCab.userById(state.offCab.userId);
+          const ft = state.offCab.flowType;
+          if (!user || !ft) break;
+          if (!state.offCab.flowSteps.length) {
+            toast("请先完成至少一步操作");
+            break;
+          }
+          const op = offCabOperatorName();
+          state.offCab.lastOrder = OffCab.createOffOrder(
+            ft,
+            user,
+            op,
+            state.offCab.flowSteps
+          );
+          state.offCab.view = "result";
+          track("off_cab_order", { type: ft });
+          render();
+          break;
+        }
+        case "offcab-remote-open": {
+          const user = OffCab.userById(state.offCab.userId);
+          if (!user) break;
+          const sw = OffCab.latestCabinetSwap(user.id);
+          const el = OffCab.remoteEligibility(sw);
+          if (!el.ok) {
+            toast(el.msg);
+            break;
+          }
+          const op = offCabOperatorName();
+          const res = OffCab.remoteOpenPort(sw, sw.outPort, user, op);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          const steps = state.offCab.flowSteps.slice();
+          steps.push(offCabLogStep(res.log));
+          state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, steps);
+          state.offCab.view = "result";
+          track("off_cab_order", { type: "remote_out" });
+          toast("远程出电成功");
+          render();
+          break;
+        }
         case "cab-tab":
           state.ops.cabTab = t.dataset.tab;
           track("cab_tab", { tab: state.ops.cabTab });
