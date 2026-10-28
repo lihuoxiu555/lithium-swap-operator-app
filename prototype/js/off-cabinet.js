@@ -673,6 +673,25 @@
             <div><span>还入记录</span><em>${sw.returnRecorded ? "有（R1）" : "无（R2）"}</em></div>
           </div>
         </section>
+        <section class="devstat-sec offcab-loc-sec">
+          <div class="devstat-hd"><strong>定位与距离</strong></div>
+          <div class="offcab-loc-dist">
+            <span>直线距离</span>
+            <strong>${escapeHtml(loc.distanceLabel)}</strong>
+          </div>
+          <div class="offcab-loc-cards">
+            <div class="offcab-loc-card">
+              <strong>柜机定位</strong>
+              <p>${escapeHtml(loc.cab.address || "—")}</p>
+              <p class="offcab-loc-meta">${escapeHtml(cabCoord)} · ${escapeHtml(loc.cab.source || "—")}</p>
+            </div>
+            <div class="offcab-loc-card">
+              <strong>用户定位</strong>
+              ${userLocBlock}
+            </div>
+          </div>
+          <p class="ops-hint">球面直线估算，供远程出电前核对用户是否在柜机附近。</p>
+        </section>
         <section class="devstat-sec offcab-sec">
           <div class="devstat-hd"><strong>C · 选择格口并远程出电</strong></div>
           <p class="ops-hint">仅展示<strong>有电池</strong>的格口；请选择后远程开门并绑给用户。</p>
@@ -706,6 +725,7 @@
     latestCabinetSwap,
     listRemoteSlots,
     defaultRemoteSlot,
+    remoteLocationSummary,
     remoteEligibility,
     remoteOpenPort,
     simulateUserConfirm,
