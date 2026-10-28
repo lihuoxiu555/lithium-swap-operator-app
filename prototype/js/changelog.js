@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.68",
+      date: "2026-10-28 19:19",
+      title: "远程出电 · 定位与距离",
+      decisions: ["067"],
+      items: [
+        "远程页展示柜机定位、用户 LBS 定位与直线距离",
+        "Mock：浦东 1 号柜 vs 陈晓/李骑手 LBS，球面估算",
+      ],
+    },
+    {
       version: "V1.67",
       date: "2026-10-28 19:15",
       title: "换电超时口径",

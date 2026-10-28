@@ -85,6 +85,13 @@
       packageOk: true,
       heldSn: null,
       waitPickup: false,
+      location: {
+        lat: 31.2376,
+        lng: 121.5068,
+        address: "上海市浦东新区张杨路梅园新村段（LBS）",
+        source: "LBS",
+        reportedAt: "2 分钟前",
+      },
     },
     {
       id: "u-li",
@@ -94,8 +101,25 @@
       packageOk: true,
       heldSn: null,
       waitPickup: false,
+      location: {
+        lat: 31.2284,
+        lng: 121.4972,
+        address: "上海市浦东新区浦东南路地铁站（LBS）",
+        source: "LBS",
+        reportedAt: "5 分钟前",
+      },
     },
   ];
+
+  /** @type {Record<string, { lat: number, lng: number, address: string, source: string }>} */
+  const CAB_LOCATIONS = {
+    "cab-pd-1": {
+      lat: 31.2368,
+      lng: 121.5055,
+      address: "上海市浦东新区张杨路1588号 · 浦东骑手驿站",
+      source: "站点/柜机坐标",
+    },
+  };
 
   /** @type {Array<object>} */
   let CABINET_SWAPS = [
@@ -247,6 +271,49 @@
       ":" +
       p(d.getMinutes())
     );
+  }
+
+  function cabLocation(cabinetId, sw) {
+    const row = CAB_LOCATIONS[cabinetId];
+    if (row) return row;
+    return {
+      lat: null,
+      lng: null,
+      address: (sw && sw.siteName) || "—",
+      source: "—",
+    };
+  }
+
+  function haversineMeters(lat1, lng1, lat2, lng2) {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function formatDistanceM(m) {
+    if (m == null || !isFinite(m)) return "—";
+    if (m < 1000) return Math.round(m) + " m";
+    return (m / 1000).toFixed(1) + " km";
+  }
+
+  function remoteLocationSummary(sw, user) {
+    const cab = cabLocation(sw.cabinetId, sw);
+    const ul = user && user.location;
+    let distanceM = null;
+    if (cab.lat != null && cab.lng != null && ul && ul.lat != null && ul.lng != null) {
+      distanceM = haversineMeters(ul.lat, ul.lng, cab.lat, cab.lng);
+    }
+    return {
+      cab,
+      user: ul,
+      distanceM,
+      distanceLabel: formatDistanceM(distanceM),
+    };
   }
 
   function latestCabinetSwap(userId) {
@@ -574,6 +641,17 @@
       .join("");
 
     const selectedSlot = slots.find((s) => s.sn === selectedSn);
+    const loc = remoteLocationSummary(sw, user);
+    const cabCoord =
+      loc.cab.lat != null && loc.cab.lng != null
+        ? `${loc.cab.lat.toFixed(4)}, ${loc.cab.lng.toFixed(4)}`
+        : "—";
+    const userLocBlock = loc.user
+      ? `<p>${escapeHtml(loc.user.address || "—")}</p>
+          <p class="offcab-loc-meta">${escapeHtml(
+            loc.user.lat.toFixed(4) + ", " + loc.user.lng.toFixed(4)
+          )} · ${escapeHtml(loc.user.source || "LBS")} · ${escapeHtml(loc.user.reportedAt || "—")}</p>`
+      : `<p class="offcab-loc-meta">暂无用户定位（Mock）</p>`;
 
     return `
       <div class="sites-page ops-page">
