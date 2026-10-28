@@ -17,6 +17,12 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.69",
+      date: "2026-10-28 19:29",
+      title: "远程定位区紧凑化",
+      items: ["定位与距离改为单行摘要 + 柜机/用户各一行，减少纵向占位"],
+    },
+    {
       version: "V1.68",
       date: "2026-10-28 19:19",
       title: "远程出电 · 定位与距离",
