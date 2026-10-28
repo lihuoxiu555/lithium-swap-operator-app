@@ -6855,6 +6855,10 @@
           render();
           break;
         }
+        case "offcab-kw-apply":
+          render();
+          toast(state.offCab.kw.trim() ? "已筛选" : "已刷新列表");
+          break;
         case "offcab-back-search":
           state.offCab.view = "search";
           state.offCab.userId = null;

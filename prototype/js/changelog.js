@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.63",
+      date: "2026-10-28 18:48",
+      title: "柜外作业 · 对齐运维框架样式",
+      items: [
+        "用户卡片/搜索/流程块复用 sites-card、sites-search-row、devstat-sec",
+        "修正无效 CSS 变量，按钮与站点/电柜模块同口径",
+      ],
+    },
+    {
       version: "V1.62",
       date: "2026-10-28 18:39",
       title: "柜外电池作业",

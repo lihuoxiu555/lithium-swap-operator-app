@@ -301,12 +301,15 @@
             <h1>作业完成</h1>
             <div class="sites-header-spacer"></div>
           </div>
-          <div class="offcab-result">
-            <p class="offcab-result-type">${escapeHtml(o.orderType)}</p>
-            <p class="offcab-result-meta">单号 ${escapeHtml(o.id)} · ${escapeHtml(o.createdAt)}</p>
-            <p class="offcab-result-meta">操作人 ${escapeHtml(o.operatorName)}</p>
+          <article class="sites-card offcab-result">
+            <div class="sites-card-hd"><strong>${escapeHtml(o.orderType)}</strong></div>
+            <div class="sites-card-rows">
+              <div><span>单号</span><em>${escapeHtml(o.id)}</em></div>
+              <div><span>时间</span><em>${escapeHtml(o.createdAt)}</em></div>
+              <div><span>操作人</span><em>${escapeHtml(o.operatorName)}</em></div>
+            </div>
             <ul class="offcab-steps">${steps}</ul>
-          </div>
+          </article>
           <button type="button" class="btn-primary offcab-btn" data-action="offcab-back-search">返回搜索</button>
         </div>`;
     }
@@ -331,36 +334,40 @@
         const actions = [];
         if (u.heldSn) {
           actions.push(
-            `<button type="button" class="offcab-action" data-action="offcab-start" data-flow="off_swap" data-uid="${escapeAttr(
+            `<button type="button" data-action="offcab-start" data-flow="off_swap" data-uid="${escapeAttr(
               u.id
             )}">柜外换电</button>`,
-            `<button type="button" class="offcab-action" data-action="offcab-start" data-flow="off_return" data-uid="${escapeAttr(
+            `<button type="button" data-action="offcab-start" data-flow="off_return" data-uid="${escapeAttr(
               u.id
             )}">柜外退电</button>`
           );
         }
         if (u.packageOk && !u.heldSn) {
           actions.push(
-            `<button type="button" class="offcab-action primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
+            `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
               u.id
             )}">柜外领电</button>`
           );
         }
         if (u.packageOk) {
           actions.push(
-            `<button type="button" class="offcab-action" data-action="offcab-remote" data-uid="${escapeAttr(
+            `<button type="button" data-action="offcab-remote" data-uid="${escapeAttr(
               u.id
             )}">远程出电</button>`
           );
         }
-        return `<article class="offcab-user-card">
-          <div class="offcab-user-hd">
-            <strong>${escapeHtml(u.name)}</strong>
-            <span>${escapeHtml(u.phone)}</span>
+        return `<article class="sites-card">
+          <div class="sites-card-hd">
+            <div>
+              <strong>${escapeHtml(u.name)}</strong>
+              <div class="sites-meta">${escapeHtml(u.phone)}</div>
+            </div>
           </div>
-          <p class="offcab-user-pkg">${escapeHtml(u.packageLabel)}</p>
-          <p class="offcab-user-held">${held}</p>
-          <div class="offcab-user-actions">${actions.join("")}</div>
+          <div class="sites-card-rows">
+            <div><span>套餐</span><em>${escapeHtml(u.packageLabel)}</em></div>
+            <div><span>电池</span><em>${held}</em></div>
+          </div>
+          <div class="offcab-actions">${actions.join("")}</div>
         </article>`;
       })
       .join("");
@@ -373,22 +380,25 @@
           <div class="sites-header-spacer"></div>
         </div>
         <p class="ops-hint">搜索用户后操作（输入后按 Enter 筛选）。回收确认后用户可待领取；远程出电 R1/R2 均展示。Mock 蓝牙：手动输入后点「蓝牙校验」。</p>
-        <div class="offcab-search">
-          <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
-            kw
-          )}" />
+        <div class="sites-filters">
+          <div class="sites-search-row">
+            <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
+              kw
+            )}" />
+            <button type="button" class="sites-confirm" data-action="offcab-kw-apply">确定</button>
+          </div>
         </div>
-        <div class="offcab-list">${cards || `<div class="empty-inline compact">无匹配用户</div>`}</div>
+        <div class="sites-list">${cards || `<div class="empty-inline compact">无匹配用户</div>`}</div>
       </div>`;
   }
 
   function renderSnInput(stepKey, oc, escapeAttr) {
     const v = (oc.draftSn && oc.draftSn[stepKey]) || "";
-    return `<div class="offcab-sn-row">
+    return `<div class="sites-search-row offcab-sn-row">
       <input type="text" class="offcab-sn" data-action="offcab-sn" data-step="${escapeAttr(
         stepKey
       )}" placeholder="扫码或手动输入电池编码" value="${escapeAttr(v)}" />
-      <button type="button" class="btn-secondary offcab-sn-btn" data-action="offcab-bt" data-step="${escapeAttr(
+      <button type="button" class="sites-confirm" data-action="offcab-bt" data-step="${escapeAttr(
         stepKey
       )}">蓝牙校验</button>
     </div>
@@ -408,26 +418,26 @@
 
     let body = "";
     if (oc.flowType === "off_return") {
-      body = `<section class="offcab-sec">
-        <strong>A · 回收原电池</strong>
+      body = `<section class="devstat-sec offcab-sec">
+        <div class="devstat-hd"><strong>A · 回收原电池</strong></div>
         ${renderSnInput("recycle", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-recycle-only">确认回收</button>
       </section>`;
     } else if (oc.flowType === "off_pickup") {
-      body = `<section class="offcab-sec">
-        <strong>A · 绑定电池</strong>
+      body = `<section class="devstat-sec offcab-sec">
+        <div class="devstat-hd"><strong>A · 绑定电池</strong></div>
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind">确认绑定</button>
         <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
       </section>`;
     } else if (oc.flowType === "off_swap") {
-      body = `<section class="offcab-sec">
-        <strong>A · 回收原电池</strong>
+      body = `<section class="devstat-sec offcab-sec">
+        <div class="devstat-hd"><strong>A · 回收原电池</strong></div>
         ${renderSnInput("recycle", oc, escapeAttr)}
         <button type="button" class="btn-secondary offcab-btn" data-action="offcab-recycle-step">确认回收（可稍后再领）</button>
       </section>
-      <section class="offcab-sec">
-        <strong>B · 绑定新电池</strong>
+      <section class="devstat-sec offcab-sec">
+        <div class="devstat-hd"><strong>B · 绑定新电池</strong></div>
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind" ${user.waitPickup && !oc.recycledThisSession ? " disabled" : ""}>确认绑定新电</button>
         <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
@@ -494,9 +504,9 @@
             <div><span>还入记录</span><em>${sw.returnRecorded ? "有（R1）" : "无（R2）"}</em></div>
           </div>
         </section>
-        <section class="offcab-sec">
-          <strong>C · 远程开门并绑定</strong>
-          <p class="sites-hint">原型：选择同柜可用格口 ${sw.outPort} 号演示。</p>
+        <section class="devstat-sec offcab-sec">
+          <div class="devstat-hd"><strong>C · 远程开门并绑定</strong></div>
+          <p class="ops-hint">原型：选择同柜可用格口 ${sw.outPort} 号演示。</p>
           <button type="button" class="btn-primary offcab-btn" data-action="offcab-remote-open">远程开门 · 绑给用户</button>
           <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="remote">模拟用户扫码确认</button>
         </section>
