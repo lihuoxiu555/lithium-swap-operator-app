@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.65",
+      date: "2026-10-28 19:02",
+      title: "柜外入口 · 待领取无换电记录",
+      decisions: ["067"],
+      items: [
+        "待领取且无柜机换电记录：仅「柜外领电」（如王骑手）",
+        "远程出电需有柜机换电记录；有记录且非待领取时可同时展示领电",
+      ],
+    },
+    {
       version: "V1.64",
       date: "2026-10-28 18:53",
       title: "柜外作业 · 去掉蓝牙、远程入口规则",

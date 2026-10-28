@@ -328,6 +328,7 @@
             ? '<em class="brand">待领取电池</em>'
             : "无持电";
         const actions = [];
+        const hasSwap = !!latestCabinetSwap(u.id);
         if (u.heldSn) {
           actions.push(
             `<button type="button" data-action="offcab-start" data-flow="off_swap" data-uid="${escapeAttr(
@@ -337,20 +338,33 @@
               u.id
             )}">柜外退电</button>`
           );
-        }
-        if (u.packageOk && !u.heldSn) {
-          actions.push(
-            `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
-              u.id
-            )}">柜外领电</button>`
-          );
-        }
-        if (u.packageOk && !u.heldSn) {
-          actions.push(
-            `<button type="button" data-action="offcab-remote" data-uid="${escapeAttr(
-              u.id
-            )}">远程出电</button>`
-          );
+        } else if (u.packageOk) {
+          if (u.waitPickup && !hasSwap) {
+            actions.push(
+              `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
+                u.id
+              )}">柜外领电</button>`
+            );
+          } else if (hasSwap) {
+            actions.push(
+              `<button type="button" data-action="offcab-remote" data-uid="${escapeAttr(
+                u.id
+              )}">远程出电</button>`
+            );
+            if (!u.waitPickup) {
+              actions.push(
+                `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
+                  u.id
+                )}">柜外领电</button>`
+              );
+            }
+          } else {
+            actions.push(
+              `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
+                u.id
+              )}">柜外领电</button>`
+            );
+          }
         }
         return `<article class="sites-card">
           <div class="sites-card-hd">
@@ -375,7 +389,7 @@
           <h1>柜外电池作业</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">搜索用户后操作（输入后按 Enter 或点确定）。持电用户仅柜外退/换电；无持电且有套餐可见远程出电（R1/R2）。</p>
+        <p class="ops-hint">待领取且无柜机换电记录 → 仅柜外领电。有换电记录可走远程出电（R1/R2）。持电用户仅柜外退/换电。</p>
         <div class="sites-filters">
           <div class="sites-search-row">
             <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
