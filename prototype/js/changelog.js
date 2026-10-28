@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.67",
+      date: "2026-10-28 19:15",
+      title: "换电超时口径",
+      decisions: ["067"],
+      items: [
+        "5 分钟未取出电：状态改为「换电超时」，不再使用「出电超时-退电」",
+        "明确不等同退电；李骑手 Mock 远程页同步",
+      ],
+    },
+    {
       version: "V1.66",
       date: "2026-10-28 19:08",
       title: "远程出电 · 格口选择与柜机信息",

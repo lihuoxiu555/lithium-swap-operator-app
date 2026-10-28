@@ -12,7 +12,7 @@
 
   const SWAP_STATUS = {
     in_progress: "进行中",
-    outbound_timeout: "出电超时-退电",
+    swap_timeout: "换电超时",
     completed: "已完成",
   };
 
@@ -257,7 +257,7 @@
 
   function refreshSwapTimeout(sw) {
     if (!sw || sw.status !== "in_progress") return sw;
-    if (Date.now() > sw.outboundDeadlineMs) sw.status = "outbound_timeout";
+    if (Date.now() > sw.outboundDeadlineMs) sw.status = "swap_timeout";
     return sw;
   }
 
