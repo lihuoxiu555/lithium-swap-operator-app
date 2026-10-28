@@ -370,9 +370,10 @@
       title: "柜外电池作业 · 远程出电",
       source: "decision-067",
       fields: [
-        { name: "R1", def: "已还入未取新（有还电记录）" },
-        { name: "R2", def: "出电失败仍在柜、无还电记录" },
-        { name: "远程开门", def: "绑用户并完结换电 Mock" },
+        { name: "柜机", def: "必展示站点、柜机名称" },
+        { name: "格口选择", def: "仅有电池格口；展示 SOC + 编码；可改选" },
+        { name: "R1/R2", def: "已还入未取新 / 出电失败仍在柜" },
+        { name: "远程开门", def: "对所选格口绑用户并完结换电 Mock" },
       ],
     }),
     "offCabinet:result": S({

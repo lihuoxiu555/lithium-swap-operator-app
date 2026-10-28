@@ -22,13 +22,38 @@
     "035211210001": { sn: "035211210001", boundUserPhone: "13800138001" },
     "492391002233": { sn: "492391002233" },
     "492391883344": { sn: "492391883344" },
+    "492399990003": {
+      sn: "492399990003",
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 7,
+        door: "关闭",
+        soc: 65,
+      },
+    },
     "492399990001": {
       sn: "492399990001",
-      inCabinet: { cab: "浦东 1 号柜", port: 3, door: "关闭" },
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 3,
+        door: "关闭",
+        soc: 92,
+      },
     },
     "492399990002": {
       sn: "492399990002",
-      inCabinet: { cab: "浦东 1 号柜", port: 5, door: "关闭" },
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 5,
+        door: "关闭",
+        soc: 78,
+      },
     },
   };
 
@@ -86,6 +111,9 @@
       returnedSn: "492391002233",
       outboundSn: "492399990001",
       returnRecorded: true,
+      cabinetId: "cab-pd-1",
+      siteName: "浦东骑手驿站",
+      cabinetName: "浦东 1 号柜",
       cab: "浦东 1 号柜",
       outPort: 3,
     },
@@ -102,6 +130,9 @@
       outboundSn: "492399990002",
       returnRecorded: false,
       openFail: true,
+      cabinetId: "cab-pd-1",
+      siteName: "浦东骑手驿站",
+      cabinetName: "浦东 1 号柜",
       cab: "浦东 1 号柜",
       outPort: 5,
     },
@@ -230,22 +261,53 @@
     return sw;
   }
 
+  function listRemoteSlots(sw) {
+    if (!sw || !sw.cabinetId) return [];
+    const rows = [];
+    Object.keys(BATTERIES).forEach((sn) => {
+      const b = BATTERIES[sn];
+      const ic = b && b.inCabinet;
+      if (!ic || ic.cabinetId !== sw.cabinetId) return;
+      rows.push({
+        port: ic.port,
+        sn,
+        soc: typeof ic.soc === "number" ? ic.soc : null,
+        door: ic.door || "—",
+        siteName: ic.siteName || sw.siteName,
+        cabinetName: ic.cabinetName || sw.cabinetName,
+      });
+    });
+    return rows.sort((a, b) => a.port - b.port);
+  }
+
+  function defaultRemoteSlot(sw, slots) {
+    if (!slots.length) return null;
+    const bySn = slots.find((s) => s.sn === sw.outboundSn);
+    if (bySn) return bySn;
+    const byPort = slots.find((s) => s.port === sw.outPort);
+    if (byPort) return byPort;
+    return slots[0];
+  }
+
   function remoteEligibility(sw) {
     refreshSwapTimeout(sw);
     if (!sw) return { ok: false, msg: "无换电记录" };
-    const b = BATTERIES[sw.outboundSn];
-    if (!b || !b.inCabinet) return { ok: false, msg: "换出电池已不在格口，无法远程出电" };
     const tags = [];
     if (sw.r1) tags.push("R1·已还入未取新");
     if (sw.r2) tags.push("R2·出电失败仍在柜");
     if (!tags.length) return { ok: false, msg: "不满足远程出电条件" };
-    return { ok: true, tags, swap: sw, battery: b };
+    const slots = listRemoteSlots(sw);
+    if (!slots.length) return { ok: false, msg: "该柜暂无带电格口，无法远程出电" };
+    return { ok: true, tags, swap: sw, slots };
   }
 
-  function remoteOpenPort(sw, port, user, operatorName) {
-    const sn = sw.outboundSn;
-    if (!BATTERIES[sn] || !BATTERIES[sn].inCabinet)
-      return { ok: false, msg: "格口内无可用电池" };
+  function remoteOpenPort(sw, port, sn, user, operatorName) {
+    const b = BATTERIES[sn];
+    const ic = b && b.inCabinet;
+    if (!ic || ic.cabinetId !== sw.cabinetId || ic.port !== port)
+      return { ok: false, msg: "所选格口无可用电池" };
+    const siteName = sw.siteName || ic.siteName || "—";
+    const cabinetName = sw.cabinetName || ic.cabinetName || sw.cab || "—";
     delete BATTERIES[sn].inCabinet;
     BATTERIES[sn].boundUserPhone = user.phone;
     user.heldSn = sn;
@@ -257,9 +319,11 @@
         type: "remote_open",
         sn,
         port,
+        siteName,
+        cabinetName,
         operatorName,
         at: new Date().toISOString(),
-        label: "远程出电绑用户",
+        label: `远程出电 · ${siteName} · ${cabinetName} · ${port}号`,
       },
     };
   }
@@ -489,6 +553,27 @@
     const tags = el.tags.map((t) => `<span class="offcab-tag">${escapeHtml(t)}</span>`).join("");
     const statusLabel = SWAP_STATUS[sw.status] || sw.status;
     const remainMin = Math.max(0, Math.round((sw.outboundDeadlineMs - Date.now()) / 60000));
+    const slots = el.slots || [];
+    const fallback = defaultRemoteSlot(sw, slots);
+    const selectedSn = oc.remoteSn || (fallback && fallback.sn) || "";
+
+    const slotCards = slots
+      .map((s) => {
+        const selected = s.sn === selectedSn;
+        const isOutbound = s.sn === sw.outboundSn;
+        const socLabel = s.soc != null ? `${s.soc}%` : "—";
+        return `<button type="button" class="offcab-slot${selected ? " is-selected" : ""}" data-action="offcab-select-slot" data-port="${s.port}" data-sn="${escapeAttr(
+          s.sn
+        )}">
+          <span class="offcab-slot-port">${s.port} 号</span>
+          <span class="offcab-slot-soc">SOC ${escapeHtml(socLabel)}</span>
+          <span class="offcab-slot-sn">${escapeHtml(s.sn)}</span>
+          ${isOutbound ? `<span class="offcab-slot-tag">换出电</span>` : ""}
+        </button>`;
+      })
+      .join("");
+
+    const selectedSlot = slots.find((s) => s.sn === selectedSn);
 
     return `
       <div class="sites-page ops-page">
@@ -501,19 +586,29 @@
           statusLabel
         )}</strong>${sw.status === "in_progress" ? ` · 出电限时约 ${remainMin} 分钟` : ""}</p>
         <div class="offcab-tags">${tags}</div>
-        <section class="devstat-sec">
-          <div class="devstat-hd"><strong>格口信息</strong></div>
+        <section class="devstat-sec offcab-remote-cab">
+          <div class="devstat-hd"><strong>柜机</strong></div>
           <div class="sites-card-rows inline">
-            <div><span>电柜</span><em>${escapeHtml(sw.cab)}</em></div>
-            <div><span>格口</span><em>${sw.outPort} 号 · 门 ${escapeHtml(el.battery.inCabinet.door)}</em></div>
-            <div><span>电池</span><em>${escapeHtml(sw.outboundSn)}</em></div>
+            <div><span>站点</span><em>${escapeHtml(sw.siteName || "—")}</em></div>
+            <div><span>柜机名称</span><em>${escapeHtml(sw.cabinetName || sw.cab || "—")}</em></div>
+            <div><span>换出编码</span><em>${escapeHtml(sw.outboundSn)}</em></div>
             <div><span>还入记录</span><em>${sw.returnRecorded ? "有（R1）" : "无（R2）"}</em></div>
           </div>
         </section>
         <section class="devstat-sec offcab-sec">
-          <div class="devstat-hd"><strong>C · 远程开门并绑定</strong></div>
-          <p class="ops-hint">原型：选择同柜可用格口 ${sw.outPort} 号演示。</p>
-          <button type="button" class="btn-primary offcab-btn" data-action="offcab-remote-open">远程开门 · 绑给用户</button>
+          <div class="devstat-hd"><strong>C · 选择格口并远程出电</strong></div>
+          <p class="ops-hint">仅展示<strong>有电池</strong>的格口；请选择后远程开门并绑给用户。</p>
+          <div class="offcab-slot-list">${slotCards}</div>
+          ${
+            selectedSlot
+              ? `<p class="offcab-slot-pick">已选 ${selectedSlot.port} 号 · SOC ${
+                  selectedSlot.soc != null ? selectedSlot.soc + "%" : "—"
+                } · ${escapeHtml(selectedSlot.sn)}</p>`
+              : ""
+          }
+          <button type="button" class="btn-primary offcab-btn" data-action="offcab-remote-open" ${
+            selectedSn ? "" : "disabled"
+          }>远程开门 · 绑给用户</button>
           <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="remote">模拟用户扫码确认</button>
         </section>
       </div>`;
@@ -531,6 +626,8 @@
     doBind,
     createOffOrder,
     latestCabinetSwap,
+    listRemoteSlots,
+    defaultRemoteSlot,
     remoteEligibility,
     remoteOpenPort,
     simulateUserConfirm,

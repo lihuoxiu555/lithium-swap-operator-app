@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.66",
+      date: "2026-10-28 19:08",
+      title: "远程出电 · 格口选择与柜机信息",
+      decisions: ["067"],
+      items: [
+        "远程出电展示站点、柜机名称；可选有电格口（SOC + 编码）",
+        "默认选中换出格口；留痕含站点/柜机/格口",
+      ],
+    },
+    {
       version: "V1.65",
       date: "2026-10-28 19:02",
       title: "柜外入口 · 待领取无换电记录",

@@ -156,6 +156,8 @@
       recycledThisSession: false,
       pendingUserConfirm: null,
       lastOrder: null,
+      remotePort: null,
+      remoteSn: null,
     },
   };
 
@@ -478,6 +480,8 @@
       state.offCab.draftSn = {};
       state.offCab.recycledThisSession = false;
       state.offCab.lastOrder = null;
+      state.offCab.remotePort = null;
+      state.offCab.remoteSn = null;
       state.screen = "offCabinet";
       setHash(mod.route);
       track("off_cabinet_open", {});
@@ -6843,7 +6847,30 @@
           state.offCab.userId = uid;
           state.offCab.flowSteps = [];
           state.offCab.lastOrder = null;
+          state.offCab.remotePort = null;
+          state.offCab.remoteSn = null;
+          {
+            const user = OffCab.userById(uid);
+            const sw = user && OffCab.latestCabinetSwap(user.id);
+            const el = sw && OffCab.remoteEligibility(sw);
+            if (el && el.ok) {
+              const pick = OffCab.defaultRemoteSlot(sw, el.slots);
+              if (pick) {
+                state.offCab.remotePort = pick.port;
+                state.offCab.remoteSn = pick.sn;
+              }
+            }
+          }
           track("off_cab_remote", { user_id: uid });
+          render();
+          break;
+        }
+        case "offcab-select-slot": {
+          const port = Number(t.dataset.port);
+          const sn = t.dataset.sn || "";
+          if (!sn) break;
+          state.offCab.remotePort = port;
+          state.offCab.remoteSn = sn;
           render();
           break;
         }
@@ -6858,6 +6885,8 @@
           state.offCab.flowSteps = [];
           state.offCab.draftSn = {};
           state.offCab.recycledThisSession = false;
+          state.offCab.remotePort = null;
+          state.offCab.remoteSn = null;
           render();
           break;
         case "offcab-recycle-only":
@@ -6925,9 +6954,14 @@
           const step = t.dataset.step || "bind";
           let sn = "";
           if (step === "remote") {
-            const user = OffCab.userById(state.offCab.userId);
-            const sw = user && OffCab.latestCabinetSwap(user.id);
-            sn = (sw && sw.outboundSn) || "";
+            sn = state.offCab.remoteSn || "";
+            if (!sn) {
+              const user = OffCab.userById(state.offCab.userId);
+              const sw = user && OffCab.latestCabinetSwap(user.id);
+              const el = sw && OffCab.remoteEligibility(sw);
+              const pick = el && el.ok && OffCab.defaultRemoteSlot(sw, el.slots);
+              sn = (pick && pick.sn) || (sw && sw.outboundSn) || "";
+            }
           } else {
             sn =
               String((state.offCab.draftSn && state.offCab.draftSn[step]) || "").trim() ||
@@ -6975,8 +7009,14 @@
             toast(el.msg);
             break;
           }
+          const sn = state.offCab.remoteSn;
+          const port = state.offCab.remotePort;
+          if (!sn || !port) {
+            toast("请先选择格口");
+            break;
+          }
           const op = offCabOperatorName();
-          const res = OffCab.remoteOpenPort(sw, sw.outPort, user, op);
+          const res = OffCab.remoteOpenPort(sw, port, sn, user, op);
           if (!res.ok) {
             toast(res.msg);
             break;
