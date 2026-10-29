@@ -48,9 +48,21 @@
         cabinetId: "cab-pd-1",
         siteName: "浦东骑手驿站",
         cabinetName: "浦东 1 号柜",
-        port: 7,
+        port: 8,
         door: "关闭",
         soc: 65,
+      },
+    },
+    "492399990004": {
+      sn: "492399990004",
+      boundUserPhone: "13600003333",
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 6,
+        door: "关闭",
+        soc: 82,
       },
     },
     "492399990001": {
@@ -112,6 +124,23 @@
         address: "上海市浦东新区张杨路梅园新村段（LBS）",
         source: "LBS",
         reportedAt: "2 分钟前",
+      },
+    },
+    {
+      id: "u-zhao",
+      name: "赵骑手",
+      phone: "13600003333",
+      packageLabel: "包月30天 · 生效中",
+      packageOk: true,
+      heldSn: "492399990004",
+      waitPickup: false,
+      heldInCabinet: true,
+      location: {
+        lat: 31.2312,
+        lng: 121.5018,
+        address: "上海市浦东新区潍坊路附近（LBS）",
+        source: "LBS",
+        reportedAt: "3 分钟前",
       },
     },
     {
@@ -190,8 +219,34 @@
       returnPort: 2,
       returnAt: "2026-10-28 16:18",
       outboundAt: "2026-10-28 16:20",
-      /** Mock：本柜除出电/还入外无其他可发电池 → 演示「取走还入电赴他站」 */
+      /** Mock 场景二：本柜除出电/还入外无其他可发电池 */
       sparseCabinet: true,
+      remoteScenario: 2,
+    },
+    {
+      id: "sw-r2-zhao",
+      userId: "u-zhao",
+      orderNo: "SW260928003",
+      status: "swap_timeout",
+      createdAt: "2026-10-28 16:25",
+      outboundDeadlineMs: Date.now() - 120000,
+      r1: false,
+      r2: true,
+      returnedSn: "492391002233",
+      outboundSn: "492399990004",
+      returnRecorded: true,
+      openFail: true,
+      cabinetId: "cab-pd-1",
+      siteName: "浦东骑手驿站",
+      cabinetName: "浦东 1 号柜",
+      cab: "浦东 1 号柜",
+      outPort: 6,
+      returnPort: 7,
+      returnAt: "2026-10-28 16:23",
+      outboundAt: "2026-10-28 16:25",
+      /** Mock 场景一：重开失败后另有 3/8 号等可发格口 */
+      sparseCabinet: false,
+      remoteScenario: 1,
     },
   ];
 
@@ -436,6 +491,13 @@
     if (sw.r1) return "R1 · 已还入未取新";
     if (sw.r2) return "R2 · 出电失败仍在柜";
     return "持电仍在柜";
+  }
+
+  function remoteMockScenarioLabel(sw) {
+    if (!sw || !sw.remoteScenario) return "";
+    if (sw.remoteScenario === 1) return "Mock·场景一：重开失败可改发他格口";
+    if (sw.remoteScenario === 2) return "Mock·场景二：重开失败仅可取还入电赴他站";
+    return "";
   }
 
   function refreshOutboundInCab(sw) {
@@ -767,6 +829,11 @@
             : "无持电";
         const actions = [];
         const hasSwap = !!latestCabinetSwap(u.id);
+        const swHint = latestCabinetSwap(u.id);
+        const scenTag = remoteMockScenarioLabel(swHint);
+        const scenHtml = scenTag
+          ? `<p class="offcab-scenario-hint">${escapeHtml(scenTag)}</p>`
+          : "";
         if (canShowRemoteOut(u)) {
           actions.push(
             `<button type="button" class="is-primary" data-action="offcab-remote" data-uid="${escapeAttr(
@@ -800,6 +867,7 @@
             <div><span>套餐</span><em>${escapeHtml(u.packageLabel)}</em></div>
             <div><span>电池</span><em>${held}</em></div>
           </div>
+          ${scenHtml}
           <div class="offcab-actions">${actions.join("")}</div>
         </article>`;
       })
@@ -812,7 +880,7 @@
           <h1>柜外电池作业</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">远程出电：有换电单 + 持电 + 持电仍在柜（出电误绑定）。其余持电走柜外退/换；待领取无换电单仅柜外领电。</p>
+        <p class="ops-hint">远程出电 Mock：<strong>赵骑手</strong>场景一（改发他格口）、<strong>李骑手</strong>场景二（取还入电赴他站）。</p>
         <div class="sites-filters">
           <div class="sites-search-row">
             <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
@@ -1047,7 +1115,11 @@
             ${swapRow("发起时间", sw.createdAt || "—")}
             ${swapRow("还电结果", sw.returnRecorded ? "还电成功" : "未还电")}
           </div>
-          <div class="offcab-tags offcab-tags-inline">${tags}</div>
+          <div class="offcab-tags offcab-tags-inline">${tags}${
+            remoteMockScenarioLabel(sw)
+              ? `<span class="offcab-tag offcab-tag-scenario">${escapeHtml(remoteMockScenarioLabel(sw))}</span>`
+              : ""
+          }</div>
         </section>
         <div class="offcab-remote-dual">${returnLeg}${outboundLeg}</div>
         <section class="devstat-sec offcab-remote-loc-compact" title="球面直线估算">

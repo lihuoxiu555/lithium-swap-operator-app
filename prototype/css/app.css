@@ -3282,6 +3282,17 @@ button.btn-mock.offcab-btn {
   background: var(--warning-soft);
   color: var(--warning);
 }
+.offcab-tag-scenario {
+  background: #ede8f8;
+  color: #5f4d94;
+}
+.offcab-scenario-hint {
+  margin: 0 14px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #5f4d94;
+  font-weight: 600;
+}
 .offcab-result {
   margin: 12px;
   width: calc(100% - 24px);

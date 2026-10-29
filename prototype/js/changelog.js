@@ -17,6 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.77",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 双场景 Mock",
+      decisions: ["068"],
+      items: [
+        "赵骑手场景一：6 号重开失败可改发 3/8 号",
+        "李骑手场景二：5 号失败仅取还入 2 号赴他站",
+        "搜索卡与远程页展示场景标签",
+      ],
+    },
+    {
       version: "V1.76",
       date: formatLocalDateTime(),
       title: "远程出电 · 两步主路径与兜底",
