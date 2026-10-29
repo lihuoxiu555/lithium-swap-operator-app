@@ -159,6 +159,7 @@
       lastOrder: null,
       remotePort: null,
       remoteSn: null,
+      outboundRefreshAt: null,
     },
   };
 
@@ -6913,6 +6914,7 @@
           state.offCab.lastOrder = null;
           state.offCab.remotePort = null;
           state.offCab.remoteSn = null;
+          state.offCab.outboundRefreshAt = new Date().toISOString();
           {
             const user = OffCab.userById(uid);
             const sw = user && OffCab.latestCabinetSwap(user.id);
@@ -6951,8 +6953,44 @@
           state.offCab.recycledThisSession = false;
           state.offCab.remotePort = null;
           state.offCab.remoteSn = null;
+          state.offCab.outboundRefreshAt = null;
           render();
           break;
+        case "offcab-out-refresh": {
+          if (!OffCab) break;
+          state.offCab.outboundRefreshAt = new Date().toISOString();
+          const user = OffCab.userById(state.offCab.userId);
+          const sw = user && OffCab.latestCabinetSwap(user.id);
+          if (sw) OffCab.refreshOutboundInCab(sw);
+          track("off_cab_out_refresh", { user_id: state.offCab.userId });
+          toast("已刷新在柜状态");
+          render();
+          break;
+        }
+        case "offcab-reopen-port": {
+          if (!OffCab) break;
+          const port = Number(t.dataset.port);
+          const user = OffCab.userById(state.offCab.userId);
+          const sw = user && OffCab.latestCabinetSwap(user.id);
+          if (!sw) break;
+          const res = OffCab.reopenPort(sw.cabinetId, port);
+          toast(res.msg);
+          if (res.ok) track("off_cab_reopen_port", { port });
+          render();
+          break;
+        }
+        case "offcab-disable-port": {
+          if (!OffCab) break;
+          const port = Number(t.dataset.port);
+          const user = OffCab.userById(state.offCab.userId);
+          const sw = user && OffCab.latestCabinetSwap(user.id);
+          if (!sw) break;
+          const res = OffCab.disablePort(sw.cabinetId, port);
+          toast(res.msg);
+          if (res.ok) track("off_cab_disable_port", { port });
+          render();
+          break;
+        }
         case "offcab-recycle-only":
         case "offcab-recycle-step": {
           const sn = offCabRequireSn("recycle");

@@ -124,6 +124,9 @@
   ];
 
   /** @type {Record<string, { lat: number, lng: number, address: string, source: string }>} */
+  /** @type {Set<string>} cabinetId:port */
+  const DISABLED_PORTS = new Set();
+
   const CAB_LOCATIONS = {
     "cab-pd-1": {
       lat: 31.2368,
@@ -398,6 +401,58 @@
     const b = BATTERIES[sn];
     if (!b) return "未知";
     return b.inCabinet ? "在柜" : "不在柜";
+  }
+
+  function outboundPortNumber(sw) {
+    if (!sw) return null;
+    if (sw.outPort != null && isFinite(sw.outPort)) return sw.outPort;
+    const ob = sw.outboundSn && BATTERIES[sw.outboundSn];
+    if (ob && ob.inCabinet && ob.inCabinet.port != null) return ob.inCabinet.port;
+    return null;
+  }
+
+  function formatRefreshClock(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    const p = (n) => String(n).padStart(2, "0");
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
+
+  function swapScenarioLabel(sw) {
+    if (!sw) return "—";
+    if (sw.r1) return "R1 · 已还入未取新";
+    if (sw.r2) return "R2 · 出电失败仍在柜";
+    return "持电仍在柜";
+  }
+
+  function refreshOutboundInCab(sw) {
+    if (!sw || !sw.outboundSn) return { inCab: "—", sn: null };
+    return { inCab: batteryInCabLabel(sw.outboundSn), sn: sw.outboundSn };
+  }
+
+  function reopenPort(cabinetId, port) {
+    if (!cabinetId || !port) return { ok: false, msg: "格口无效" };
+    let hit = false;
+    Object.keys(BATTERIES).forEach((sn) => {
+      const ic = BATTERIES[sn].inCabinet;
+      if (ic && ic.cabinetId === cabinetId && ic.port === port) {
+        ic.door = "开";
+        hit = true;
+      }
+    });
+    if (!hit) return { ok: false, msg: "该格口无在柜电池" };
+    return { ok: true, msg: `已下发重开 ${port} 号格口（Mock）` };
+  }
+
+  function disablePort(cabinetId, port) {
+    if (!cabinetId || !port) return { ok: false, msg: "格口无效" };
+    DISABLED_PORTS.add(cabinetId + ":" + port);
+    return { ok: true, msg: `已禁用 ${port} 号格口（Mock）` };
+  }
+
+  function isPortDisabled(cabinetId, port) {
+    return DISABLED_PORTS.has(cabinetId + ":" + port);
   }
 
   function swapLegPort(sw, leg) {
@@ -772,23 +827,47 @@
     const legRow = (label, value) =>
       `<div class="offcab-leg-row"><span>${escapeHtml(label)}</span><em>${escapeHtml(value)}</em></div>`;
 
+    const outPortNum = outboundPortNumber(sw);
+    const outPortLabel = outPortNum != null ? outPortNum + " 号" : "—";
+    const outInCab = refreshOutboundInCab(sw).inCab;
+    const refreshLabel = formatRefreshClock(oc.outboundRefreshAt);
+    const swapRow = (label, value) =>
+      `<div class="offcab-swap-row"><span>${escapeHtml(label)}</span><em>${escapeHtml(value)}</em></div>`;
+    const limitHint =
+      sw.status === "in_progress" ? ` · 出电限时约 ${remainMin} 分钟` : "";
+
     const returnLeg = `
       <div class="offcab-remote-leg">
         <div class="offcab-remote-leg-hd">还电信息</div>
         ${legRow("还入格口", swapLegPort(sw, "return"))}
         ${legRow("还入电池", returnSn)}
-        ${legRow("电池是否在柜", returnSn === "—" ? "—" : batteryInCabLabel(sw.returnedSn))}
+        ${legRow("是否在柜", returnSn === "—" ? "—" : batteryInCabLabel(sw.returnedSn))}
         ${legRow("时间", returnTime)}
       </div>`;
 
     const outboundLeg = `
-      <div class="offcab-remote-leg">
-        <div class="offcab-remote-leg-hd">出电信息</div>
-        ${legRow("出电格口", swapLegPort(sw, "out"))}
+      <div class="offcab-remote-leg offcab-remote-leg-out">
+        <div class="offcab-remote-leg-hd-row">
+          <span class="offcab-remote-leg-hd">出电信息</span>
+          <button type="button" class="offcab-refresh-btn" data-action="offcab-out-refresh">刷新</button>
+        </div>
+        <p class="offcab-out-updated">更新 ${escapeHtml(refreshLabel)}</p>
+        ${legRow("出电格口", outPortLabel)}
         ${legRow("出电电池", sw.outboundSn || "—")}
-        ${legRow("电池是否在柜", sw.outboundSn ? batteryInCabLabel(sw.outboundSn) : "—")}
+        ${legRow("是否在柜", outInCab)}
         ${legRow("时间", outboundTime)}
       </div>`;
+
+    const portBtns =
+      outPortNum != null
+        ? `<div class="offcab-port-actions">
+            <button type="button" class="btn-secondary offcab-port-btn" data-action="offcab-reopen-port" data-port="${outPortNum}">重开格口：${outPortNum}</button>
+            <button type="button" class="btn-secondary offcab-port-btn" data-action="offcab-disable-port" data-port="${outPortNum}">禁用格口：${outPortNum}</button>
+          </div>`
+        : "";
+
+    const siteShort = truncateLocText(siteAddr, 28);
+    const userShort = truncateLocText(userAddr, 28);
 
     return `
       <div class="sites-page ops-page">
@@ -797,25 +876,30 @@
           <h1>远程出电</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">${escapeHtml(user.name)} · 最近换电 ${escapeHtml(sw.orderNo)} · <strong>${escapeHtml(
-          statusLabel
-        )}</strong>${sw.status === "in_progress" ? ` · 出电限时约 ${remainMin} 分钟` : ""}</p>
-        <div class="offcab-tags">${tags}</div>
+        <section class="devstat-sec offcab-remote-swap">
+          <div class="offcab-remote-leg-hd">换电信息</div>
+          <div class="offcab-remote-swap-grid">
+            ${swapRow("用户", user.name)}
+            ${swapRow("换电单号", sw.orderNo || "—")}
+            ${swapRow("换电状态", statusLabel + limitHint.replace(/^ · /, ""))}
+            ${swapRow("场景", swapScenarioLabel(sw))}
+            ${swapRow("发起时间", sw.createdAt || "—")}
+            ${swapRow("还入记录", sw.returnRecorded ? "有" : "无")}
+          </div>
+          <div class="offcab-tags offcab-tags-inline">${tags}</div>
+        </section>
         <div class="offcab-remote-dual">${returnLeg}${outboundLeg}</div>
-        <section class="devstat-sec offcab-remote-site">
-          <div class="sites-card-rows inline">
-            <div><span>站点</span><em>${escapeHtml(sw.siteName || "—")}</em></div>
-            <div><span>柜机</span><em>${escapeHtml(sw.cabinetName || sw.cab || "—")}</em></div>
-            <div class="offcab-site-addr"><span>站点位置</span><em>${escapeHtml(siteAddr)}</em></div>
+        <section class="devstat-sec offcab-remote-loc-compact" title="球面直线估算">
+          <div class="offcab-loc-compact-grid">
+            <span>站点</span><em>${escapeHtml(sw.siteName || "—")}</em>
+            <span>柜机</span><em>${escapeHtml(sw.cabinetName || sw.cab || "—")}</em>
+            <span>站点位置</span><em class="offcab-loc-ellipsis" title="${escapeAttr(siteAddr)}">${escapeHtml(siteShort)}</em>
+            <span>用户定位</span><em class="offcab-loc-ellipsis" title="${escapeAttr(userAddr)}">${escapeHtml(userShort)}</em>
+            <span>最近回传</span><em>${escapeHtml(userReported)}</em>
+            <span>与站点距离</span><em>${escapeHtml(loc.distanceLabel)}</em>
           </div>
         </section>
-        <section class="devstat-sec offcab-loc-sec" title="球面直线估算">
-          <div class="sites-card-rows inline">
-            <div class="offcab-site-addr"><span>用户定位</span><em>${escapeHtml(userAddr)}</em></div>
-            <div><span>最近回传</span><em>${escapeHtml(userReported)}</em></div>
-            <div><span>与站点距离</span><em>${escapeHtml(loc.distanceLabel)}</em></div>
-          </div>
-        </section>
+        ${portBtns}
         <section class="devstat-sec offcab-sec">
           <div class="devstat-hd"><strong>C · 选择格口并远程出电</strong></div>
           <p class="ops-hint">仅展示<strong>有电池</strong>的格口；请选择后远程开门并绑给用户。</p>
@@ -854,6 +938,12 @@
     remoteLocationSummary,
     remoteEligibility,
     remoteOpenPort,
+    refreshOutboundInCab,
+    reopenPort,
+    disablePort,
+    isPortDisabled,
+    outboundPortNumber,
+    formatRefreshClock,
     simulateUserConfirm,
     getOffOrders: () => OFF_ORDERS.slice(),
     orderRowsForList,

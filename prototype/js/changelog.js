@@ -17,6 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.74",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 换电信息与格口操作",
+      decisions: ["067"],
+      items: [
+        "区域1 补换电信息并修正还电/出电排版",
+        "区域2 站点与定位合并紧凑展示",
+        "出电信息刷新+更新时间；重开/禁用出电格口按钮",
+      ],
+    },
+    {
       version: "V1.73",
       date: formatLocalDateTime(),
       title: "远程出电 · 还电/出电区紧凑",
