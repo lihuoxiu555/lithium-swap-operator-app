@@ -51,6 +51,7 @@
     lease: {
       kind: "personal", // personal | daypool
       menuKey: null,
+      offCabOpsId: null,
       tab: "all",
       searchType: "phone",
       keyword: "",
@@ -1154,6 +1155,9 @@
     const rows = [];
     Lease.LEASE_ORDERS.forEach((o) => rows.push({ kind: "personal", order: o }));
     Daypool.DAYPOOL_ORDERS.forEach((o) => rows.push({ kind: "daypool", order: o }));
+    if (OffCab && OffCab.getOffOrders) {
+      OffCab.getOffOrders().forEach((o) => rows.push({ kind: "offCab", order: o }));
+    }
     const rank = { arrears: 0, return_due: 1, pending: 2, parked: 3 };
     return rows.sort((a, b) => {
       const ra = rank[a.order.status] != null ? rank[a.order.status] : 8;
@@ -1195,16 +1199,24 @@
     const pf = state.lease.problemFilter || "all";
     const filtered = rows.filter(({ kind, order }) => {
       if (siteLabel && siteLabel !== "全部" && order.store !== siteLabel) return false;
+      if (pf === "offcab" && kind !== "offCab") return false;
       if (pf === "pending" && !(kind === "personal" && order.status === "pending")) {
         return false;
       }
       if (pf === "problem" && !swapProblemBadge(kind, order)) return false;
+      if (pf === "problem" && kind === "offCab") return false;
       if (!kw) return true;
-      if (type === "battery") return String(order.batteryNo || "").toLowerCase().includes(kw);
+      if (type === "battery") {
+        const sns =
+          kind === "offCab" && OffCab.batteryNosFromSteps
+            ? OffCab.batteryNosFromSteps(order.steps).join(" ")
+            : String(order.batteryNo || "");
+        return sns.toLowerCase().includes(kw);
+      }
       return (
         String(order.phone || "").includes(kw) ||
         String(order.userName || "").toLowerCase().includes(kw) ||
-        String(order.orderNo || "").toLowerCase().includes(kw)
+        String(order.orderNo || order.id || "").toLowerCase().includes(kw)
       );
     });
     return attachUserHeaders(filtered);
@@ -1249,8 +1261,10 @@
     const pendingN = swapPendingCount(allRows);
     const list = filterSwapRows(allRows);
     const pf = L.problemFilter || "all";
+    const offCabN = allRows.filter((r) => r.kind === "offCab").length;
     const quickFilters = [
       { id: "all", label: "全部" },
+      { id: "offcab", label: offCabN ? `柜外 ${offCabN}` : "柜外" },
       { id: "pending", label: pendingN ? `待确认 ${pendingN}` : "待确认" },
       { id: "problem", label: "有问题" },
     ]
@@ -1609,22 +1623,58 @@
     return renderSwapUserCard("personal", order);
   }
 
+  function renderOffCabOpsBlock(order) {
+    const steps = order.steps || [];
+    if (!steps.length) return "";
+    const open = state.lease.offCabOpsId === order.id;
+    const items = steps
+      .map(
+        (s) =>
+          `<li>${escapeHtml(s.label)}${s.sn ? " · " + escapeHtml(s.sn) : ""}${
+            s.userConfirm ? " · 用户已确认" : ""
+          } · ${escapeHtml(s.operatorName || order.operatorName || "—")}</li>`
+      )
+      .join("");
+    return `<div class="lease-offcab-ops">
+      <button type="button" class="lease-offcab-ops-toggle" data-action="offcab-ops-toggle" data-id="${escapeAttr(
+        order.id
+      )}" aria-expanded="${open ? "true" : "false"}">
+        运营商操作记录（${steps.length} 步）<span class="lease-offcab-chev">${open ? "▾" : "▸"}</span>
+      </button>
+      ${open ? `<ul class="lease-offcab-ops-list">${items}</ul>` : ""}
+    </div>`;
+  }
+
   function renderSwapUserCard(kind, order, showUserHeader) {
     const withUser = showUserHeader !== false;
-    const badge = swapProblemBadge(kind, order);
-    const problem = kind === "personal" ? order.status === "arrears" : order.status === "return_due";
+    const badge =
+      kind === "offCab"
+        ? order.orderType || "柜外"
+        : swapProblemBadge(kind, order);
+    const problem =
+      kind === "personal"
+        ? order.status === "arrears"
+        : kind === "daypool"
+          ? order.status === "return_due"
+          : false;
     const profile =
       withUser && kind === "daypool"
         ? Daypool.profileRows(order)
-        : withUser
+        : withUser && kind === "personal"
           ? Lease.profileRows(order)
           : [];
     const orderFields =
-      kind === "daypool" ? Daypool.orderRows(order) : Lease.orderRows(order);
-    const actions =
       kind === "daypool"
-        ? Daypool.actionsForStatus(order.status)
-        : Lease.actionsForStatus(order.status);
+        ? Daypool.orderRows(order)
+        : kind === "offCab"
+          ? OffCab.orderRowsForList(order)
+          : Lease.orderRows(order);
+    const actions =
+      kind === "offCab"
+        ? []
+        : kind === "daypool"
+          ? Daypool.actionsForStatus(order.status)
+          : Lease.actionsForStatus(order.status);
     const callAction = kind === "daypool" ? "daypool-call" : "lease-call";
     const recordClass = withUser ? "" : " lease-card-record";
     const userBlock = withUser
@@ -1639,7 +1689,13 @@
           <div class="lease-card-tools">
             ${
               badge
-                ? `<span class="lease-status-badge">${escapeHtml(badge)}</span>`
+                ? `<span class="lease-status-badge${
+                    kind === "offCab" ? " offcab" : ""
+                  }">${escapeHtml(badge)}</span>${
+                    kind === "offCab"
+                      ? `<span class="lease-offcab-pill">柜外</span>`
+                      : ""
+                  }`
                 : ""
             }
             <button type="button" class="lease-icon-btn call" data-action="${callAction}" data-phone="${escapeAttr(
@@ -1657,9 +1713,10 @@
       <article class="lease-card${problem ? " arrears" : ""}${recordClass}">
         ${userBlock}
         ${profileBlock}
-        <h2 class="lease-card-sec">换电订单</h2>
+        <h2 class="lease-card-sec">${kind === "offCab" ? "柜外换电订单" : "换电订单"}</h2>
         <div class="lease-fields">${orderFields.map(renderLeaseFieldRow).join("")}</div>
-        ${renderOrderOpBar(kind, order.id, actions)}
+        ${kind === "offCab" ? renderOffCabOpsBlock(order) : ""}
+        ${actions.length ? renderOrderOpBar(kind, order.id, actions) : ""}
       </article>`;
   }
 
@@ -6572,9 +6629,16 @@
         case "lease-problem-filter":
           state.lease.problemFilter = t.dataset.filter || "all";
           state.lease.menuKey = null;
+          state.lease.offCabOpsId = null;
           track("lease_problem_filter", { filter: state.lease.problemFilter });
           render();
           break;
+        case "offcab-ops-toggle": {
+          const id = t.dataset.id || "";
+          state.lease.offCabOpsId = state.lease.offCabOpsId === id ? null : id;
+          render();
+          break;
+        }
         case "lease-scan":
           toast("请手动输入，扫码暂未开放");
           track("lease_scan_click", {});
@@ -7023,7 +7087,9 @@
           }
           const steps = state.offCab.flowSteps.slice();
           steps.push(offCabLogStep(res.log));
-          state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, steps);
+          state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, steps, {
+            siteName: sw.siteName || sw.cabinetName,
+          });
           state.offCab.view = "result";
           track("off_cab_order", { type: "remote_out" });
           toast("远程出电成功");

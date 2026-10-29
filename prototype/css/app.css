@@ -1105,6 +1105,47 @@ input:focus-visible,
   border-radius: 4px;
   padding: 2px 6px;
 }
+.lease-status-badge.offcab {
+  color: var(--brand-dark);
+  border-color: var(--brand-line);
+  background: var(--brand-soft);
+}
+.lease-offcab-pill {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.lease-offcab-ops {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.lease-offcab-ops-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--brand);
+  text-align: left;
+}
+.lease-offcab-chev {
+  color: var(--muted);
+  font-size: 11px;
+}
+.lease-offcab-ops-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 11px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
 .lease-icon-btn {
   width: 28px;
   height: 28px;

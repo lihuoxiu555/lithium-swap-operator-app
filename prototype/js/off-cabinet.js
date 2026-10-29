@@ -163,7 +163,42 @@
   ];
 
   /** @type {Array<object>} */
-  let OFF_ORDERS = [];
+  let OFF_ORDERS = [
+    {
+      id: "OC-260928001",
+      orderNo: "OC260928001",
+      orderType: "柜外退电",
+      orderTypeKey: "off_return",
+      userName: "史建国",
+      phone: "18915821617",
+      operatorName: "管理员",
+      createdAt: "2026-10-28 15:20",
+      store: "柜外作业",
+      channel: "off_cabinet",
+      steps: [
+        { label: "运营商回收", sn: "035211127474", operatorName: "管理员" },
+      ],
+    },
+    {
+      id: "OC-260928002",
+      orderNo: "OC260928002",
+      orderType: "远程出电",
+      orderTypeKey: "remote_out",
+      userName: "李骑手",
+      phone: "13700002222",
+      operatorName: "管理员",
+      createdAt: "2026-10-28 16:35",
+      store: "浦东骑手驿站",
+      channel: "off_cabinet",
+      steps: [
+        {
+          label: "远程出电 · 浦东骑手驿站 · 浦东 1 号柜 · 5号",
+          sn: "492399990002",
+          operatorName: "管理员",
+        },
+      ],
+    },
+  ];
 
   function searchUsers(kw) {
     const q = String(kw || "")
@@ -240,21 +275,53 @@
     };
   }
 
+  function batteryNosFromSteps(steps) {
+    const set = new Set();
+    (steps || []).forEach((s) => {
+      if (s.sn) set.add(s.sn);
+    });
+    return Array.from(set);
+  }
+
   function createOffOrder(typeKey, user, operatorName, steps, extra) {
     const type = ORDER_TYPES[typeKey];
+    const ts = Date.now();
+    const sns = batteryNosFromSteps(steps);
     const row = {
-      id: "OC-" + Date.now(),
+      id: "OC-" + ts,
+      orderNo: "OC" + String(ts).slice(-10),
       orderType: type.label,
       orderTypeKey: typeKey,
       userName: user.name,
       phone: user.phone,
       operatorName,
       createdAt: formatLocal(),
+      store: (extra && extra.siteName) || "柜外作业",
+      channel: "off_cabinet",
+      batteryNo: sns[0] || "",
+      batteryNos: sns,
       steps: steps.slice(),
       extra: extra || {},
     };
     OFF_ORDERS.unshift(row);
     return row;
+  }
+
+  function orderRowsForList(order) {
+    const rows = [];
+    const push = (label, value, opts = {}) => {
+      if (value === undefined || value === null || value === "") return;
+      rows.push({ label, value, ...opts });
+    };
+    push("业务类型", order.orderType, { tag: "柜外" });
+    push("订单编号", order.orderNo || order.id, { copy: true });
+    push("站点/场景", order.store);
+    push("操作人", order.operatorName);
+    push("创建时间", order.createdAt);
+    const sns = order.batteryNos || batteryNosFromSteps(order.steps);
+    if (sns.length === 1) push("电池编号", sns[0], { copy: true, link: true });
+    else if (sns.length > 1) push("电池编号", sns.join(" / "), { copy: true });
+    return rows;
   }
 
   function formatLocal() {
@@ -723,6 +790,8 @@
     remoteOpenPort,
     simulateUserConfirm,
     getOffOrders: () => OFF_ORDERS.slice(),
+    orderRowsForList,
+    batteryNosFromSteps,
     getCabinetSwaps: () => CABINET_SWAPS.slice(),
     render,
   };
