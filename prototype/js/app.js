@@ -6981,12 +6981,26 @@
           render();
           break;
         }
-        case "ch-quota-new":
+        case "ch-quota-new": {
+          if (!Channels) break;
+          const pending = Channels.dayPoolContractsForQuota().filter(
+            (c) => !Channels.quotaPriceForChannel(c.channelId)
+          );
+          if (!pending.length) {
+            toast("所有人天池渠道已配置批发价，请在列表中编辑");
+            break;
+          }
+          state.channel.tab = "quotaPricing";
+          state.channel.quotaEditId = "new";
+          state.channel.quotaForm = {};
+          state.channel.view = "quotaForm";
+          render();
+          break;
+        }
         case "ch-quota-edit": {
           if (!Channels) break;
           state.channel.tab = "quotaPricing";
-          state.channel.quotaEditId =
-            t.dataset.action === "ch-quota-new" ? "new" : t.dataset.id;
+          state.channel.quotaEditId = t.dataset.id;
           state.channel.quotaForm = {};
           state.channel.view = "quotaForm";
           render();

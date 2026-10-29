@@ -29,12 +29,12 @@
 
   /** 渠道管理首页 · 子模块入口（不直出列表） */
   const MENU_ENTRIES = [
-    { id: "contracts", label: "签约渠道", desc: "签约列表、新增渠道商、信用额度" },
-    { id: "orders", label: "渠道订单", desc: "人天批发采购单与确认到账" },
-    { id: "assets", label: "渠道权益", desc: "人天池额度、渠道分销 SKU" },
-    { id: "quotaPricing", label: "人天批发价", desc: "默认价与渠道覆盖 · 对齐 PC 平台设置" },
-    { id: "cardPricing", label: "推广分销价", desc: "链接类 SKU 正式价/专享价/佣金" },
-    { id: "linkSettle", label: "推广结算", desc: "推广佣金月度汇总与线下登记" },
+    { id: "contracts", label: "签约渠道", icon: "📋" },
+    { id: "orders", label: "渠道订单", icon: "🧾" },
+    { id: "assets", label: "渠道权益", icon: "💎" },
+    { id: "quotaPricing", label: "人天批发价", icon: "📊" },
+    { id: "cardPricing", label: "推广分销价", icon: "🏷" },
+    { id: "linkSettle", label: "推广结算", icon: "💰" },
   ];
 
   const PLATFORM_STD_DAY_PRICE = 8.5;
@@ -2291,13 +2291,10 @@
         </article>`;
       })
       .join("");
-    const pending = dayPoolContractsForQuota().filter((c) => !quotaPriceForChannel(c.channelId));
     return `
       <p class="ops-hint channel-page-note">默认价供无渠道/新建签约继承；各渠道可单独覆盖（PC：平台设置 → 人天批发价）。</p>
       <div class="channel-list-toolbar">
-        <button type="button" class="btn-primary channel-add-btn" data-action="ch-quota-new"${
-          pending.length ? "" : ' disabled title="所有人天池渠道已配置"'
-        }>+ 新增渠道批发价</button>
+        <button type="button" class="btn-primary channel-add-btn" data-action="ch-quota-new">+ 新增渠道批发价</button>
       </div>
       <div class="channel-card-list">${cards}</div>`;
   }
@@ -2360,16 +2357,16 @@
           }>${escapeHtml(t)}</option>`
       )
       .join("");
-    return `<div class="channel-filter-bar">
-      <label class="sites-field">月份起<input type="month" id="ch-ls-monthFrom" value="${escapeAttr(
+    return `<div class="channel-filter-compact">
+      <label class="sites-field sites-field-compact">月起<input type="month" id="ch-ls-monthFrom" value="${escapeAttr(
         f.monthFrom || "2026-05"
       )}" /></label>
-      <label class="sites-field">月份止<input type="month" id="ch-ls-monthTo" value="${escapeAttr(
+      <label class="sites-field sites-field-compact">月止<input type="month" id="ch-ls-monthTo" value="${escapeAttr(
         f.monthTo || "2026-06"
       )}" /></label>
-      <label class="sites-field">渠道<select id="ch-ls-channelId">${chOpts}</select></label>
-      <label class="sites-field">结算方式<select id="ch-ls-settleType">${settleOpts}</select></label>
-      <button type="button" class="btn-primary" data-action="ch-link-settle-query">查询</button>
+      <label class="sites-field sites-field-compact">渠道<select id="ch-ls-channelId">${chOpts}</select></label>
+      <label class="sites-field sites-field-compact">结算<select id="ch-ls-settleType">${settleOpts}</select></label>
+      <button type="button" class="btn-primary channel-filter-query" data-action="ch-link-settle-query">查询</button>
     </div>`;
   }
 
@@ -2683,31 +2680,28 @@
     const { escapeHtml, escapeAttr, session } = ctx;
     const pendingLs = pendingLinkSettleBadgeCount();
     const items = MENU_ENTRIES.map((e) => {
-      const badge =
+      const pendingBadge =
         e.id === "linkSettle" && pendingLs > 0
-          ? ` <span class="sites-tag warn">${pendingLs} 待结</span>`
+          ? `<span class="pending">${pendingLs}待结</span>`
           : "";
       return `
-      <button type="button" class="channel-menu-item" data-action="ch-enter-section" data-tab="${escapeAttr(
+      <button type="button" class="app-tile" data-action="ch-enter-section" data-tab="${escapeAttr(
         e.id
       )}">
-        <span class="channel-menu-item-main">
-          <strong>${escapeHtml(e.label)}${badge}</strong>
-          <span class="channel-menu-item-desc">${escapeHtml(e.desc)}</span>
-        </span>
-        <span class="channel-menu-item-chevron" aria-hidden="true">›</span>
+        <div class="ai">${e.icon || "▦"}${pendingBadge}</div>
+        <div class="an">${escapeHtml(e.label)}</div>
       </button>`;
     }).join("");
 
     return `
-      <div class="sites-page ops-page">
+      <div class="sites-page ops-page channel-menu-page">
         <div class="sites-header">
           <button type="button" class="sites-back" data-action="back-workbench" aria-label="返回">‹</button>
           <h1>渠道管理</h1>
           <div class="sites-header-spacer"></div>
         </div>
         <p class="ops-hint">${escapeHtml(dataScopeHint(session))}</p>
-        <nav class="channel-menu-list" aria-label="渠道管理模块">${items}</nav>
+        <div class="grid-apps channel-module-grid" aria-label="渠道管理模块">${items}</div>
       </div>`;
   }
 
@@ -2836,6 +2830,8 @@
     saveQuotaPricing,
     saveCardPricing,
     registerOfflineCommissionSettle,
+    dayPoolContractsForQuota,
+    quotaPriceForChannel,
     readQuotaFormFromDom,
     readCardFormFromDom,
     readOfflineSettleFromDom,

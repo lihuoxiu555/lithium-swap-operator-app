@@ -2824,15 +2824,63 @@ button.btn-mock.offcab-btn {
   line-height: 1;
   color: var(--muted, #bbb);
 }
+.channel-module-grid {
+  margin-top: 4px;
+}
+.channel-menu-page .ops-hint {
+  margin-bottom: 4px;
+}
+/* 渠道页内按钮：覆盖全局 btn 的 16px 侧距，保证居中铺满卡片 */
+.channel-list-toolbar .btn-primary,
+.channel-list-toolbar .btn-secondary,
+.channel-card-ft .btn-primary,
+.channel-card-ft .btn-secondary,
+.channel-card-btn,
+.channel-add-btn,
+.channel-filter-query,
+.ch-pool-actions .btn-primary,
+.ch-pool-actions .btn-secondary {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: center;
+  box-sizing: border-box;
+}
 .channel-list-toolbar {
   padding: 4px 14px 12px;
 }
 .channel-add-btn {
-  width: 100%;
   border-radius: 999px;
   padding: 11px 16px;
   font-size: 14px;
   font-weight: 600;
+  height: auto;
+}
+.channel-filter-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  padding: 6px 12px 8px;
+  margin-bottom: 4px;
+}
+.channel-filter-compact .sites-field-compact {
+  margin: 0;
+  font-size: 11px;
+  gap: 2px;
+}
+.channel-filter-compact .sites-field-compact input,
+.channel-filter-compact .sites-field-compact select {
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.channel-filter-query {
+  grid-column: 1 / -1;
+  height: 34px;
+  border-radius: 17px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 12px;
 }
 .channel-card .sites-card-hd {
   margin-bottom: 10px;

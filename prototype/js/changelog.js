@@ -17,8 +17,18 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.91",
+      version: "V1.92",
       date: formatLocalDateTime(),
+      title: "渠道管理 · 格子入口与按钮排版",
+      items: [
+        "入口改工作台 grid-apps 四列格子",
+        "渠道页按钮取消全局 16px 侧距，卡片内居中铺满",
+        "推广结算筛选改紧凑两列；新增批发价可点并提示已配满",
+      ],
+    },
+    {
+      version: "V1.91",
+      date: "2026-10-29 13:55",
       title: "渠道管理 · 定价与推广结算",
       items: [
         "入口新增：人天批发价、推广分销价、推广结算（对齐 PC 三模块）",
