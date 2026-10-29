@@ -3246,14 +3246,32 @@ button.btn-mock.offcab-btn {
 .offcab-sn-row {
   margin-bottom: 8px;
 }
-.offcab-sn-row .offcab-sn {
-  width: 100%;
+.offcab-sn-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.offcab-sn-field .offcab-sn {
+  flex: 1;
+  min-width: 0;
+  width: auto;
   height: 36px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 0 12px;
+  padding:  0 12px;
   background: var(--surface-soft);
   font-size: 14px;
+}
+.offcab-scan-btn {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--brand-line);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 650;
 }
 .offcab-btn {
   width: calc(100% - 24px) !important;

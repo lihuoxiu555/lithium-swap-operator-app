@@ -6948,6 +6948,22 @@
           render();
           toast(state.offCab.kw.trim() ? "已筛选" : "已刷新列表");
           break;
+        case "offcab-scan": {
+          if (!OffCab) break;
+          const step = t.dataset.step || "bind";
+          const user = OffCab.userById(state.offCab.userId);
+          const sn = OffCab.mockScanSn(step, user, state.offCab.flowType);
+          if (!sn) {
+            toast("扫码无结果（Mock）");
+            break;
+          }
+          if (!state.offCab.draftSn) state.offCab.draftSn = {};
+          state.offCab.draftSn[step] = sn;
+          track("off_cab_scan", { step, flow: state.offCab.flowType });
+          toast("扫码成功（Mock）");
+          render();
+          break;
+        }
         case "offcab-back-search":
           state.offCab.view = "search";
           state.offCab.userId = null;

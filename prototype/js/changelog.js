@@ -17,6 +17,13 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.79",
+      date: formatLocalDateTime(),
+      title: "柜外绑定电池 · 扫描",
+      decisions: ["067"],
+      items: ["柜外领电/换电「绑定电池」旁增加扫描按钮（Mock 回填 SN）"],
+    },
+    {
       version: "V1.78",
       date: formatLocalDateTime(),
       title: "场景二兜底文案与换电失败",

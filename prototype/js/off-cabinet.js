@@ -905,12 +905,32 @@
       </div>`;
   }
 
+  /** 绑定/回收 · Mock 扫码回填 */
+  function mockScanSn(stepKey, user, flowType) {
+    if (stepKey === "recycle") return (user && user.heldSn) || "";
+    if (stepKey === "bind") {
+      if (flowType === "off_pickup") return "492399990003";
+      if (flowType === "off_swap") return "492399990001";
+      return "492399990003";
+    }
+    return "";
+  }
+
   function renderSnInput(stepKey, oc, escapeAttr) {
     const v = (oc.draftSn && oc.draftSn[stepKey]) || "";
+    const scanBtn =
+      stepKey === "bind"
+        ? `<button type="button" class="offcab-scan-btn" data-action="offcab-scan" data-step="${escapeAttr(
+            stepKey
+          )}">扫描</button>`
+        : "";
     return `<div class="offcab-sn-row">
-      <input type="text" class="offcab-sn" data-action="offcab-sn" data-step="${escapeAttr(
-        stepKey
-      )}" placeholder="扫码或手动输入电池编码" value="${escapeAttr(v)}" />
+      <div class="offcab-sn-field">
+        <input type="text" class="offcab-sn" data-action="offcab-sn" data-step="${escapeAttr(
+          stepKey
+        )}" placeholder="扫码或手动输入电池编码" value="${escapeAttr(v)}" />
+        ${scanBtn}
+      </div>
     </div>`;
   }
 
@@ -1100,10 +1120,10 @@
     const fallbackBlock =
       onlyFailed && outPortNum != null
         ? `<div class="offcab-remote-fallback">
-            <p class="offcab-step-note">允许用户取走<strong>还入</strong>电池（${escapeHtml(
+            <p class="offcab-step-note">禁用出电 ${outPortNum} 号格口，开还入格口供用户取走电池（${escapeHtml(
               swapLegPort(sw, "return")
-            )} · ${escapeHtml(returnSn)}），前往其他站点或电柜完成换电。</p>
-            <button type="button" class="btn-mock offcab-btn offcab-step-btn" data-action="offcab-return-pickup">允许取走还入电池 · 赴他站换电</button>
+            )} · ${escapeHtml(returnSn)}）；<strong>换电订单标记为换电失败</strong>。</p>
+            <button type="button" class="btn-mock offcab-btn offcab-step-btn" data-action="offcab-return-pickup">禁用${outPortNum}号格口·允许取走还入电池</button>
           </div>`
         : "";
 
@@ -1193,6 +1213,7 @@
     allowReturnPickupElsewhere,
     outboundPortNumber,
     formatRefreshClock,
+    mockScanSn,
     simulateUserConfirm,
     getOffOrders: () => OFF_ORDERS.slice(),
     orderRowsForList,
