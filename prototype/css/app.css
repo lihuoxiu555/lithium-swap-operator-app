@@ -2856,31 +2856,84 @@ button.btn-mock.offcab-btn {
   font-weight: 600;
   height: auto;
 }
-.channel-filter-compact {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 8px;
-  padding: 6px 12px 8px;
-  margin-bottom: 4px;
+/* 推广结算 · 单行筛选（不用 sites-field 大卡） */
+.channel-link-settle .channel-ls-tabs .lease-filters {
+  padding: 6px 10px 4px;
+  border-bottom: 0;
+  background: transparent;
 }
-.channel-filter-compact .sites-field-compact {
-  margin: 0;
-  font-size: 11px;
-  gap: 2px;
+.channel-link-settle .channel-kpi-grid {
+  gap: 6px;
+  padding: 4px 12px 6px;
 }
-.channel-filter-compact .sites-field-compact input,
-.channel-filter-compact .sites-field-compact select {
-  height: 32px;
-  padding: 4px 8px;
-  font-size: 12px;
+.channel-link-settle .channel-kpi {
+  padding: 8px 6px;
 }
-.channel-filter-query {
-  grid-column: 1 / -1;
-  height: 34px;
-  border-radius: 17px;
+.channel-link-settle .channel-kpi span {
+  font-size: 10px;
+}
+.channel-link-settle .channel-kpi strong {
   font-size: 13px;
+}
+.channel-ls-filter {
+  margin: 0 12px 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.channel-ls-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.channel-ls-filter-row + .channel-ls-filter-row {
+  margin-top: 6px;
+}
+.channel-ls-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.channel-ls-sep {
+  font-size: 11px;
+  color: var(--muted);
+}
+.channel-ls-in {
+  width: 118px;
+  max-width: 42vw;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--surface-soft, #f8f9fb);
+}
+.channel-ls-sel {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  background: #fff;
+}
+.channel-ls-sel-narrow {
+  flex: 0 1 96px;
+  max-width: 38%;
+}
+.channel-ls-query {
+  flex-shrink: 0;
+  width: auto !important;
+  min-width: 52px;
+  height: 30px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  border-radius: 15px !important;
+  font-size: 12px !important;
   font-weight: 600;
-  padding: 0 12px;
 }
 .channel-card .sites-card-hd {
   margin-bottom: 10px;
