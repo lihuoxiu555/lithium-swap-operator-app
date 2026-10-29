@@ -46,6 +46,7 @@
     },
     "492399990002": {
       sn: "492399990002",
+      boundUserPhone: "13700002222",
       inCabinet: {
         cabinetId: "cab-pd-1",
         siteName: "浦东骑手驿站",
@@ -99,8 +100,9 @@
       phone: "13700002222",
       packageLabel: "包月30天 · 生效中",
       packageOk: true,
-      heldSn: null,
+      heldSn: "492399990002",
       waitPickup: false,
+      heldInCabinet: true,
       location: {
         lat: 31.2284,
         lng: 121.4972,
@@ -396,6 +398,19 @@
     )[0];
   }
 
+  function heldBatteryInCabinet(user) {
+    if (!user || !user.heldSn) return false;
+    const b = BATTERIES[user.heldSn];
+    return !!(b && b.inCabinet);
+  }
+
+  /** 远程出电：有换电单 + 持电 + 持电仍在柜（出电失败误绑定） */
+  function canShowRemoteOut(user) {
+    if (!user || !user.packageOk) return false;
+    if (!latestCabinetSwap(user.id)) return false;
+    return heldBatteryInCabinet(user);
+  }
+
   function refreshSwapTimeout(sw) {
     if (!sw || sw.status !== "in_progress") return sw;
     if (Date.now() > sw.outboundDeadlineMs) sw.status = "swap_timeout";
@@ -430,16 +445,21 @@
     return slots[0];
   }
 
-  function remoteEligibility(sw) {
+  function remoteEligibility(sw, user) {
     refreshSwapTimeout(sw);
-    if (!sw) return { ok: false, msg: "无换电记录" };
+    if (!sw) return { ok: false, msg: "无换电订单" };
+    if (!user || !user.heldSn) return { ok: false, msg: "用户未持电，无法远程出电" };
+    if (!heldBatteryInCabinet(user))
+      return { ok: false, msg: "持电不在柜内，请走柜外退/换电" };
+    if (user.heldSn !== sw.outboundSn && !BATTERIES[user.heldSn])
+      return { ok: false, msg: "持电与换电出电编码不一致" };
     const tags = [];
     if (sw.r1) tags.push("R1·已还入未取新");
     if (sw.r2) tags.push("R2·出电失败仍在柜");
-    if (!tags.length) return { ok: false, msg: "不满足远程出电条件" };
-    const slots = listRemoteSlots(sw);
-    if (!slots.length) return { ok: false, msg: "该柜暂无带电格口，无法远程出电" };
-    return { ok: true, tags, swap: sw, slots };
+    if (!tags.length) tags.push("持电仍在柜");
+    const slots = listRemoteSlots(sw).filter((s) => s.sn === user.heldSn);
+    if (!slots.length) return { ok: false, msg: "用户持电格口不可用" };
+    return { ok: true, tags, swap: sw, slots, heldSn: user.heldSn };
   }
 
   function remoteOpenPort(sw, port, sn, user, operatorName) {
@@ -527,14 +547,23 @@
     const list = searchUsers(kw);
     const cards = list
       .map((u) => {
+        const inCab = heldBatteryInCabinet(u);
         const held = u.heldSn
-          ? `持电 ${escapeHtml(u.heldSn)}`
+          ? inCab
+            ? `持电 ${escapeHtml(u.heldSn)} · <em class="brand">仍在柜</em>`
+            : `持电 ${escapeHtml(u.heldSn)}`
           : u.waitPickup
             ? '<em class="brand">待领取电池</em>'
             : "无持电";
         const actions = [];
         const hasSwap = !!latestCabinetSwap(u.id);
-        if (u.heldSn) {
+        if (canShowRemoteOut(u)) {
+          actions.push(
+            `<button type="button" class="is-primary" data-action="offcab-remote" data-uid="${escapeAttr(
+              u.id
+            )}">远程出电</button>`
+          );
+        } else if (u.heldSn && !inCab) {
           actions.push(
             `<button type="button" data-action="offcab-start" data-flow="off_swap" data-uid="${escapeAttr(
               u.id
@@ -543,33 +572,12 @@
               u.id
             )}">柜外退电</button>`
           );
-        } else if (u.packageOk) {
-          if (u.waitPickup && !hasSwap) {
-            actions.push(
-              `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
-                u.id
-              )}">柜外领电</button>`
-            );
-          } else if (hasSwap) {
-            actions.push(
-              `<button type="button" data-action="offcab-remote" data-uid="${escapeAttr(
-                u.id
-              )}">远程出电</button>`
-            );
-            if (!u.waitPickup) {
-              actions.push(
-                `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
-                  u.id
-                )}">柜外领电</button>`
-              );
-            }
-          } else {
-            actions.push(
-              `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
-                u.id
-              )}">柜外领电</button>`
-            );
-          }
+        } else if (u.packageOk && !u.heldSn) {
+          actions.push(
+            `<button type="button" class="is-primary" data-action="offcab-start" data-flow="off_pickup" data-uid="${escapeAttr(
+              u.id
+            )}">柜外领电</button>`
+          );
         }
         return `<article class="sites-card">
           <div class="sites-card-hd">
@@ -594,7 +602,7 @@
           <h1>柜外电池作业</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">待领取且无柜机换电记录 → 仅柜外领电。有换电记录可走远程出电（R1/R2）。持电用户仅柜外退/换电。</p>
+        <p class="ops-hint">远程出电：有换电单 + 持电 + 持电仍在柜（出电误绑定）。其余持电走柜外退/换；待领取无换电单仅柜外领电。</p>
         <div class="sites-filters">
           <div class="sites-search-row">
             <input type="search" class="offcab-kw" data-action="offcab-kw-input" placeholder="手机号 / 姓名" value="${escapeAttr(
@@ -677,7 +685,7 @@
     const user = userById(oc.userId);
     const sw = latestCabinetSwap(user.id);
     refreshSwapTimeout(sw);
-    const el = remoteEligibility(sw);
+    const el = remoteEligibility(sw, user);
 
     if (!el.ok) {
       return `
@@ -785,6 +793,8 @@
     latestCabinetSwap,
     listRemoteSlots,
     defaultRemoteSlot,
+    canShowRemoteOut,
+    heldBatteryInCabinet,
     remoteLocationSummary,
     remoteEligibility,
     remoteOpenPort,
