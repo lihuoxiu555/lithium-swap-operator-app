@@ -2738,6 +2738,71 @@ button.btn-mock.offcab-btn {
   border-radius: 8px;
   background: var(--surface-soft, #f8fafc);
 }
+/* 渠道管理 · 列表卡片键值排版 */
+.channel-list-toolbar {
+  padding: 4px 14px 12px;
+}
+.channel-add-btn {
+  width: 100%;
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.channel-card .sites-card-hd {
+  margin-bottom: 10px;
+}
+.channel-card-title {
+  min-width: 0;
+  flex: 1;
+}
+.channel-card-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.channel-kv-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.channel-kv-k {
+  flex: 0 0 4.5em;
+  color: var(--muted);
+  font-size: 11px;
+}
+.channel-kv-v {
+  flex: 1;
+  text-align: right;
+  color: var(--ink);
+  font-weight: 550;
+  word-break: break-word;
+}
+.channel-kv-v strong {
+  font-weight: 700;
+}
+.channel-kv-muted {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+}
+.channel-card-ft {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.channel-card-btn {
+  width: 100%;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+.channel-order-card .channel-card-kv {
+  padding-top: 2px;
+}
 .ch-pool-actions {
   display: flex;
   gap: 8px;

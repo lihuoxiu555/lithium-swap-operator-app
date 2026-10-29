@@ -1294,17 +1294,36 @@
     </div>`;
   }
 
+  function renderChannelKvRows(rows, escapeHtml) {
+    return rows
+      .map(
+        ([label, value]) =>
+          `<div class="channel-kv-row"><span class="channel-kv-k">${escapeHtml(
+            label
+          )}</span><span class="channel-kv-v">${value}</span></div>`
+      )
+      .join("");
+  }
+
   function renderContractCard(c, escapeHtml, escapeAttr) {
     const usesCredit = channelUsesCreditEval(c.channelId);
     const prof = usesCredit ? ensureChannelCreditProfile(c.channelId) : null;
-    const creditLine = usesCredit
-      ? `信用 ¥${(prof?.creditLimit ?? CHANNEL_DEFAULT_CREDIT_LIMIT).toLocaleString("zh-CN")}`
-      : "分销 · 无渠道信用";
-    return `<article class="sites-card" data-action="ch-open-contract" data-id="${escapeAttr(
+    const creditVal = usesCredit
+      ? `¥${(prof?.creditLimit ?? CHANNEL_DEFAULT_CREDIT_LIMIT).toLocaleString("zh-CN")}`
+      : `<span class="channel-kv-muted">无（推广分销）</span>`;
+    const kv = renderChannelKvRows(
+      [
+        ["批发/定价", escapeHtml(contractPricingText(c))],
+        ["权益概要", escapeHtml(contractTermsText(c))],
+        ["信用额度", creditVal],
+      ],
+      escapeHtml
+    );
+    return `<article class="sites-card channel-card" data-action="ch-open-contract" data-id="${escapeAttr(
       c.id
     )}">
       <div class="sites-card-hd">
-        <div>
+        <div class="channel-card-title">
           <strong>${escapeHtml(c.channelName)}</strong>
           <div class="sites-meta">${escapeHtml(c.channelId)} · ${escapeHtml(
       settlementModeLabel(contractSettlementMode(c))
@@ -1312,11 +1331,7 @@
         </div>
         <span class="status-pill ok">${escapeHtml(c.status || "在营")}</span>
       </div>
-      <div class="sites-card-rows">
-        <div><span>批发/定价</span><em>${escapeHtml(contractPricingText(c))}</em></div>
-        <div><span>权益概要</span><em>${escapeHtml(contractTermsText(c))}</em></div>
-        <div><span>信用</span><em>${escapeHtml(creditLine)}</em></div>
-      </div>
+      <div class="channel-card-kv">${kv}</div>
     </article>`;
   }
 
@@ -1325,11 +1340,24 @@
     let rows = "";
     let confirmBtn = "";
     if (kind === "day") {
-      rows = `
-        <div><span>渠道</span><em>${escapeHtml(o.channelName)}</em></div>
-        <div><span>人天/金额</span><em>${o.days} 人天 · ¥${o.amount.toLocaleString("zh-CN")}</em></div>
-        <div><span>支付</span><em>${escapeHtml(o.payMethod || "—")}${o.transferRef ? " · " + escapeHtml(o.transferRef) : ""}</em></div>
-        <div><span>状态</span><em>${escapeHtml(o.orderStatus)} / ${escapeHtml(o.payStatus)}</em></div>`;
+      const payLine = `${escapeHtml(o.payMethod || "—")}${
+        o.transferRef ? `<br><span class="channel-kv-muted">${escapeHtml(o.transferRef)}</span>` : ""
+      }`;
+      rows = renderChannelKvRows(
+        [
+          ["渠道商", escapeHtml(o.channelName)],
+          [
+            "人天/金额",
+            `<strong>${o.days} 人天</strong> · ¥${o.amount.toLocaleString("zh-CN")}`,
+          ],
+          ["支付", payLine],
+          [
+            "付款状态",
+            `${escapeHtml(o.payStatus)}<span class="channel-kv-muted"> · ${escapeHtml(o.orderStatus)}</span>`,
+          ],
+        ],
+        escapeHtml
+      );
     } else if (kind === "rent") {
       rows = `
         <div><span>渠道</span><em>${escapeHtml(o.channelName)}</em></div>
@@ -1344,13 +1372,17 @@
         <div><span>发码</span><em>${escapeHtml(o.mintStatus || "—")}</em></div>`;
     }
     if (o.orderStatus === "待确认到账") {
-      confirmBtn = `<button type="button" class="btn-primary" style="width:100%;margin-top:10px" data-action="ch-confirm-order" data-kind="${escapeAttr(
+      confirmBtn = `<div class="channel-card-ft"><button type="button" class="btn-primary channel-card-btn" data-action="ch-confirm-order" data-kind="${escapeAttr(
         kind
-      )}" data-id="${escapeAttr(o.id)}">确认到账</button>`;
+      )}" data-id="${escapeAttr(o.id)}">确认到账</button></div>`;
     }
-    return `<article class="sites-card">
+    const bodyWrap =
+      kind === "day"
+        ? `<div class="channel-card-kv">${rows}</div>`
+        : `<div class="sites-card-rows">${rows}</div>`;
+    return `<article class="sites-card channel-card channel-order-card">
       <div class="sites-card-hd">
-        <div>
+        <div class="channel-card-title">
           <strong>${escapeHtml(title)}</strong>
           <div class="sites-meta">${escapeHtml(o.createdAt || "")}</div>
         </div>
@@ -1358,7 +1390,7 @@
       o.orderStatus
     )}</span>
       </div>
-      <div class="sites-card-rows">${rows}</div>
+      ${bodyWrap}
       ${confirmBtn}
     </article>`;
   }
