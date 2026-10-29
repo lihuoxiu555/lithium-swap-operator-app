@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.84",
+      date: formatLocalDateTime(),
+      title: "新增渠道商 · 字段对齐 PC",
+      items: [
+        "表单补全：登录手机号、城市、状态、联系人/电话；默认密码提示",
+        "按结算模式展示人天池/链接/租赁/激活码字段；保存写入 platformChannels Mock",
+      ],
+    },
+    {
       version: "V1.83",
       date: formatLocalDateTime(),
       title: "渠道管理 · 缓存与可见性",

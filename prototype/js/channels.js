@@ -33,6 +33,12 @@
     { id: "act", label: "激活码" },
   ];
 
+  const CHANNEL_CITIES = ["上海", "杭州"];
+  const CHANNEL_STATUSES = ["在营", "已停用"];
+  const DEFAULT_DAY_WHOLESALE = 8.5;
+  const DEFAULT_DAY_MIN = 500;
+  const DEFAULT_CHANNEL_PASSWORD = "123456";
+
   /** @type {Array<object>} */
   let channelContracts = [
     {
@@ -121,6 +127,71 @@
       codesRedeemed: 86,
       sites: [],
       status: "在营",
+    },
+  ];
+
+  /** 平台渠道商主体（与 PC「渠道商管理」对齐） */
+  /** @type {Array<object>} */
+  let platformChannels = [
+    {
+      id: "CH-SF",
+      name: "顺丰同城渠道",
+      city: "上海",
+      status: "在营",
+      settlementMode: "人天池",
+      loginAccount: "13900003100",
+      contactName: "陈渠道",
+      contactPhone: "139****3100",
+    },
+    {
+      id: "CH-TEMP",
+      name: "临时渠道",
+      city: "上海",
+      status: "在营",
+      settlementMode: "人天池",
+      loginAccount: "13900003998",
+      contactName: "临时对接",
+      contactPhone: "139****3998",
+    },
+    {
+      id: "CH-CARD",
+      name: "骑士卡渠道",
+      city: "上海",
+      status: "在营",
+      settlementMode: "链接类",
+      loginAccount: "13900003201",
+      contactName: "王卡务",
+      contactPhone: "139****3201",
+    },
+    {
+      id: "CH-DELIV",
+      name: "闪送骑士卡",
+      city: "上海",
+      status: "在营",
+      settlementMode: "链接类",
+      loginAccount: "13900003210",
+      contactName: "李卡务",
+      contactPhone: "139****3210",
+    },
+    {
+      id: "CH-RENT",
+      name: "京东物流租赁渠道",
+      city: "上海",
+      status: "在营",
+      settlementMode: "设备租赁",
+      loginAccount: "13900003301",
+      contactName: "赵租金",
+      contactPhone: "139****3301",
+    },
+    {
+      id: "CH-ACT",
+      name: "蜂鸟激活码渠道",
+      city: "上海",
+      status: "在营",
+      settlementMode: "激活码",
+      loginAccount: "13900003401",
+      contactName: "周码务",
+      contactPhone: "139****3401",
     },
   ];
 
@@ -510,7 +581,7 @@
   ];
 
   /** @type {Array<object>} */
-  const channelLeaseSummary = [
+  let channelLeaseSummary = [
     {
       channelId: "CH-RENT",
       monthlyRent: 12000,
@@ -655,77 +726,278 @@
     return prof;
   }
 
+  function getPlatformChannel(channelId) {
+    return platformChannels.find((p) => p.id === channelId) || null;
+  }
+
+  function inheritDayQuota() {
+    return { wholesalePrice: DEFAULT_DAY_WHOLESALE, minDays: DEFAULT_DAY_MIN };
+  }
+
   function emptyForm() {
     return {
       channelName: "",
+      loginAccount: "",
       settlementMode: "人天池",
-      wholesalePrice: "8.5",
-      minDays: "1000",
-      sites: "浦东骑手驿站",
+      city: "上海",
+      status: "在营",
+      contactName: "",
+      contactPhone: "",
+      wholesalePriceAct: "255",
+      minCodes: "100",
+      codeSkuName: "30天包月",
+      codeValidityDays: "30",
+      monthlyRent: "12000",
+      whitelistDefaultAccess: "paid",
+      crossNetworkEnabled: "1",
+      dedicatedSiteId: "",
+      newSiteName: "",
+      instantCommissionPayout: "0",
+      commissionRatePct: "9",
     };
   }
 
   function formFromContract(c) {
     if (!c) return emptyForm();
+    const ch = getPlatformChannel(c.channelId);
     return {
-      channelName: c.channelName || "",
+      channelName: c.channelName || ch?.name || "",
+      loginAccount: ch?.loginAccount || "",
       settlementMode: contractSettlementMode(c),
-      wholesalePrice: c.wholesalePrice != null ? String(c.wholesalePrice) : "",
-      minDays: c.minDays != null ? String(c.minDays) : "",
-      sites: Array.isArray(c.sites) ? c.sites.join("、") : String(c.sites || ""),
+      city: ch?.city || "上海",
+      status: ch?.status || c.status || "在营",
+      contactName: ch?.contactName || "",
+      contactPhone: ch?.contactPhone || "",
+      wholesalePriceAct:
+        c.wholesalePrice != null ? String(c.wholesalePrice) : "255",
+      minCodes: c.minCodes != null ? String(c.minCodes) : "100",
+      codeSkuName: c.codeSkuName || "30天包月",
+      codeValidityDays:
+        c.codeValidityDays != null ? String(c.codeValidityDays) : "30",
+      monthlyRent:
+        c.monthlyRent != null ? String(c.monthlyRent) : "12000",
+      whitelistDefaultAccess: c.whitelistDefaultAccess || "paid",
+      crossNetworkEnabled: c.crossNetworkEnabled === false ? "0" : "1",
+      dedicatedSiteId: c.dedicatedSiteId || "",
+      newSiteName: "",
+      instantCommissionPayout: c.instantCommissionPayout ? "1" : "0",
+      commissionRatePct:
+        c.commissionRate != null ? String(c.commissionRate * 100) : "9",
     };
   }
 
-  function parseSitesText(text) {
-    return String(text || "")
-      .split(/[,，、\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+  function syncFormModeSections() {
+    const modeEl = document.getElementById("ch-form-settlementMode");
+    const root = document.getElementById("ch-contract-form");
+    const mode =
+      (modeEl && modeEl.value) ||
+      (root && root.dataset.settlementMode) ||
+      "人天池";
+    document.querySelectorAll("[data-ch-field]").forEach((el) => {
+      const modes = (el.getAttribute("data-ch-field") || "").split(/\s+/);
+      el.style.display =
+        modes.includes("all") || modes.includes(mode) ? "" : "none";
+    });
+    const instant =
+      document.getElementById("ch-form-instantCommissionPayout")?.value === "1";
+    document.querySelectorAll("[data-ch-field-instant]").forEach((el) => {
+      el.style.display = mode === "链接类" && instant ? "" : "none";
+    });
   }
 
   function saveContract(form, editId) {
     const channelName = String(form.channelName || "").trim();
+    const loginAccount = String(form.loginAccount || "").trim();
     const settlementMode = form.settlementMode || "人天池";
-    const sites = parseSitesText(form.sites);
+    const city = form.city || "上海";
+    const status = form.status || "在营";
+    const contactName = String(form.contactName || "").trim();
+    const contactPhone = String(form.contactPhone || "").trim();
+
     if (!channelName) return { ok: false, msg: "请填写渠道商名称" };
+    if (!loginAccount) return { ok: false, msg: "请填写登录手机号" };
+    if (!/^1\d{10}$/.test(loginAccount)) {
+      return { ok: false, msg: "登录账号须为 11 位手机号" };
+    }
+
+    const inherited = inheritDayQuota();
+    let wholesalePrice = null;
+    let minDays = null;
+    let minCodes = null;
+    let codeSkuName = null;
+    let codeValidityDays = null;
+    let monthlyRent = null;
+    let instantCommissionPayout = false;
+    let commissionRate = null;
+    let dedicatedSiteId = null;
+    let dedicatedSiteName = null;
+    let whitelistDefaultAccess = null;
+    let crossNetworkEnabled = null;
+
     if (settlementMode === "人天池") {
-      const wp = parseFloat(form.wholesalePrice);
-      const md = parseInt(form.minDays, 10);
-      if (!Number.isFinite(wp) || wp <= 0) return { ok: false, msg: "请填写有效批发单价" };
-      if (!Number.isFinite(md) || md <= 0) return { ok: false, msg: "请填写最低起购人天" };
-      if (!sites.length) return { ok: false, msg: "请填写授权站点" };
+      wholesalePrice = inherited.wholesalePrice;
+      minDays = inherited.minDays;
+    } else if (settlementMode === "激活码") {
+      wholesalePrice = parseFloat(form.wholesalePriceAct);
+      minCodes = parseInt(form.minCodes, 10);
+      codeSkuName = form.codeSkuName || "30天包月";
+      codeValidityDays = parseInt(form.codeValidityDays, 10) || 30;
+      if (!Number.isFinite(wholesalePrice) || wholesalePrice <= 0) {
+        return { ok: false, msg: "请填写有效单码批发价" };
+      }
+      if (!Number.isFinite(minCodes) || minCodes <= 0) {
+        return { ok: false, msg: "请填写最低起购（码）" };
+      }
+    } else if (settlementMode === "设备租赁") {
+      monthlyRent = parseFloat(form.monthlyRent);
+      if (!Number.isFinite(monthlyRent) || monthlyRent <= 0) {
+        return { ok: false, msg: "请填写月租" };
+      }
+      whitelistDefaultAccess = form.whitelistDefaultAccess || "paid";
+      crossNetworkEnabled = form.crossNetworkEnabled !== "0";
+      dedicatedSiteId = form.dedicatedSiteId || null;
+      if (dedicatedSiteId === "new") {
+        const nm = String(form.newSiteName || "").trim();
+        if (!nm) return { ok: false, msg: "请填写新建专属站名称" };
+        dedicatedSiteId = "ST-NEW-" + Date.now().toString().slice(-4);
+        dedicatedSiteName = nm;
+      } else if (dedicatedSiteId) {
+        dedicatedSiteName =
+          dedicatedSiteId === "ST-JD"
+            ? "京东物流专属站"
+            : form.newSiteName || "专属站";
+      }
+    } else if (settlementMode === "链接类") {
+      instantCommissionPayout = form.instantCommissionPayout === "1";
+      if (instantCommissionPayout) {
+        const pct = parseFloat(form.commissionRatePct);
+        if (!Number.isFinite(pct) || pct <= 0 || pct > 50) {
+          return { ok: false, msg: "请填写有效佣金比例（0.1～50）" };
+        }
+        commissionRate = pct / 100;
+      }
     }
 
     if (editId && editId !== "new") {
       const row = getContractById(editId);
       if (!row) return { ok: false, msg: "签约不存在" };
       row.channelName = channelName;
-      if (settlementMode === "人天池") {
-        row.wholesalePrice = parseFloat(form.wholesalePrice);
-        row.minDays = parseInt(form.minDays, 10);
-        row.sites = sites;
-      } else if (Array.isArray(row.sites)) {
-        row.sites = sites.length ? sites : row.sites;
+      row.status = status;
+      const plat = getPlatformChannel(row.channelId);
+      if (plat) {
+        plat.name = channelName;
+        plat.loginAccount = loginAccount;
+        plat.city = city;
+        plat.status = status;
+        plat.contactName = contactName;
+        plat.contactPhone = contactPhone;
+      }
+      if (settlementMode === "激活码") {
+        row.wholesalePrice = wholesalePrice;
+        row.minCodes = minCodes;
+        row.codeSkuName = codeSkuName;
+        row.codeValidityDays = codeValidityDays;
+      }
+      if (settlementMode === "设备租赁") {
+        row.monthlyRent = monthlyRent;
+        row.whitelistDefaultAccess = whitelistDefaultAccess;
+        row.crossNetworkEnabled = crossNetworkEnabled;
+        row.dedicatedSiteId = dedicatedSiteId;
+        row.dedicatedSiteName = dedicatedSiteName;
+      }
+      if (settlementMode === "链接类") {
+        row.instantCommissionPayout = instantCommissionPayout;
+        row.commissionRate = commissionRate;
       }
       return { ok: true, contract: row };
     }
 
-    const seq = String(channelContracts.length + 1).padStart(2, "0");
-    const channelId = "CH-NEW-" + seq;
+    const channelId = "CH-" + Date.now().toString().slice(-6);
+    const contractId = "CC-" + Date.now().toString().slice(-6);
+    platformChannels.unshift({
+      id: channelId,
+      name: channelName,
+      city,
+      status,
+      settlementMode,
+      loginAccount,
+      contactName,
+      contactPhone,
+    });
+    const sites =
+      settlementMode === "人天池"
+        ? ["浦东骑手驿站"]
+        : dedicatedSiteName
+          ? [dedicatedSiteName]
+          : [];
     const row = {
-      id: "CC-NEW-" + seq,
+      id: contractId,
       channelId,
       channelName,
       operatorId: OPERATOR_ID,
       operatorName: PAYEE_OPERATOR,
       settlementMode,
-      wholesalePrice:
-        settlementMode === "人天池" ? parseFloat(form.wholesalePrice) : null,
-      minDays: settlementMode === "人天池" ? parseInt(form.minDays, 10) : null,
-      sites: settlementMode === "人天池" ? sites : [],
-      status: "在营",
+      wholesalePrice,
+      minDays,
+      minCodes,
+      codeSkuName,
+      codeValidityDays,
+      codeInventory: settlementMode === "激活码" ? 0 : undefined,
+      codesRedeemed: settlementMode === "激活码" ? 0 : undefined,
+      monthlyRent,
+      dedicatedSiteId,
+      dedicatedSiteName,
+      whitelistDefaultAccess,
+      crossNetworkEnabled,
+      whitelistCount: settlementMode === "设备租赁" ? 0 : undefined,
+      billingStatus: settlementMode === "设备租赁" ? "待首缴" : undefined,
+      instantCommissionPayout,
+      commissionRate,
+      cardSkus: settlementMode === "链接类" ? [] : undefined,
+      sites,
+      status,
     };
     channelContracts.unshift(row);
+    if (settlementMode === "人天池") {
+      dayPools.unshift({
+        id: "QP-" + Date.now().toString().slice(-4),
+        name: channelName + "人天池",
+        ownerId: channelId,
+        ownerName: channelName,
+        sellerId: OPERATOR_ID,
+        sellerName: PAYEE_OPERATOR,
+        totalDays: 0,
+        availableDays: 0,
+        frozenDays: 0,
+        consumedDays: 0,
+        giftedDays: 0,
+        refundedDays: 0,
+        expiredDays: 0,
+        validFrom: formatLocal().slice(0, 10),
+        validTo: "2026-12-31",
+        wholesalePrice: wholesalePrice,
+        orderNo: null,
+        status: "待首购",
+        balancePct: 0,
+        warnSms: false,
+      });
+    }
+    if (settlementMode === "设备租赁") {
+      channelLeaseSummary.push({
+        channelId,
+        monthlyRent: monthlyRent || 12000,
+        devicesCovered: 0,
+        cabinets: 0,
+        batteries: 0,
+        whitelistCount: 0,
+        dedicatedSiteName,
+        nextDue: formatLocal().slice(0, 10),
+        billingStatus: "待首缴",
+        monthSwaps: 0,
+        operatorId: OPERATOR_ID,
+        operatorName: PAYEE_OPERATOR,
+      });
+    }
     if (channelUsesCreditEval(channelId)) ensureChannelCreditProfile(channelId);
     return { ok: true, contract: row, created: true };
   }
@@ -1141,6 +1413,7 @@
     if (!c) {
       return `<div class="empty-full">签约不存在<button type="button" class="btn-secondary" data-action="ch-back-hub">返回</button></div>`;
     }
+    const plat = getPlatformChannel(c.channelId);
     const usesCredit = channelUsesCreditEval(c.channelId);
     const prof = usesCredit ? ensureChannelCreditProfile(c.channelId) : null;
     const siteText = (c.sites || []).join("、") || "—";
@@ -1175,6 +1448,9 @@
           </div>
           <div class="sites-card-rows">
             <div><span>结算模式</span><em>${escapeHtml(settlementModeLabel(contractSettlementMode(c)))}</em></div>
+            <div><span>登录账号</span><em>${escapeHtml(plat?.loginAccount || "—")}</em></div>
+            <div><span>城市 / 状态</span><em>${escapeHtml(plat?.city || "—")} · ${escapeHtml(plat?.status || c.status || "—")}</em></div>
+            <div><span>联系人</span><em>${escapeHtml(plat?.contactName || "—")}${plat?.contactPhone ? " · " + escapeHtml(plat.contactPhone) : ""}</em></div>
             <div><span>批发/定价</span><em>${escapeHtml(contractPricingText(c))}</em></div>
             <div><span>权益概要</span><em>${escapeHtml(contractTermsText(c))}</em></div>
             <div><span>授权站点</span><em>${escapeHtml(siteText)}</em></div>
@@ -1190,13 +1466,32 @@
     const isNew = !ch.editId || ch.editId === "new";
     const c = isNew ? null : getContractById(ch.editId);
     const form = ch.form && Object.keys(ch.form).length ? ch.form : formFromContract(c);
+    const mode = form.settlementMode || "人天池";
     const modeOpts = SETTLEMENT_MODES.map(
       (m) =>
-        `<option value="${escapeAttr(m.id)}" ${form.settlementMode === m.id ? "selected" : ""}>${escapeHtml(
+        `<option value="${escapeAttr(m.id)}" ${mode === m.id ? "selected" : ""}>${escapeHtml(
           m.label
         )}</option>`
     ).join("");
+    const cityOpts = CHANNEL_CITIES.map(
+      (city) =>
+        `<option value="${escapeAttr(city)}" ${form.city === city ? "selected" : ""}>${escapeHtml(
+          city
+        )}</option>`
+    ).join("");
+    const statusOpts = CHANNEL_STATUSES.map(
+      (st) =>
+        `<option value="${escapeAttr(st)}" ${form.status === st ? "selected" : ""}>${escapeHtml(
+          st
+        )}</option>`
+    ).join("");
     const modeLocked = !isNew;
+    const codeSkuOpts = ["30天包月", "7天体验"]
+      .map(
+        (sku) =>
+          `<option ${form.codeSkuName === sku ? "selected" : ""}>${escapeHtml(sku)}</option>`
+      )
+      .join("");
     return `
       <div class="sites-page sites-page-form">
         <div class="sites-header">
@@ -1204,37 +1499,106 @@
           <h1>${isNew ? "新增渠道商" : "编辑签约"}</h1>
           <span class="sites-header-spacer"></span>
         </div>
-        <div class="sites-form-body">
-          <p class="sites-hint">保存后同步 Mock 签约列表；人天池需填写批发价、起购与站点。</p>
-          <label class="sites-field">渠道商名称
+        <div class="sites-form-body" id="ch-contract-form" data-settlement-mode="${escapeAttr(mode)}">
+          <p class="sites-hint">保存后同步至平台「渠道商管理」（平台只读监管）。</p>
+          <label class="sites-field" data-ch-field="all">渠道商名称
             <input id="ch-form-channelName" type="text" value="${escapeAttr(
               form.channelName || ""
             )}" placeholder="如：同城配送渠道" />
           </label>
-          <label class="sites-field">结算模式
+          <label class="sites-field" data-ch-field="all">登录账号（手机号）
+            <input id="ch-form-loginAccount" type="tel" inputmode="numeric" maxlength="11" value="${escapeAttr(
+              form.loginAccount || ""
+            )}" placeholder="11 位手机号，用于登录渠道商后台" />
+            <small class="sites-hint" style="margin-top:6px;display:block">默认密码：${DEFAULT_CHANNEL_PASSWORD}</small>
+          </label>
+          <label class="sites-field" data-ch-field="all">结算模式
             ${
               modeLocked
                 ? `<input type="text" readonly value="${escapeAttr(
-                    settlementModeLabel(form.settlementMode)
+                    settlementModeLabel(mode)
                   )}" />`
                 : `<select id="ch-form-settlementMode">${modeOpts}</select>`
             }
           </label>
-          <label class="sites-field">批发单价（元/人天）
-            <input id="ch-form-wholesalePrice" type="number" step="0.1" min="0" value="${escapeAttr(
-              form.wholesalePrice || ""
-            )}" placeholder="8.5" />
+          <label class="sites-field" data-ch-field="all">城市
+            <select id="ch-form-city">${cityOpts}</select>
           </label>
-          <label class="sites-field">最低起购（人天）
-            <input id="ch-form-minDays" type="number" step="1" min="1" value="${escapeAttr(
-              form.minDays || ""
-            )}" placeholder="1000" />
+          <label class="sites-field" data-ch-field="all">状态
+            <select id="ch-form-status">${statusOpts}</select>
           </label>
-          <label class="sites-field">授权站点（顿号或逗号分隔）
-            <textarea id="ch-form-sites" rows="3" placeholder="浦东骑手驿站、世博换电服务点">${escapeHtml(
-              form.sites || ""
-            )}</textarea>
+          <p class="sites-hint" data-ch-field="设备租赁" style="color:var(--warning,#b45309)">设备租赁（二期）：「已停用」后白名单用户不出电，仍可还电入柜。</p>
+          <label class="sites-field" data-ch-field="all">联系人
+            <input id="ch-form-contactName" type="text" value="${escapeAttr(
+              form.contactName || ""
+            )}" placeholder="选填" />
           </label>
+          <label class="sites-field" data-ch-field="all">联系电话
+            <input id="ch-form-contactPhone" type="tel" value="${escapeAttr(
+              form.contactPhone || ""
+            )}" placeholder="选填" />
+          </label>
+          <p class="sites-hint ch-form-callout" data-ch-field="人天池">人天池：批发单价与最低起购请在「平台设置 → 人天批发价」维护；新建签约继承<strong>默认批发价</strong>（当前 ¥${DEFAULT_DAY_WHOLESALE}/人天，起购 ${DEFAULT_DAY_MIN} 人天）。</p>
+          <p class="sites-hint ch-form-callout" data-ch-field="链接类">授权套餐与专享价请在「平台设置 → 渠道分销价」维护。</p>
+          <label class="sites-field" data-ch-field="链接类">佣金及时到付
+            <select id="ch-form-instantCommissionPayout">
+              <option value="0" ${form.instantCommissionPayout !== "1" ? "selected" : ""}>关闭 · 佣金线下结算</option>
+              <option value="1" ${form.instantCommissionPayout === "1" ? "selected" : ""}>开启 · 支付成功即时分账至渠道</option>
+            </select>
+          </label>
+          <label class="sites-field" data-ch-field="链接类" data-ch-field-instant="1">渠道佣金比例（%）
+            <input id="ch-form-commissionRatePct" type="number" min="0.1" max="50" step="0.1" value="${escapeAttr(
+              form.commissionRatePct || "9"
+            )}" />
+          </label>
+          <label class="sites-field" data-ch-field="设备租赁">月租（元/月 · 签约统一价）
+            <input id="ch-form-monthlyRent" type="number" min="1000" step="100" value="${escapeAttr(
+              form.monthlyRent || "12000"
+            )}" />
+          </label>
+          <label class="sites-field" data-ch-field="设备租赁">白名单默认类型
+            <select id="ch-form-whitelistDefaultAccess">
+              <option value="paid" ${form.whitelistDefaultAccess !== "free" ? "selected" : ""}>白名单付费（须购白名单套餐）</option>
+              <option value="free" ${form.whitelistDefaultAccess === "free" ? "selected" : ""}>白名单免费（B2B 月租覆盖）</option>
+            </select>
+          </label>
+          <label class="sites-field" data-ch-field="设备租赁">开通跨网
+            <select id="ch-form-crossNetworkEnabled">
+              <option value="1" ${form.crossNetworkEnabled !== "0" ? "selected" : ""}>开通 · 须缴平台跨网保证金</option>
+              <option value="0" ${form.crossNetworkEnabled === "0" ? "selected" : ""}>关闭</option>
+            </select>
+          </label>
+          <label class="sites-field" data-ch-field="设备租赁">专属站点
+            <select id="ch-form-dedicatedSiteId">
+              <option value="">（暂不绑定）</option>
+              <option value="new" ${form.dedicatedSiteId === "new" ? "selected" : ""}>+ 新建专属站点</option>
+              <option value="ST-JD" ${form.dedicatedSiteId === "ST-JD" ? "selected" : ""}>京东物流专属站 · 渠道专属</option>
+            </select>
+          </label>
+          <label class="sites-field" data-ch-field="设备租赁">新建站点名称
+            <input id="ch-form-newSiteName" type="text" value="${escapeAttr(
+              form.newSiteName || ""
+            )}" placeholder="选择「+ 新建专属站点」时填写" />
+          </label>
+          <label class="sites-field" data-ch-field="激活码">单码批发价（元）
+            <input id="ch-form-wholesalePriceAct" type="number" min="1" step="1" value="${escapeAttr(
+              form.wholesalePriceAct || "255"
+            )}" />
+          </label>
+          <label class="sites-field" data-ch-field="激活码">最低起购（码）
+            <input id="ch-form-minCodes" type="number" min="1" step="1" value="${escapeAttr(
+              form.minCodes || "100"
+            )}" />
+          </label>
+          <label class="sites-field" data-ch-field="激活码">默认套餐码
+            <select id="ch-form-codeSkuName">${codeSkuOpts}</select>
+          </label>
+          <label class="sites-field" data-ch-field="激活码">服务人天（计提用）
+            <input id="ch-form-codeValidityDays" type="number" min="1" step="1" value="${escapeAttr(
+              form.codeValidityDays || "30"
+            )}" />
+          </label>
+          <p class="sites-hint" data-ch-field="all">人天池：自动建池 · 链接类：SKU 在「渠道分销价」 · 二期：设备租赁 / 激活码见上方字段。停服用「状态」。</p>
           <button type="button" class="btn-primary" data-action="ch-save-contract">保存</button>
         </div>
       </div>`;
@@ -1307,12 +1671,27 @@
       const el = document.getElementById(id);
       return el ? el.value : "";
     };
+    const root = document.getElementById("ch-contract-form");
+    const lockedMode = root && root.dataset.settlementMode;
     return {
       channelName: g("ch-form-channelName"),
-      settlementMode: g("ch-form-settlementMode") || "人天池",
-      wholesalePrice: g("ch-form-wholesalePrice"),
-      minDays: g("ch-form-minDays"),
-      sites: g("ch-form-sites"),
+      loginAccount: g("ch-form-loginAccount"),
+      settlementMode: g("ch-form-settlementMode") || lockedMode || "人天池",
+      city: g("ch-form-city"),
+      status: g("ch-form-status"),
+      contactName: g("ch-form-contactName"),
+      contactPhone: g("ch-form-contactPhone"),
+      wholesalePriceAct: g("ch-form-wholesalePriceAct"),
+      minCodes: g("ch-form-minCodes"),
+      codeSkuName: g("ch-form-codeSkuName"),
+      codeValidityDays: g("ch-form-codeValidityDays"),
+      monthlyRent: g("ch-form-monthlyRent"),
+      whitelistDefaultAccess: g("ch-form-whitelistDefaultAccess"),
+      crossNetworkEnabled: g("ch-form-crossNetworkEnabled"),
+      dedicatedSiteId: g("ch-form-dedicatedSiteId"),
+      newSiteName: g("ch-form-newSiteName"),
+      instantCommissionPayout: g("ch-form-instantCommissionPayout"),
+      commissionRatePct: g("ch-form-commissionRatePct"),
     };
   }
 
@@ -1367,6 +1746,10 @@
     getSalePackages,
     getLeaseSummary,
     pendingConfirmCount,
+    syncFormModeSections,
+    getPlatformChannel,
+    inheritDayQuota,
+    DEFAULT_CHANNEL_PASSWORD,
     render,
     get channelContracts() {
       return channelContracts;
@@ -1394,6 +1777,9 @@
     },
     get channelCreditProfiles() {
       return channelCreditProfiles;
+    },
+    get platformChannels() {
+      return platformChannels;
     },
   };
 })(window);

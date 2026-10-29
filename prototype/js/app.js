@@ -6367,6 +6367,20 @@
         state.finance.applyAmount = finAmt.value;
       });
     }
+
+    const chMode = document.getElementById("ch-form-settlementMode");
+    const chInstant = document.getElementById("ch-form-instantCommissionPayout");
+    if (Channels && Channels.syncFormModeSections) {
+      if (chMode) {
+        chMode.addEventListener("change", () => Channels.syncFormModeSections());
+      }
+      if (chInstant) {
+        chInstant.addEventListener("change", () => Channels.syncFormModeSections());
+      }
+      if (document.getElementById("ch-contract-form")) {
+        Channels.syncFormModeSections();
+      }
+    }
   }
 
   function renderPageSpec() {
@@ -6411,7 +6425,7 @@
         },
         {
           name: "原型版本",
-          def: String(global.__OP_APP_BUILD__ || "未知"),
+          def: String(window.__OP_APP_BUILD__ || "未知"),
         },
       ]);
     }
