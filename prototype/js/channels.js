@@ -2347,16 +2347,22 @@
           }>${escapeHtml(t)}</option>`
       )
       .join("");
-    return `<div class="channel-filter-compact">
-      <label class="sites-field sites-field-compact">月起<input type="month" id="ch-ls-monthFrom" value="${escapeAttr(
-        f.monthFrom || "2026-05"
-      )}" /></label>
-      <label class="sites-field sites-field-compact">月止<input type="month" id="ch-ls-monthTo" value="${escapeAttr(
-        f.monthTo || "2026-06"
-      )}" /></label>
-      <label class="sites-field sites-field-compact">渠道<select id="ch-ls-channelId">${chOpts}</select></label>
-      <label class="sites-field sites-field-compact">结算<select id="ch-ls-settleType">${settleOpts}</select></label>
-      <button type="button" class="btn-primary channel-filter-query" data-action="ch-link-settle-query">查询</button>
+    return `<div class="channel-ls-filter" role="search" aria-label="推广结算筛选">
+      <div class="channel-ls-filter-row">
+        <span class="channel-ls-lbl">月份</span>
+        <input type="month" class="channel-ls-in" id="ch-ls-monthFrom" value="${escapeAttr(
+          f.monthFrom || "2026-05"
+        )}" aria-label="月起" />
+        <span class="channel-ls-sep">—</span>
+        <input type="month" class="channel-ls-in" id="ch-ls-monthTo" value="${escapeAttr(
+          f.monthTo || "2026-06"
+        )}" aria-label="月止" />
+      </div>
+      <div class="channel-ls-filter-row">
+        <select class="channel-ls-sel" id="ch-ls-channelId" aria-label="渠道">${chOpts}</select>
+        <select class="channel-ls-sel channel-ls-sel-narrow" id="ch-ls-settleType" aria-label="结算方式">${settleOpts}</select>
+        <button type="button" class="channel-ls-query btn-primary" data-action="ch-link-settle-query">查询</button>
+      </div>
     </div>`;
   }
 
@@ -2488,11 +2494,12 @@
       body = `<div class="channel-card-list">${body || '<p class="empty-inline">所选范围暂无汇总</p>'}</div>`;
     }
     return `
-      <p class="ops-hint channel-page-note">即时分账支付时完成；线下结算可登记凭证（PC：渠道管理 → 推广结算）。</p>
-      ${renderLinkSettleFilters(ch, ctx)}
-      ${kpi}
-      <div class="lease-filters">${subTabs}</div>
-      ${body}`;
+      <div class="channel-link-settle">
+        <div class="channel-ls-tabs">${subTabs}</div>
+        ${kpi}
+        ${renderLinkSettleFilters(ch, ctx)}
+        ${body}
+      </div>`;
   }
 
   function renderQuotaPricingForm(ch, ctx) {
