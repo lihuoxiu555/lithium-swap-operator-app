@@ -4591,6 +4591,266 @@ button.btn-mock.offcab-btn {
   line-height: 1.35;
 }
 
+/* 电池管理 · 对齐 manage-app */
+.bat-mgmt-page {
+  min-height: 100%;
+  background: linear-gradient(180deg, #d8e8ff 0%, #eef3f8 120px, #eef3f8 100%);
+  padding-bottom: 24px;
+}
+.bat-mgmt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  color: #1a3a6b;
+}
+.bat-mgmt-header h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+.bat-mgmt-back {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font-size: 28px;
+  line-height: 1;
+  padding: 0;
+}
+.bat-detail-hd .bat-mgmt-back {
+  width: auto;
+  font-size: 15px;
+  font-weight: 650;
+  padding: 0 4px;
+}
+.bat-mgmt-header-spacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+.bat-detail-hd .bat-mgmt-header-spacer { width: 48px; }
+.bat-mgmt-search {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 10px;
+  align-items: center;
+}
+.bat-mgmt-search input {
+  flex: 1;
+  height: 40px;
+  border: 0;
+  border-radius: 20px;
+  padding: 0 14px;
+  font-size: 13px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+.bat-mgmt-query {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 650;
+}
+.bat-mgmt-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.bat-mgmt-select {
+  display: block;
+}
+.bat-mgmt-select select {
+  width: 100%;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 28px 0 10px;
+  font-size: 13px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 10px center;
+  appearance: none;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+.bat-mgmt-list {
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bat-mgmt-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 12px 0;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+.bat-mgmt-card-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.bat-mgmt-code {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  text-align: left;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+.bat-mgmt-copy {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--brand);
+  font-weight: 650;
+}
+.bat-mgmt-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e8f8ef;
+  color: var(--success);
+  margin-left: auto;
+}
+.bat-mgmt-badge.off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.bat-mgmt-kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  font-size: 12px;
+  padding-bottom: 10px;
+}
+.bat-mgmt-kv div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bat-mgmt-kv span {
+  color: var(--muted);
+}
+.bat-mgmt-kv em {
+  font-style: normal;
+  font-weight: 650;
+  color: var(--ink);
+  word-break: break-all;
+}
+.bat-mgmt-kv em.ok { color: var(--success); }
+.bat-mgmt-kv em.off { color: var(--danger); }
+.bat-mgmt-detail {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-align: center;
+  font-weight: 650;
+}
+.bat-page-mgmt .bat-body { padding-top: 4px; }
+.bat-page-mgmt .bat-sec-hd i { background: var(--brand); }
+.bat-id-mgmt { text-align: center; }
+.bat-id-sn-center {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.bat-id-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.bat-metrics-mgmt div {
+  text-align: left;
+}
+.bat-metrics-mgmt em.ok { color: var(--success); }
+.bat-mgmt-refresh {
+  margin-top: 10px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.bat-linkage-hint {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.bat-buzz-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.bat-buzz-mgmt .bat-buzz-btn {
+  font-size: 12px;
+}
+.bat-loc-btn.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+.bat-map-empty {
+  min-height: 200px;
+  border-radius: 8px;
+  background: #eceff3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.bat-map-empty-icon {
+  font-size: 36px;
+  opacity: 0.45;
+}
+.bat-map-compact { height: 200px; }
+.bat-asset-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.bat-asset-kv div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.bat-asset-kv span {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.bat-asset-kv em {
+  font-style: normal;
+  text-align: right;
+  word-break: break-all;
+  color: var(--ink);
+}
+
 .fin-hero {
   margin: 12px 14px 0;
   padding: 16px 14px 14px;

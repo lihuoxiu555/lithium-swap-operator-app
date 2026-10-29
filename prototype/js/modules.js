@@ -34,8 +34,8 @@
   const MODULE_REGISTRY = [
     {
       id: "lease.orders",
-      name: "换电订单",
-      group: "经营",
+      name: "换电记录",
+      group: "其他",
       icon: "📋",
       status: "ready",
       roles: ["admin", "staff"],
@@ -112,6 +112,15 @@
       status: "ready",
       roles: ["admin", "staff"],
       route: "#/module/ops.offCabinet",
+    },
+    {
+      id: "ops.batteries",
+      name: "电池管理",
+      group: "运维",
+      icon: "🔋",
+      status: "ready",
+      roles: ["admin", "staff"],
+      route: "#/module/ops.batteries",
     },
     {
       id: "ops.channels",

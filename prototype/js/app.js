@@ -140,6 +140,8 @@
       sn: null,
       fromScreen: "leaseOrders",
       mapZoom: 2,
+      mgmtDetail: false,
+      locTab: "lbs",
     },
     finance: {
       view: "home",
@@ -166,6 +168,12 @@
     },
     channel: Channels ? Channels.defaultState() : { tab: "contracts", view: "menu" },
     chPartner: ChPartner ? ChPartner.defaultState() : { module: null, dayTab: "pool", view: "hub" },
+    batteryMgmt: {
+      keyword: "",
+      site: "全部站点",
+      online: "全部在线状态",
+      listScroll: 0,
+    },
   };
 
   const els = {};
@@ -495,6 +503,14 @@
       state.screen = "cabinets";
       setHash(mod.route);
       track("cabinets_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "ops.batteries") {
+      state.placeholderModule = mod;
+      state.screen = "batteryManage";
+      setHash(mod.route);
+      track("battery_manage_open", {});
       render();
       return;
     }
@@ -1396,7 +1412,7 @@
 
     const cards =
       list.length === 0
-        ? `<div class="empty-full"><div class="icon">📋</div>暂无换电订单</div>`
+        ? `<div class="empty-full"><div class="icon">📋</div>暂无换电记录</div>`
         : list
             .map((row) => renderSwapUserCard(row.kind, row.order, row.showUserHeader))
             .join("");
@@ -1421,7 +1437,7 @@
       <div class="lease-page">
         <div class="lease-header">
           <button type="button" class="lease-back" data-action="back-workbench" aria-label="返回">‹</button>
-          <h1>换电订单</h1>
+          <h1>换电记录</h1>
           <div class="lease-header-actions" aria-hidden="true">•••</div>
         </div>
         <div class="lease-filters">
@@ -1547,8 +1563,13 @@
     if (els.screenRoot && state.screen === "leaseOrders") {
       state.lease.listScroll = els.screenRoot.scrollTop || 0;
     }
+    if (els.screenRoot && state.screen === "batteryManage") {
+      state.batteryMgmt.listScroll = els.screenRoot.scrollTop || 0;
+    }
     state.battery.sn = code;
     state.battery.fromScreen = state.screen;
+    state.battery.mgmtDetail = state.screen === "batteryManage";
+    state.battery.locTab = "lbs";
     state.battery.mapZoom = 2;
     state.screen = "batteryDetail";
     track("battery_open", { sn: code, from: state.battery.fromScreen });
@@ -1559,12 +1580,22 @@
     const from = state.battery.fromScreen || "leaseOrders";
     state.screen = from;
     state.battery.sn = null;
+    state.battery.mgmtDetail = false;
     render();
     if (from === "leaseOrders") {
       requestAnimationFrame(() => {
         if (els.screenRoot) els.screenRoot.scrollTop = state.lease.listScroll || 0;
       });
     }
+    if (from === "batteryManage") {
+      requestAnimationFrame(() => {
+        if (els.screenRoot) els.screenRoot.scrollTop = state.batteryMgmt.listScroll || 0;
+      });
+    }
+  }
+
+  function renderBatteryManage() {
+    return Batteries.renderManagePage(state.batteryMgmt, { escapeHtml, escapeAttr });
   }
 
   function renderBatteryDetail() {
@@ -1579,6 +1610,12 @@
         </div>
         <div class="empty-full"><div class="icon">🔋</div>未找到该电池</div>
       </div>`;
+    }
+    if (state.battery.mgmtDetail) {
+      return Batteries.renderDetailMgmt(b, { locTab: state.battery.locTab || "lbs" }, {
+        escapeHtml,
+        escapeAttr,
+      });
     }
     const zoom = Math.max(1, Math.min(4, state.battery.mapZoom || 2));
     const socWarn = b.soc < 20;
@@ -6079,6 +6116,7 @@
       state.screen === "userPay" ||
       state.screen === "financeAccount" ||
       state.screen === "packageOrders" ||
+      state.screen === "batteryManage" ||
       state.screen === "batteryDetail" ||
       (state.screen === "todos" && state.todos.type) ||
       state.screen === "alerts" ||
@@ -6191,6 +6229,9 @@
       case "packageOrders":
         html = renderPackageOrders();
         break;
+      case "batteryManage":
+        html = renderBatteryManage();
+        break;
       case "batteryDetail":
         html = renderBatteryDetail();
         break;
@@ -6254,6 +6295,36 @@
       leaseSite.addEventListener("change", () => {
         state.lease.siteId = leaseSite.value;
         track("lease_site_filter", { site: state.lease.siteId });
+        render();
+      });
+    }
+
+    const batMgmtKw = $("bat-mgmt-kw");
+    if (batMgmtKw) {
+      batMgmtKw.addEventListener("input", () => {
+        state.batteryMgmt.keyword = batMgmtKw.value;
+      });
+      batMgmtKw.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          track("battery_mgmt_search", { keyword: state.batteryMgmt.keyword });
+          render();
+        }
+      });
+    }
+    const batMgmtSite = $("bat-mgmt-site");
+    if (batMgmtSite) {
+      batMgmtSite.addEventListener("change", () => {
+        state.batteryMgmt.site = batMgmtSite.value;
+        track("battery_mgmt_site", { site: state.batteryMgmt.site });
+        render();
+      });
+    }
+    const batMgmtOnline = $("bat-mgmt-online");
+    if (batMgmtOnline) {
+      batMgmtOnline.addEventListener("change", () => {
+        state.batteryMgmt.online = batMgmtOnline.value;
+        track("battery_mgmt_online", { online: state.batteryMgmt.online });
         render();
       });
     }
@@ -6881,12 +6952,57 @@
           render();
           break;
         }
+        case "bat-mgmt-back":
+          goTab("workbench");
+          break;
+        case "bat-mgmt-search": {
+          const kwEl = $("bat-mgmt-kw");
+          if (kwEl) state.batteryMgmt.keyword = kwEl.value;
+          track("battery_mgmt_search", { keyword: state.batteryMgmt.keyword });
+          render();
+          toast(state.batteryMgmt.keyword.trim() ? "已筛选" : "已刷新列表");
+          break;
+        }
         case "battery-open":
           openBatteryDetail(t.dataset.sn);
           break;
         case "battery-back":
           closeBatteryDetail();
           break;
+        case "battery-refresh": {
+          const bat = Batteries.refreshDeviceStatus(state.battery.sn);
+          track("battery_refresh", { sn: state.battery.sn, ok: !!bat });
+          toast(bat ? "设备状态已刷新（Mock）" : "电池不存在");
+          render();
+          break;
+        }
+        case "battery-discharge-linked":
+        case "battery-charge-linked": {
+          const bat = Batteries.toggleDischargeChargeLinked(state.battery.sn);
+          track("battery_discharge_charge_linked", {
+            sn: state.battery.sn,
+            on: bat && bat.dischargeOn && bat.chargeOn,
+          });
+          toast(
+            bat
+              ? `充放电已${bat.dischargeOn && bat.chargeOn ? "开启" : "关闭"}（Mock · 联动）`
+              : "电池不存在"
+          );
+          render();
+          break;
+        }
+        case "battery-loc-tab": {
+          state.battery.locTab = t.dataset.tab || "lbs";
+          const tab = state.battery.locTab;
+          if (tab === "nav") toast("导航暂未开放");
+          else if (tab === "track") toast("轨迹回放暂未开放");
+          else if (tab === "addr") {
+            const bat = Batteries.view(state.battery.sn);
+            toast(bat ? bat.address : "电池不存在");
+          }
+          render();
+          break;
+        }
         case "battery-discharge": {
           const bat = Batteries.toggleDischarge(state.battery.sn);
           track("battery_discharge", { sn: state.battery.sn, on: bat && bat.dischargeOn });
@@ -7218,7 +7334,7 @@
           break;
         case "site-busy-go-orders":
           openModule("lease.orders", true);
-          toast("已打开换电订单（原型：可按站点名筛选）");
+          toast("已打开换电记录（原型：可按站点名筛选）");
           break;
         case "site-busy-go-cabs":
           openModule("ops.cabinets", true);

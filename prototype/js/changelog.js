@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.101",
+      version: "V1.102",
       date: formatLocalDateTime(),
+      title: "换电记录归位 + 运维电池管理",
+      items: [
+        "换电订单改名为换电记录，工作台分组移至「其他」",
+        "运维新增电池管理：列表搜索/筛选、详情定位·资产·远程操作（对齐 manage-app）",
+      ],
+    },
+    {
+      version: "V1.101",
+      date: "2026-10-29 18:00",
       title: "人天池工作台三分组 + 待办异常",
       items: [
         "基础信息 / 业务管理 / 组织关联；移除异常记录宫格",

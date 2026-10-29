@@ -287,8 +287,8 @@
       empty: "本页即空态",
     }),
     leaseOrders: S({
-      title: "换电订单",
-      source: "PC 一期换电单 + APP 现场状态机",
+      title: "换电记录",
+      source: "工作台「其他」· PC 一期换电单 + APP 现场状态机",
       fields: [
         { name: "卡片规则", def: "全部换电记录；同一用户仅最新一条有用户信息头+换电订单；历史单仅换电订单区。先用户后换电" },
         { name: "快捷筛", def: "全部 / 柜外 / 待确认 / 有问题（非状态 Tab）；进页重置站点与关键词" },
@@ -303,9 +303,37 @@
         { name: "个人操作", def: "已欠费含逾期记录；无更换电池/更换记录/支付记录/订单合同" },
       ],
       enums: ["个人状态：待确认 / 使用中 / 冻结中 / 已欠费 / 已结束", "人天另有待还电"],
-      empty: "暂无换电订单",
+      empty: "暂无换电记录",
       error: "扫码 toast「请手动输入，扫码暂未开放」",
       note: "套餐购买见「套餐订单」。列表状态机是现场用的，不换成 PC 的成功/失败。",
+    }),
+    batteryManage: S({
+      title: "电池管理",
+      source: "manage-app 电池管理 · 运维模块",
+      fields: [
+        { name: "搜索", def: "壳体码 / 通讯板编码 / 提手码 / SN；确定刷新列表" },
+        { name: "筛选", def: "全部站点 · 全部在线状态 / 在线 / 离线" },
+        {
+          name: "列表卡片",
+          def: "壳体码（可复制）、启用/停用、SN、型号、规格、站点、在线、电量、当前电柜、查看详情",
+        },
+        {
+          name: "详情·状态",
+          def: "壳体码/SN、规格、剩余电量、网络状态、位置最后上报、刷新设备状态",
+        },
+        {
+          name: "详情·远程",
+          def: "充放电联动开关；蜂鸣器周期开启/停止（停止不撤回已发命令）",
+        },
+        { name: "详情·定位", def: "LBS / 详细地址 / 导航 / 轨迹；无有效定位空态" },
+        {
+          name: "详情·资产",
+          def: "健康度、业务编号、所属站点、位置、持有人、型号、规格、所在电柜、格口",
+        },
+      ],
+      empty: "暂无匹配电池",
+      error: "未找到电池时详情空态",
+      roles: "管理员与员工",
     }),
     packageOrders: S({
       title: "套餐订单",
@@ -926,6 +954,10 @@
       if (v === "settle-edit") return "financeAccount:settle";
       if (v === "detail") return "financeAccount:detail";
       return "financeAccount";
+    }
+    if (sc === "batteryManage") return "batteryManage";
+    if (sc === "batteryDetail" && state.battery && state.battery.mgmtDetail) {
+      return "batteryManage";
     }
     return sc || "login";
   }
