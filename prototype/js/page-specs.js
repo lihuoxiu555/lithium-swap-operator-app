@@ -368,6 +368,22 @@
         { name: "信用", def: "人天池·租赁·激活码可调整授信；链接类不适用" },
       ],
     }),
+    "channels:poolAdjust": S({
+      title: "渠道权益 · 额度调整",
+      source: "PC 已售额度池 · day_pool_operator_adjust",
+      fields: [
+        { name: "类型", def: "充值 / 赠送 / 退款 / 修正（后二者为扣减）" },
+        { name: "校验", def: "扣减后可用余额不得为负；写入 dayPoolLedger Mock" },
+      ],
+    }),
+    "channels:poolLedger": S({
+      title: "渠道权益 · 查看变动",
+      source: "PC 额度变动记录",
+      fields: [
+        { name: "筛选", def: "渠道商、类型（购买入账/调账/确认消耗等）" },
+        { name: "字段", def: "时间、渠道、池、类型、变动人天、余额后、关联单、说明" },
+      ],
+    }),
     "channels:form": S({
       title: "渠道管理 · 签约表单",
       source: "decision-069 · 对齐 PC 新增渠道商",
@@ -678,6 +694,8 @@
       const ch = state.channel || {};
       if (ch.view === "contractDetail") return "channels:detail";
       if (ch.view === "contractForm" || ch.view === "creditForm") return "channels:form";
+      if (ch.view === "poolAdjust") return "channels:poolAdjust";
+      if (ch.view === "poolLedger") return "channels:poolLedger";
       return "channels";
     }
     if (sc === "offCabinet") {

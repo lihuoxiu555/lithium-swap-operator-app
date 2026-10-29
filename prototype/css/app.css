@@ -2731,6 +2731,28 @@ button.btn-mock.offcab-btn {
   color: var(--muted);
   line-height: 1.4;
 }
+.ch-form-callout {
+  margin: 8px 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft, #f8fafc);
+}
+.ch-pool-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ch-pool-actions .btn-secondary {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 8px 6px;
+  font-size: 12px;
+}
+.sites-card.compact .sites-card-rows.compact {
+  gap: 4px;
+}
 .sites-footer-bar {
   position: sticky;
   bottom: 0;

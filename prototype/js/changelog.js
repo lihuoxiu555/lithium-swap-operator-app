@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.87",
+      date: formatLocalDateTime(),
+      title: "渠道权益 · 人天池操作",
+      items: [
+        "已售池卡片增加额度调整、查看变动",
+        "调账类型充值/赠送/退款/修正；变动记录支持渠道与类型筛选",
+      ],
+    },
+    {
       version: "V1.86",
       date: formatLocalDateTime(),
       title: "新增渠道商 · 结算模式收敛",

@@ -6381,6 +6381,22 @@
         Channels.syncFormModeSections();
       }
     }
+    const ledgerCh = document.getElementById("ch-ledger-channel");
+    const ledgerTy = document.getElementById("ch-ledger-type");
+    if (ledgerCh) {
+      ledgerCh.addEventListener("change", () => {
+        if (!state.channel) return;
+        state.channel.ledgerChannelId = ledgerCh.value;
+        render();
+      });
+    }
+    if (ledgerTy) {
+      ledgerTy.addEventListener("change", () => {
+        if (!state.channel) return;
+        state.channel.ledgerType = ledgerTy.value;
+        render();
+      });
+    }
   }
 
   function renderPageSpec() {
@@ -7074,9 +7090,62 @@
           render();
           break;
         }
-        case "ch-ledger-pool": {
+        case "ch-pool-adjust": {
           if (!Channels) break;
-          state.channel.ledgerPoolId = t.dataset.pool;
+          state.channel.tab = "assets";
+          state.channel.assetsSub = "dayPool";
+          state.channel.poolId = t.dataset.pool;
+          state.channel.poolForm = {};
+          state.channel.view = "poolAdjust";
+          track("channel_pool_adjust_open", { pool_id: t.dataset.pool });
+          render();
+          break;
+        }
+        case "ch-pool-ledger": {
+          if (!Channels) break;
+          state.channel.tab = "assets";
+          state.channel.assetsSub = "dayPool";
+          state.channel.ledgerPoolId = t.dataset.pool || state.channel.ledgerPoolId;
+          state.channel.ledgerChannelId = t.dataset.channelId || "全部";
+          state.channel.ledgerType = "全部";
+          state.channel.view = "poolLedger";
+          track("channel_pool_ledger_open", {
+            pool_id: t.dataset.pool,
+            channel_id: t.dataset.channelId,
+          });
+          render();
+          break;
+        }
+        case "ch-save-pool-adjust": {
+          if (!Channels) break;
+          const form = Channels.readPoolAdjustFromDom();
+          state.channel.poolForm = form;
+          const res = Channels.adjustPoolQuota(
+            state.channel.poolId,
+            form.adjustType,
+            form.adjustDays,
+            form.remark,
+            offCabOperatorName()
+          );
+          if (!res.ok) {
+            toast(res.msg || "调整失败");
+            break;
+          }
+          toast("额度已调整");
+          state.channel.view = "hub";
+          state.channel.tab = "assets";
+          state.channel.assetsSub = "dayPool";
+          state.channel.poolForm = {};
+          render();
+          break;
+        }
+        case "ch-back-assets": {
+          if (!state.channel) break;
+          state.channel.view = "hub";
+          state.channel.tab = "assets";
+          state.channel.assetsSub = "dayPool";
+          state.channel.poolId = null;
+          state.channel.poolForm = {};
           render();
           break;
         }

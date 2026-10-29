@@ -599,6 +599,8 @@
     },
   ];
 
+  const POOL_ADJUST_TYPES = ["充值", "赠送", "退款", "修正"];
+
   function defaultState() {
     return {
       tab: "contracts",
@@ -609,6 +611,113 @@
       creditChannelId: null,
       form: {},
       ledgerPoolId: "QP-2601",
+      poolId: null,
+      ledgerChannelId: "全部",
+      ledgerType: "全部",
+      poolForm: {},
+    };
+  }
+
+  function getPoolById(id) {
+    return dayPools.find((p) => p.id === id) || null;
+  }
+
+  function poolChannelOptions() {
+    const opts = [{ id: "全部", name: "全部渠道商" }];
+    dayPools.forEach((p) => {
+      if (!opts.some((o) => o.id === p.ownerId)) {
+        opts.push({ id: p.ownerId, name: p.ownerName });
+      }
+    });
+    return opts;
+  }
+
+  function ledgerTypeOptions() {
+    const set = new Set(dayPoolLedger.map((l) => l.type));
+    POOL_ADJUST_TYPES.forEach((t) => set.add(t));
+    return ["全部", ...Array.from(set).sort()];
+  }
+
+  function enrichLedgerRow(row) {
+    const pool = getPoolById(row.poolId);
+    return Object.assign({}, row, {
+      channelId: pool?.ownerId,
+      channelName: pool?.ownerName || "—",
+      poolName: pool?.name || row.poolId,
+    });
+  }
+
+  function filterLedgerRows(ch) {
+    const channelId = ch.ledgerChannelId || "全部";
+    const type = ch.ledgerType || "全部";
+    return dayPoolLedger
+      .map(enrichLedgerRow)
+      .filter((l) => {
+        if (channelId !== "全部" && l.channelId !== channelId) return false;
+        if (type !== "全部" && l.type !== type) return false;
+        return true;
+      })
+      .sort((a, b) => String(b.time).localeCompare(String(a.time)));
+  }
+
+  function appendPoolLedgerEntry(pool, type, deltaDays, ref, reason, operatorName) {
+    dayPoolLedger.unshift({
+      id: "LG-" + Date.now(),
+      poolId: pool.id,
+      time: formatLocal(),
+      type,
+      deltaDays,
+      balanceAfter: pool.availableDays,
+      operator: operatorName || PAYEE_OPERATOR,
+      ref: ref || "—",
+      reason: reason || "",
+    });
+  }
+
+  function adjustPoolQuota(poolId, adjustType, rawDays, remark, operatorName) {
+    const p = getPoolById(poolId);
+    if (!p) return { ok: false, msg: "额度池不存在" };
+    const days = parseInt(rawDays, 10);
+    if (!Number.isFinite(days) || days <= 0) return { ok: false, msg: "请输入有效人天数" };
+    const isDeduct = adjustType === "退款" || adjustType === "修正";
+    const delta = isDeduct ? -days : days;
+    if (isDeduct && p.availableDays + delta < 0) {
+      return {
+        ok: false,
+        msg: `扣减后可用不能为负（当前 ${p.availableDays} 人天）`,
+      };
+    }
+    p.availableDays += delta;
+    if (!isDeduct) {
+      p.totalDays += days;
+      if (adjustType === "赠送") p.giftedDays = (p.giftedDays || 0) + days;
+    } else if (adjustType === "退款") {
+      p.refundedDays = (p.refundedDays || 0) + days;
+    }
+    p.balancePct = p.totalDays
+      ? Math.round((p.availableDays / p.totalDays) * 1000) / 10
+      : 0;
+    if (p.availableDays > 0 && p.status === "余额不足") p.status = "使用中";
+    appendPoolLedgerEntry(
+      p,
+      adjustType,
+      delta,
+      String(remark || "").slice(0, 24) || "协商单",
+      remark,
+      operatorName
+    );
+    return { ok: true, pool: p };
+  }
+
+  function readPoolAdjustFromDom() {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    };
+    return {
+      adjustType: g("ch-pool-adjust-type") || "充值",
+      adjustDays: g("ch-pool-adjust-days"),
+      remark: g("ch-pool-adjust-remark"),
     };
   }
 
@@ -1284,8 +1393,6 @@
   function renderDayPoolAssets(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
     const pools = getDayPools();
-    const ledgerPool = ch.ledgerPoolId || pools[0]?.id || "QP-2601";
-    const ledger = getDayPoolLedger(ledgerPool);
     const poolCards = pools
       .map((p) => {
         const warn = p.status === "余额不足" ? "warn" : "ok";
@@ -1302,28 +1409,111 @@
             <div><span>批发价</span><em>¥${p.wholesalePrice}/人天</em></div>
             <div><span>有效期</span><em>${escapeHtml(p.validFrom)} ~ ${escapeHtml(p.validTo)}</em></div>
           </div>
-          <button type="button" class="btn-secondary" style="width:100%;margin-top:8px" data-action="ch-ledger-pool" data-pool="${escapeAttr(
-            p.id
-          )}">查看流水</button>
+          <div class="ch-pool-actions">
+            <button type="button" class="btn-secondary" data-action="ch-pool-adjust" data-pool="${escapeAttr(
+              p.id
+            )}">额度调整</button>
+            <button type="button" class="btn-secondary" data-action="ch-pool-ledger" data-pool="${escapeAttr(
+              p.id
+            )}" data-channel-id="${escapeAttr(p.ownerId)}">查看变动</button>
+          </div>
         </article>`;
       })
       .join("");
-    const ledgerRows = ledger
+    return `<div class="sites-list">${poolCards || `<div class="empty-inline compact">暂无人天池</div>`}</div>`;
+  }
+
+  function renderPoolAdjust(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const pool = getPoolById(ch.poolId);
+    if (!pool) {
+      return `<div class="empty-full">额度池不存在<button type="button" class="btn-secondary" data-action="ch-back-assets">返回</button></div>`;
+    }
+    const typeOpts = POOL_ADJUST_TYPES.map(
+      (t) =>
+        `<option value="${escapeAttr(t)}" ${(ch.poolForm?.adjustType || "充值") === t ? "selected" : ""}>${escapeHtml(t)}</option>`
+    ).join("");
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-assets" aria-label="返回">‹</button>
+          <h1>额度调整</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="sites-form-body">
+          <p class="ops-hint">${escapeHtml(pool.id)} · ${escapeHtml(pool.name)} · 可用 ${pool.availableDays} 人天</p>
+          <label class="sites-field">调整类型
+            <select id="ch-pool-adjust-type">${typeOpts}</select>
+          </label>
+          <label class="sites-field">人天数
+            <input id="ch-pool-adjust-days" type="number" min="1" step="1" value="${escapeAttr(
+              ch.poolForm?.adjustDays != null ? ch.poolForm.adjustDays : "100"
+            )}" />
+          </label>
+          <p class="sites-hint ch-form-callout">「退款」「修正」为扣减：填正数，系统记负向变动；扣减后可用不得为负。</p>
+          <label class="sites-field">原因 / 协商单号
+            <textarea id="ch-pool-adjust-remark" rows="3" placeholder="线下协商退款，扣减未使用购买额度">${escapeHtml(
+              ch.poolForm?.remark || ""
+            )}</textarea>
+          </label>
+          <button type="button" class="btn-primary" data-action="ch-save-pool-adjust">保存</button>
+        </div>
+      </div>`;
+  }
+
+  function renderPoolLedger(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const rows = filterLedgerRows(ch);
+    const chOpts = poolChannelOptions()
       .map(
-        (l) =>
-          `<div class="lease-row"><span class="lk">${escapeHtml(l.time.slice(5, 16))} ${escapeHtml(
-            l.type
-          )}</span><span class="lv">${l.deltaDays ? (l.deltaDays > 0 ? "+" : "") + l.deltaDays + "天 · " : ""}余 ${l.balanceAfter}</span></div>`
+        (o) =>
+          `<option value="${escapeAttr(o.id)}" ${ch.ledgerChannelId === o.id ? "selected" : ""}>${escapeHtml(
+            o.name
+          )}</option>`
+      )
+      .join("");
+    const typeOpts = ledgerTypeOptions()
+      .map(
+        (t) =>
+          `<option value="${escapeAttr(t)}" ${ch.ledgerType === t ? "selected" : ""}>${escapeHtml(t)}</option>`
+      )
+      .join("");
+    const list = rows
+      .map(
+        (l) => `<article class="sites-card compact">
+        <div class="sites-card-hd">
+          <div>
+            <strong>${escapeHtml(l.type)}</strong>
+            <div class="sites-meta">${escapeHtml(l.time)} · ${escapeHtml(l.channelName)}</div>
+          </div>
+          <span class="status-pill ${l.deltaDays < 0 ? "warn" : "ok"}">${l.deltaDays > 0 ? "+" : ""}${l.deltaDays} 人天</span>
+        </div>
+        <div class="sites-card-rows compact">
+          <div><span>额度池</span><em>${escapeHtml(l.poolName)}</em></div>
+          <div><span>余额后</span><em>${l.balanceAfter} 人天</em></div>
+          <div><span>关联</span><em>${escapeHtml(l.ref || "—")}</em></div>
+          <div><span>说明</span><em>${escapeHtml(l.reason || "—")}</em></div>
+        </div>
+      </article>`
       )
       .join("");
     return `
-      <div class="sites-list">${poolCards || `<div class="empty-inline compact">暂无人天池</div>`}</div>
-      <section class="devstat-sec">
-        <div class="devstat-hd"><strong>额度流水</strong><span class="sites-meta">${escapeHtml(
-          ledgerPool
-        )}</span></div>
-        <div class="sites-card-rows compact">${ledgerRows || `<div class="empty-inline compact">暂无流水</div>`}</div>
-      </section>`;
+      <div class="sites-page ops-page">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-assets" aria-label="返回">‹</button>
+          <h1>额度变动</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="lease-filters" style="padding:0 10px 8px">
+          <label class="sites-field" style="margin-bottom:8px">渠道商
+            <select id="ch-ledger-channel">${chOpts}</select>
+          </label>
+          <label class="sites-field">类型
+            <select id="ch-ledger-type">${typeOpts}</select>
+          </label>
+        </div>
+        <div class="sites-list">${list || `<div class="empty-inline compact">该筛选下暂无变动记录</div>`}</div>
+      </div>`;
   }
 
   function renderCardAssets(ctx) {
@@ -1717,6 +1907,8 @@
     if (view === "contractDetail") return renderContractDetail(ch, ctx);
     if (view === "contractForm") return renderContractForm(ch, ctx);
     if (view === "creditForm") return renderCreditForm(ch, ctx);
+    if (view === "poolAdjust") return renderPoolAdjust(ch, ctx);
+    if (view === "poolLedger") return renderPoolLedger(ch, ctx);
     return renderHub(ch, ctx);
   }
 
@@ -1762,6 +1954,11 @@
     getPlatformChannel,
     inheritDayQuota,
     DEFAULT_CHANNEL_PASSWORD,
+    getPoolById,
+    adjustPoolQuota,
+    readPoolAdjustFromDom,
+    filterLedgerRows,
+    POOL_ADJUST_TYPES,
     render,
     get channelContracts() {
       return channelContracts;
