@@ -73,13 +73,31 @@
     }),
     "chPartner:dayPool": S({
       title: "渠道商 · 人天额度池",
-      source: "原型-外卖 · dayPool 全 Tab",
+      source: "原型-外卖 · dayPool 子集",
       fields: [
-        { name: "主 Tab", def: "额度池 / 骑手登记 / 额度分配 / 消耗明细 / 零售价 / 异常记录" },
-        { name: "子 Tab", def: "列表+明细；登记+团队；分配骑手+变动；消耗骑手+团队" },
+        { name: "主 Tab", def: "额度池 / 消耗明细 / 零售价" },
+        { name: "额度池子 Tab", def: "额度池列表 / 额度明细" },
       ],
-      note: "额度池不支持在线退款（decision-126）",
+      note: "骑手登记、额度分配、异常记录为工作台独立宫格",
       roles: "人天池渠道商 channelDay",
+    }),
+    "chPartner:dayRiders": S({
+      title: "渠道商 · 骑手登记",
+      source: "PC dayPool · riders",
+      fields: [{ name: "子 Tab", def: "登记骑手 / 骑手团队" }],
+      roles: "channelDay",
+    }),
+    "chPartner:dayAlloc": S({
+      title: "渠道商 · 额度分配",
+      source: "PC dayPool · allocations",
+      fields: [{ name: "子 Tab", def: "按骑手 / 变动记录" }],
+      roles: "channelDay",
+    }),
+    "chPartner:dayExceptions": S({
+      title: "渠道商 · 异常记录",
+      source: "PC dayPool · exceptions",
+      fields: [{ name: "列表", def: "异常类型、骑手、状态、时间" }],
+      roles: "channelDay",
     }),
     "chPartner:orderAudit": S({
       title: "渠道商 · 变更记录",
@@ -834,6 +852,9 @@
     if (sc === "channelPartner") {
       const mod = (state.chPartner && state.chPartner.module) || "";
       if (mod === "ch.dayPool") return "chPartner:dayPool";
+      if (mod === "ch.dayRiders") return "chPartner:dayRiders";
+      if (mod === "ch.dayAlloc") return "chPartner:dayAlloc";
+      if (mod === "ch.dayExceptions") return "chPartner:dayExceptions";
       if (mod === "ch.links") return "chPartner:links";
       if (mod === "ch.settlement") return "chPartner:settlement";
       if (mod === "ch.commission") return "chPartner:commission";

@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.99",
+      version: "V1.100",
       date: formatLocalDateTime(),
+      title: "人天池 · 登记/分配/异常拆工作台入口",
+      items: [
+        "ch.dayRiders / ch.dayAlloc / ch.dayExceptions 独立宫格",
+        "ch.dayPool 保留额度池、消耗明细、零售价",
+      ],
+    },
+    {
+      version: "V1.99",
+      date: "2026-10-29 16:15",
       title: "渠道信用 · 提交打款凭证表单",
       items: ["「提交打款凭证」进入表单页，校验金额/流水号，提交后写入凭证列表待审核"],
     },

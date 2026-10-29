@@ -401,13 +401,11 @@
     },
   ];
 
-  const DAY_MAIN_TABS = [
+  /** 人天额度池模块内 Tab（骑手登记/额度分配/异常记录已拆至工作台独立入口） */
+  const DAY_POOL_TABS = [
     { id: "pools", label: "额度池" },
-    { id: "riders", label: "骑手登记" },
-    { id: "allocations", label: "额度分配" },
     { id: "consume", label: "消耗明细" },
     { id: "retail", label: "零售价" },
-    { id: "exceptions", label: "异常记录" },
   ];
 
   function defaultState() {
@@ -555,10 +553,123 @@
       </div>`;
   }
 
+  function renderDayRiders(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const sub = ch.ridersSub || "list";
+    const subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
+      [
+        ["list", "登记骑手"],
+        ["teams", "骑手团队"],
+      ],
+      sub,
+      "ch-riders-sub",
+      escapeHtml,
+      escapeAttr
+    )}</div>`;
+    let body = "";
+    if (sub === "teams") {
+      body = DAY_TEAMS.map(
+        (t) =>
+          `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
+            t.name
+          )}</strong><span class="sites-tag">${escapeHtml(t.status)}</span></div>
+          <div class="channel-card-kv">${renderKv(
+            [
+              ["在职", `${t.riderCount} 人`],
+              ["默认团队", t.isDefault ? "是" : "否"],
+              ["创建", escapeHtml(t.createdAt)],
+              ["备注", escapeHtml(t.remark)],
+            ],
+            escapeHtml
+          )}</div></article>`
+      ).join("");
+    } else {
+      body = DAY_RIDERS.map(
+        (r) =>
+          `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
+            r.name
+          )}</strong><span class="sites-tag">${escapeHtml(r.quotaStatus)}</span></div>
+          <div class="channel-card-kv">${renderKv(
+            [
+              ["手机", escapeHtml(r.phone)],
+              ["团队", escapeHtml(r.team)],
+              ["剩余/分配", `${r.remainingDays}/${r.allocatedDays} 人天`],
+              ["今日资格", escapeHtml(r.todayEligibility)],
+            ],
+            escapeHtml
+          )}</div></article>`
+      ).join("");
+    }
+    return `<p class="ops-hint channel-page-note">登记骑手与团队管理；扣减统一走渠道唯一额度池。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
+  }
+
+  function renderDayAlloc(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const sub = ch.allocSub || "logs";
+    const subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
+      [
+        ["riders", "按骑手"],
+        ["logs", "变动记录"],
+      ],
+      sub,
+      "ch-alloc-sub",
+      escapeHtml,
+      escapeAttr
+    )}</div>`;
+    let body = "";
+    if (sub === "riders") {
+      body = DAY_ALLOC_RIDERS.map(
+        (r) =>
+          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
+            [
+              ["骑手", escapeHtml(r.name)],
+              ["团队", escapeHtml(r.team)],
+              ["分配/剩余", `${r.allocated}/${r.remaining} 人天`],
+              ["状态", escapeHtml(r.status)],
+            ],
+            escapeHtml
+          )}</div></article>`
+      ).join("");
+    } else {
+      body = DAY_ALLOC_LOGS.map(
+        (l) =>
+          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
+            [
+              ["骑手", escapeHtml(l.riderName)],
+              ["类型", escapeHtml(l.type)],
+              ["人天", String(l.days)],
+              ["时间", escapeHtml(l.time)],
+            ],
+            escapeHtml
+          )}</div></article>`
+      ).join("");
+    }
+    return `<p class="ops-hint channel-page-note">向骑手分配或收回人天额度（对齐 PC dayPool · 额度分配）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
+  }
+
+  function renderDayExceptions(ctx) {
+    const { escapeHtml } = ctx;
+    const body = DAY_EXCEPTIONS.map(
+      (e) =>
+        `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
+          e.type
+        )}</strong><span class="sites-tag">${escapeHtml(e.status)}</span></div>
+        <div class="channel-card-kv">${renderKv(
+          [
+            ["时间", escapeHtml(e.time)],
+            ["骑手", escapeHtml(e.rider)],
+            ["单号", escapeHtml(e.id)],
+          ],
+          escapeHtml
+        )}</div></article>`
+    ).join("");
+    return `<p class="ops-hint channel-page-note">待还电、分配异常等（对齐 PC dayPool · 异常记录）。</p><div class="channel-card-list">${body}</div>`;
+  }
+
   function renderDayPool(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
     const tab = ch.dayTab || "pools";
-    const mainTabs = DAY_MAIN_TABS.map(
+    const mainTabs = DAY_POOL_TABS.map(
       (t) =>
         `<button type="button" class="sites-tab${tab === t.id ? " active" : ""}" data-action="ch-day-tab" data-tab="${escapeAttr(
           t.id
@@ -615,90 +726,6 @@
           </div>
         </article>`;
       }
-    } else if (tab === "riders") {
-      const sub = ch.ridersSub || "list";
-      subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
-        [
-          ["list", "登记骑手"],
-          ["teams", "骑手团队"],
-        ],
-        sub,
-        "ch-riders-sub",
-        escapeHtml,
-        escapeAttr
-      )}</div>`;
-      if (sub === "teams") {
-        body = DAY_TEAMS.map(
-          (t) =>
-            `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
-              t.name
-            )}</strong><span class="sites-tag">${escapeHtml(t.status)}</span></div>
-            <div class="channel-card-kv">${renderKv(
-              [
-                ["在职", `${t.riderCount} 人`],
-                ["默认团队", t.isDefault ? "是" : "否"],
-                ["创建", escapeHtml(t.createdAt)],
-                ["备注", escapeHtml(t.remark)],
-              ],
-              escapeHtml
-            )}</div></article>`
-        ).join("");
-      } else {
-        body = DAY_RIDERS.map(
-          (r) =>
-            `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
-              r.name
-            )}</strong><span class="sites-tag">${escapeHtml(r.quotaStatus)}</span></div>
-            <div class="channel-card-kv">${renderKv(
-              [
-                ["手机", escapeHtml(r.phone)],
-                ["团队", escapeHtml(r.team)],
-                ["剩余/分配", `${r.remainingDays}/${r.allocatedDays} 人天`],
-                ["今日资格", escapeHtml(r.todayEligibility)],
-              ],
-              escapeHtml
-            )}</div></article>`
-        ).join("");
-      }
-    } else if (tab === "allocations") {
-      const sub = ch.allocSub || "logs";
-      subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
-        [
-          ["riders", "按骑手"],
-          ["logs", "变动记录"],
-        ],
-        sub,
-        "ch-alloc-sub",
-        escapeHtml,
-        escapeAttr
-      )}</div>`;
-      if (sub === "riders") {
-        body = DAY_ALLOC_RIDERS.map(
-          (r) =>
-            `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
-              [
-                ["骑手", escapeHtml(r.name)],
-                ["团队", escapeHtml(r.team)],
-                ["分配/剩余", `${r.allocated}/${r.remaining} 人天`],
-                ["状态", escapeHtml(r.status)],
-              ],
-              escapeHtml
-            )}</div></article>`
-        ).join("");
-      } else {
-        body = DAY_ALLOC_LOGS.map(
-          (l) =>
-            `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
-              [
-                ["骑手", escapeHtml(l.riderName)],
-                ["类型", escapeHtml(l.type)],
-                ["人天", String(l.days)],
-                ["时间", escapeHtml(l.time)],
-              ],
-              escapeHtml
-            )}</div></article>`
-        ).join("");
-      }
     } else if (tab === "consume") {
       const sub = ch.consumeSub || "rider";
       subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
@@ -751,25 +778,10 @@
             escapeHtml
           )}</div></article>`
       ).join("");
-    } else if (tab === "exceptions") {
-      body = DAY_EXCEPTIONS.map(
-        (e) =>
-          `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
-            e.type
-          )}</strong><span class="sites-tag">${escapeHtml(e.status)}</span></div>
-          <div class="channel-card-kv">${renderKv(
-            [
-              ["时间", escapeHtml(e.time)],
-              ["骑手", escapeHtml(e.rider)],
-              ["单号", escapeHtml(e.id)],
-            ],
-            escapeHtml
-          )}</div></article>`
-      ).join("");
     }
 
     return `
-      <p class="ops-hint channel-page-note">一运营商一池；团队/骑手均从唯一额度池扣减（对齐 PC dayPool）。</p>
+      <p class="ops-hint channel-page-note">额度池概况与消耗；登记/分配/异常见工作台独立入口。</p>
       <div class="lease-filters"><div class="sites-tabs sites-tabs-scroll" role="tablist">${mainTabs}</div></div>
       ${subTabs}
       <div class="channel-card-list">${body}</div>`;
@@ -1097,6 +1109,9 @@
   function moduleTitle(moduleId) {
     const map = {
       "ch.dayPool": "人天额度池",
+      "ch.dayRiders": "骑手登记",
+      "ch.dayAlloc": "额度分配",
+      "ch.dayExceptions": "异常记录",
       "ch.settlement": "结算模式说明",
       "ch.credit": "渠道信用额度",
       "ch.links": "套餐与链接",
@@ -1111,6 +1126,9 @@
 
   function renderModuleBody(moduleId, ch, session, ctx) {
     if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx);
+    if (moduleId === "ch.dayRiders") return renderDayRiders(ch, ctx);
+    if (moduleId === "ch.dayAlloc") return renderDayAlloc(ch, ctx);
+    if (moduleId === "ch.dayExceptions") return renderDayExceptions(ctx);
     if (moduleId === "ch.settlement") return renderSettlement(session, ctx);
     if (moduleId === "ch.credit") return renderCredit(session, ch, ctx);
     if (moduleId === "ch.links") return renderLinks(ch, ctx);

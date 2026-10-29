@@ -970,13 +970,21 @@ Mock 用户：史建国（持电退/换）、王骑手（待领取/领电）、�
 | accounts | `ch.account` 收款账户 |
 | orderAudit | `ch.orderAudit` 变更记录 |
 
-### 25.2 人天额度池 Tab（`ch.dayPool`）
+### 25.2 人天池 · 工作台入口（group=渠道）
 
-额度池列表/额度明细 · 登记骑手/骑手团队 · 额度分配（按骑手/变动记录）· 消耗明细（按骑手/按团队）· **零售价** · **异常记录**。
+| 模块 | 说明 |
+|------|------|
+| `ch.dayPool` | 额度池（列表/明细）、消耗明细、零售价 |
+| `ch.dayRiders` | 骑手登记（登记骑手 / 骑手团队） |
+| `ch.dayAlloc` | 额度分配（按骑手 / 变动记录） |
+| `ch.dayExceptions` | 异常记录 |
+| `ch.credit` / `ch.settlement` / `ch.orderAudit` / `ch.employees` | 同前 |
 
-### 25.3 工作台注册（group=渠道）
+移动端将 PC dayPool 内「登记/分配/异常」拆为独立宫格，减少单页 Tab 深度。
 
-人天池 5 模块 + 链接类 6 模块（均含变更记录）；名称与 PC `NAV_LABEL` 一致。
+### 25.3 链接类
+
+链接类 6 模块（均含变更记录）；名称与 PC `NAV_LABEL` 一致。
 
 ### 25.4 数据统计 / 待办
 
