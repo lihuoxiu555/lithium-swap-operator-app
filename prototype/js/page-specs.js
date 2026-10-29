@@ -25,7 +25,7 @@
       title: "登录",
       source: "框架",
       fields: [
-        { name: "手机号", def: "11 位大陆号；演示 13800000005" },
+        { name: "手机号", def: "运营商 13800000005；人天池渠道 13900003100；推广渠道 13900003201" },
         { name: "密码", def: "演示 123456" },
         { name: "协议勾选", def: "未勾选不可登录" },
       ],
@@ -69,7 +69,51 @@
         { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。其他含渠道管理/用户管理/用户支付记录" },
       ],
       empty: "空宫格场景：「暂无可用应用」",
-      roles: "管理员与员工宫格按 roles 裁；员工不见财务账户",
+      roles: "管理员与员工宫格按 roles 裁；员工不见财务账户。渠道商仅见「渠道」分组模块",
+    }),
+    "chPartner:dayPool": S({
+      title: "渠道商 · 人天额度池",
+      source: "原型-外卖 · 客户·人天池 · dayPool",
+      fields: [
+        { name: "子 Tab", def: "额度 / 团队 / 登记 / 分配 / 消耗" },
+        { name: "额度", def: "可用/总量、冻结、已消耗、批发价、有效期、池状态" },
+        { name: "登记", def: "骑手、团队、剩余/分配人天、今日资格、额度状态" },
+      ],
+      note: "额度池不支持在线退款（decision-126）",
+      roles: "人天池渠道商 channelDay",
+    }),
+    "chPartner:links": S({
+      title: "渠道商 · 套餐与链接",
+      source: "原型-外卖 · 分销商·链接类 · channelLinks",
+      fields: [
+        { name: "链接卡片", def: "SKU、用途、专享/正式价、点击/成交" },
+        { name: "操作", def: "复制链接（Mock）" },
+      ],
+      roles: "推广渠道商 channelLink",
+    }),
+    "chPartner:settlement": S({
+      title: "渠道商 · 结算说明",
+      source: "PC 渠道结算模式规则摘要",
+      fields: [{ name: "模式", def: "人天池采购消耗 vs 链接推广分账/线下" }],
+      roles: "两种渠道商均可见",
+    }),
+    "chPartner:commission": S({
+      title: "渠道商 · 佣金对账",
+      source: "原型-外卖 · commissionStatement",
+      fields: [
+        { name: "月度", def: "毛额、退款冲正、净佣金、结算方式、状态" },
+      ],
+      note: "线下结算状态渠道端仍为 ——",
+      roles: "推广渠道商",
+    }),
+    dataStatsChannel: S({
+      title: "数据统计 · 渠道商总览",
+      source: "渠道商门户",
+      fields: [
+        { name: "人天池", def: "池可用、在职骑手、今日确认消耗、池状态" },
+        { name: "链接类", def: "本月成交/佣金、推广链接数、待线下结" },
+      ],
+      roles: "无经营/资产子 Tab；替代运营商数据统计",
     }),
     todosHub: S({
       title: "待办 Tab",
@@ -742,8 +786,26 @@
       return "cabinets:" + v;
     }
     if (sc === "dataStats") {
+      const sess = state.session;
+      if (
+        sess &&
+        (sess.role === "channelDay" || sess.role === "channelLink")
+      ) {
+        return "dataStatsChannel";
+      }
       const sub = (state.dataStats && state.dataStats.subTab) || "biz";
       return sub === "asset" ? "dataStats:asset" : "dataStats";
+    }
+    if (sc === "channelPartner") {
+      const mod = (state.chPartner && state.chPartner.module) || "";
+      if (mod === "ch.dayPool") return "chPartner:dayPool";
+      if (mod === "ch.links") return "chPartner:links";
+      if (mod === "ch.settlement") return "chPartner:settlement";
+      if (mod === "ch.commission") return "chPartner:commission";
+      if (mod === "ch.credit") return "chPartner:settlement";
+      if (mod === "ch.cardOrders") return "chPartner:links";
+      if (mod === "ch.account") return "chPartner:commission";
+      return "chPartner:settlement";
     }
     if (sc === "bizStats") {
       return "bizStats:" + ((state.ops && state.ops.bizTab) || "charts");

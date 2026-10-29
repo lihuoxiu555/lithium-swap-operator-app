@@ -34,6 +34,38 @@
         },
       ],
     },
+    {
+      phone: "13900003100",
+      password: "123456",
+      name: "顺丰渠道管理员",
+      operatorName: "绿色出行",
+      identities: [
+        {
+          role: "channelDay",
+          roleLabel: "人天池渠道商",
+          dataScope: "channel",
+          dataScopeLabel: "客户·人天池 · CH-SF",
+          channelId: "CH-SF",
+          channelName: "顺丰同城渠道",
+        },
+      ],
+    },
+    {
+      phone: "13900003201",
+      password: "123456",
+      name: "骑士卡运营",
+      operatorName: "绿色出行",
+      identities: [
+        {
+          role: "channelLink",
+          roleLabel: "推广渠道商",
+          dataScope: "channel",
+          dataScopeLabel: "分销商·链接类 · CH-CARD",
+          channelId: "CH-CARD",
+          channelName: "骑士卡渠道",
+        },
+      ],
+    },
   ];
 
   const SYSTEM_MESSAGES = [

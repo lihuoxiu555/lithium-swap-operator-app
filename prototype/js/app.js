@@ -18,6 +18,7 @@
   const Batteries = window.OperatorAppBatteries;
   const OffCab = window.OperatorAppOffCabinet;
   const Channels = window.OperatorAppChannels;
+  const ChPartner = window.OperatorAppChannelPartner;
 
   const SCENARIOS = {
     admin: { label: "管理员已登录", forceEmptyGrid: false, unread: false, loadError: false },
@@ -164,6 +165,7 @@
       remotePhase: "reopen",
     },
     channel: Channels ? Channels.defaultState() : { tab: "contracts", view: "menu" },
+    chPartner: ChPartner ? ChPartner.defaultState() : { module: null, dayTab: "pool", view: "hub" },
   };
 
   const els = {};
@@ -217,6 +219,23 @@
 
   function currentIdentity() {
     return state.session;
+  }
+
+  function isChannelSession(s) {
+    s = s || state.session;
+    return (
+      s &&
+      ChPartner &&
+      (ChPartner.isChannelDay(s) || ChPartner.isChannelLink(s))
+    );
+  }
+
+  function workbenchTenantLabel(s) {
+    if (isChannelSession(s)) {
+      const p = ChPartner.profile(s);
+      return p.channelName || s.account.operatorName;
+    }
+    return s.account.operatorName;
   }
 
   /** 已迁入「数据统计」Tab 的模块，工作台宫格不重复展示 */
@@ -503,6 +522,19 @@
       render();
       return;
     }
+    if (mod.status === "ready" && mod.id.indexOf("ch.") === 0) {
+      state.placeholderModule = mod;
+      if (!state.chPartner) state.chPartner = ChPartner ? ChPartner.defaultState() : {};
+      state.chPartner.module = mod.id;
+      if (mod.id === "ch.dayPool" && !state.chPartner.dayTab) {
+        state.chPartner.dayTab = "pool";
+      }
+      state.screen = "channelPartner";
+      setHash(mod.route);
+      track("channel_partner_open", { module_id: mod.id });
+      render();
+      return;
+    }
     if (mod.status === "ready" && mod.id === "users.list") {
       state.placeholderModule = mod;
       state.screen = "userList";
@@ -626,8 +658,12 @@
       dataScope: identity.dataScope,
       dataScopeLabel: identity.dataScopeLabel,
       siteIds: identity.siteIds || null,
+      channelId: identity.channelId || null,
+      channelName: identity.channelName || null,
     };
     state.pendingAccount = null;
+    if (ChPartner) state.chPartner = ChPartner.defaultState();
+    state.dataStats.subTab = "biz";
     track("role_selected", { role: identity.role });
     goTab("dataStats");
   }
@@ -639,6 +675,7 @@
     state.screen = "login";
     state.tab = "dataStats";
     state.dataStats.subTab = "biz";
+    if (ChPartner) state.chPartner = ChPartner.defaultState();
     setHash("#/login");
     render();
   }
@@ -727,7 +764,9 @@
       <div class="demo-hint">
         演示账号<br>
         管理员+员工：<code>13800000005</code> / <code>123456</code><br>
-        仅员工：<code>13900000001</code> / <code>123456</code>
+        仅员工：<code>13900000001</code> / <code>123456</code><br>
+        人天池渠道商：<code>13900003100</code> / <code>123456</code><br>
+        推广渠道商：<code>13900003201</code> / <code>123456</code>
       </div>
     `;
   }
@@ -833,6 +872,13 @@
 
   function renderDataStats() {
     const s = state.session;
+    if (isChannelSession(s)) {
+      return ChPartner.renderDataStats(state, {
+        escapeHtml,
+        escapeAttr,
+        session: s,
+      });
+    }
     const sub = state.dataStats.subTab || "biz";
     const body =
       sub === "asset"
@@ -885,7 +931,7 @@
 
     return `
       <div class="wb-top">
-        <div class="tenant">${escapeHtml(s.account.operatorName)}</div>
+        <div class="tenant">${escapeHtml(workbenchTenantLabel(s))}</div>
       </div>
       ${gridHtml}
       <div style="height:12px"></div>
@@ -898,6 +944,9 @@
 
   function pendingInboxCount() {
     if (!state.session) return 0;
+    if (isChannelSession()) {
+      return ChPartner.todoSummaries(state.session).reduce((n, g) => n + g.count, 0);
+    }
     return (
       Todos.totalCount(state.session.role, inboxOpts()) +
       Alerts.totalCount(inboxOpts())
@@ -906,6 +955,36 @@
 
   function renderTodoAlertSplit() {
     const s = state.session;
+    if (isChannelSession(s)) {
+      const chTodos = ChPartner.todoSummaries(s);
+      const todoCount = chTodos.reduce((n, g) => n + g.count, 0);
+      const todoHtml = chTodos.length
+        ? chTodos
+            .map(
+              (g) => `
+        <button type="button" class="split-row" data-action="open-ch-todo" data-id="${escapeAttr(
+          g.id
+        )}">
+          <span>${escapeHtml(g.title)}</span>
+          <em>${g.count}</em>
+        </button>`
+            )
+            .join("")
+        : `<div class="empty-inline compact">暂无渠道待办</div>`;
+      return `
+      <div class="home-split inbox-split">
+        <div class="card-block">
+          <button type="button" class="card-hd as-btn" data-action="open-ch-todo" data-id="${
+            chTodos[0] ? escapeAttr(chTodos[0].id) : "poolWarn"
+          }">待办 <span>${todoCount}</span></button>
+          ${todoHtml}
+        </div>
+        <div class="card-block warn-card">
+          <div class="card-hd">警告 <span>0</span></div>
+          <div class="empty-inline compact">渠道端暂无设备告警</div>
+        </div>
+      </div>`;
+    }
     const todoOpts = inboxOpts();
     const todoGroups = Todos.summaries(s.role, todoOpts);
     const todoCount = Todos.totalCount(s.role, todoOpts);
@@ -1043,6 +1122,11 @@
   function renderMine() {
     const s = state.session;
     const isAdmin = s.role === "admin";
+    const chRow = isChannelSession(s)
+      ? `<div class="info-row"><span class="k">渠道主体</span><span class="v">${escapeHtml(
+          s.channelName || ChPartner.profile(s).channelName
+        )}</span></div>`
+      : "";
     return `
       <div class="mine-head">
         <div class="avatar">${escapeHtml(s.account.name.slice(0, 1))}</div>
@@ -1052,7 +1136,8 @@
         </div>
       </div>
       <div class="info-list">
-        <div class="info-row"><span class="k">所属运营商</span><span class="v">${escapeHtml(
+        ${chRow}
+        <div class="info-row"><span class="k">签约运营商</span><span class="v">${escapeHtml(
           s.account.operatorName
         )}</span></div>
         <div class="info-row"><span class="k">角色</span><span class="v">${escapeHtml(
@@ -4989,6 +5074,17 @@
     return Channels.render(state, channelCtx());
   }
 
+  function renderChannelPartner() {
+    if (!ChPartner) return `<div class="empty-full">渠道商模块未加载</div>`;
+    return ChPartner.render(state, channelCtx());
+  }
+
+  function chTodoModuleId(todoId) {
+    if (todoId === "poolWarn") return "ch.dayPool";
+    if (todoId === "commission") return "ch.commission";
+    return null;
+  }
+
   function renderCabinets() {
     if (state.ops.cabView === "detail") return renderCabinetDetail();
     if (state.ops.cabView === "move") return renderCabinetMove();
@@ -5933,6 +6029,7 @@
       state.screen === "siteBusy" ||
       state.screen === "offCabinet" ||
       state.screen === "channels" ||
+      state.screen === "channelPartner" ||
       state.screen === "cabinets" ||
       state.screen === "deviceStats" ||
       state.screen === "userList" ||
@@ -6030,6 +6127,9 @@
         break;
       case "channels":
         html = renderChannels();
+        break;
+      case "channelPartner":
+        html = renderChannelPartner();
         break;
       case "deviceStats":
         html = renderDeviceStats();
@@ -6553,6 +6653,25 @@
           break;
         case "open-module":
           openModule(t.dataset.id, true);
+          break;
+        case "open-ch-todo": {
+          const modId = chTodoModuleId(t.dataset.id);
+          if (modId) openModule(modId, true);
+          else toast("暂无对应模块");
+          break;
+        }
+        case "ch-partner-back":
+          if (state.chPartner) state.chPartner.module = null;
+          goTab("workbench");
+          break;
+        case "ch-day-tab":
+          if (state.chPartner) {
+            state.chPartner.dayTab = t.dataset.tab || "pool";
+            render();
+          }
+          break;
+        case "ch-mock-copy-link":
+          copyText("https://demo.lithium-swap.cn/promo/mock-link", "推广链接已复制（Mock）");
           break;
         case "data-stats-tab":
           state.dataStats.subTab = t.dataset.tab === "asset" ? "asset" : "biz";

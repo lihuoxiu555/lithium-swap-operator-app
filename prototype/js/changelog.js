@@ -17,8 +17,19 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.96",
+      version: "V1.97",
       date: formatLocalDateTime(),
+      title: "渠道商门户 · 人天池 / 推广链接类",
+      items: [
+        "新增角色 channelDay / channelLink，演示号 13900003100、13900003201",
+        "底栏四 Tab 不变；工作台注册 ch.* 模块，对齐外卖 PC 渠道端菜单子集",
+        "数据统计渠道 KPI；待办 Mock 额度不足 / 佣金关注",
+      ],
+      decisions: ["decision-070"],
+    },
+    {
+      version: "V1.96",
+      date: "2026-10-29 15:30",
       title: "渠道管理 · 文档规则全量同步",
       items: [
         "PRD §24、decision-069、字段口径、验收 AC 对齐 V1.95 实现",

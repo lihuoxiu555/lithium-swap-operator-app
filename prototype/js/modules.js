@@ -10,7 +10,7 @@
  * 字段：id / name / group / icon / status / roles / badge? / route
  */
 (function (global) {
-  const MODULE_GROUPS = ["经营", "运维", "财务", "其他"];
+  const MODULE_GROUPS = ["经营", "运维", "财务", "其他", "渠道"];
 
   /** @type {Array<{
    *   id: string,
@@ -184,6 +184,70 @@
       status: "placeholder",
       roles: ["admin", "staff"],
       route: "#/module/demo.more",
+    },
+    /* —— 渠道商门户（对齐 原型-外卖 · 客户·人天池 / 分销商·链接类）—— */
+    {
+      id: "ch.dayPool",
+      name: "人天额度池",
+      group: "渠道",
+      icon: "🏊",
+      status: "ready",
+      roles: ["channelDay"],
+      route: "#/module/ch.dayPool",
+    },
+    {
+      id: "ch.credit",
+      name: "信用额度",
+      group: "渠道",
+      icon: "💳",
+      status: "ready",
+      roles: ["channelDay"],
+      route: "#/module/ch.credit",
+    },
+    {
+      id: "ch.settlement",
+      name: "结算说明",
+      group: "渠道",
+      icon: "📜",
+      status: "ready",
+      roles: ["channelDay", "channelLink"],
+      route: "#/module/ch.settlement",
+    },
+    {
+      id: "ch.links",
+      name: "套餐与链接",
+      group: "渠道",
+      icon: "🔗",
+      status: "ready",
+      roles: ["channelLink"],
+      route: "#/module/ch.links",
+    },
+    {
+      id: "ch.cardOrders",
+      name: "购卡记录",
+      group: "渠道",
+      icon: "🧾",
+      status: "ready",
+      roles: ["channelLink"],
+      route: "#/module/ch.cardOrders",
+    },
+    {
+      id: "ch.commission",
+      name: "佣金对账",
+      group: "渠道",
+      icon: "💰",
+      status: "ready",
+      roles: ["channelLink"],
+      route: "#/module/ch.commission",
+    },
+    {
+      id: "ch.account",
+      name: "收款账户",
+      group: "渠道",
+      icon: "🏦",
+      status: "ready",
+      roles: ["channelLink"],
+      route: "#/module/ch.account",
     },
   ];
 
