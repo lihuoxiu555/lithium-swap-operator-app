@@ -352,9 +352,9 @@
       title: "渠道管理 · 入口",
       source: "decision-069 · PRD §24",
       fields: [
-        { name: "入口", def: "签约渠道 / 渠道订单 / 渠道权益（点击进入，首页不展示列表）" },
+        { name: "入口", def: "签约 / 订单 / 权益 / 人天批发价 / 推广分销价 / 推广结算（6 项）" },
         { name: "数据范围", def: "本运营商 OP-SX · 绿色出行 Mock" },
-        { name: "不含", def: "链接结算、平台营销" },
+        { name: "不含", def: "平台营销（推广结算已接入）" },
       ],
       roles: "管理员 / 员工无差异",
     }),
@@ -375,6 +375,31 @@
       title: "渠道管理 · 渠道权益",
       source: "PRD §24.3",
       fields: [{ name: "子 Tab", def: "人天池 + 渠道分销；额度调整、查看变动" }],
+    }),
+    "channels:quotaPricing": S({
+      title: "渠道管理 · 人天批发价",
+      source: "PC 平台设置 → 人天批发价 · decision-104",
+      fields: [
+        { name: "默认价", def: "无渠道 · 新建签约继承；平台标准价只读" },
+        { name: "渠道覆盖", def: "批发单价 + 最低起购；新增/编辑 Mock 保存" },
+      ],
+    }),
+    "channels:cardPricing": S({
+      title: "渠道管理 · 推广分销价",
+      source: "PC 平台设置 → 渠道分销价 · decision-084",
+      fields: [
+        { name: "范围", def: "链接类签约 SKU：正式价/专享价/佣金" },
+        { name: "校验", def: "专享 ≤ 正式；佣金 ≤ 正式 − 专享" },
+      ],
+    }),
+    "channels:linkSettle": S({
+      title: "渠道管理 · 推广结算",
+      source: "PC 推广结算 · decision-148",
+      fields: [
+        { name: "Tab", def: "月度汇总 / 订单明细" },
+        { name: "筛选", def: "月份起止、渠道、结算方式" },
+        { name: "线下", def: "待线下结算 → 登记流水号+日期；已结查看凭证" },
+      ],
     }),
     "channels:detail": S({
       title: "渠道管理 · 签约详情",
@@ -712,10 +737,18 @@
       if (ch.view === "contractForm" || ch.view === "creditForm") return "channels:form";
       if (ch.view === "poolAdjust") return "channels:poolAdjust";
       if (ch.view === "poolLedger") return "channels:poolLedger";
+      if (ch.view === "quotaForm") return "channels:quotaPricing";
+      if (ch.view === "cardForm") return "channels:cardPricing";
+      if (ch.view === "linkSettleRegister" || ch.view === "linkSettleVoucher") {
+        return "channels:linkSettle";
+      }
       if (ch.view === "hub") {
         const tab = ch.tab || "contracts";
         if (tab === "orders") return "channels:orders";
         if (tab === "assets") return "channels:assets";
+        if (tab === "quotaPricing") return "channels:quotaPricing";
+        if (tab === "cardPricing") return "channels:cardPricing";
+        if (tab === "linkSettle") return "channels:linkSettle";
         return "channels:contracts";
       }
       return "channels";

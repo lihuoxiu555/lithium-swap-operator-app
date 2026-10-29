@@ -32,6 +32,137 @@
     { id: "contracts", label: "签约渠道", desc: "签约列表、新增渠道商、信用额度" },
     { id: "orders", label: "渠道订单", desc: "人天批发采购单与确认到账" },
     { id: "assets", label: "渠道权益", desc: "人天池额度、渠道分销 SKU" },
+    { id: "quotaPricing", label: "人天批发价", desc: "默认价与渠道覆盖 · 对齐 PC 平台设置" },
+    { id: "cardPricing", label: "推广分销价", desc: "链接类 SKU 正式价/专享价/佣金" },
+    { id: "linkSettle", label: "推广结算", desc: "推广佣金月度汇总与线下登记" },
+  ];
+
+  const PLATFORM_STD_DAY_PRICE = 8.5;
+
+  /** @type {Array<object>} 平台设置 → 人天批发价 Mock */
+  let operatorDayQuotaPrices = [
+    {
+      id: "OP-Q-DEF",
+      operatorId: OPERATOR_ID,
+      channelId: "*",
+      channelName: "默认批发价",
+      wholesalePrice: 8.5,
+      minDays: 500,
+      status: "生效",
+    },
+    {
+      id: "OP-Q-SF",
+      operatorId: OPERATOR_ID,
+      channelId: "CH-SF",
+      channelName: "顺丰同城渠道",
+      wholesalePrice: 8.5,
+      minDays: 1000,
+      status: "生效",
+    },
+    {
+      id: "OP-Q-TEMP",
+      operatorId: OPERATOR_ID,
+      channelId: "CH-TEMP",
+      channelName: "临时渠道",
+      wholesalePrice: 8.5,
+      minDays: 500,
+      status: "生效",
+    },
+  ];
+
+  /** @type {Array<object>} 渠道管理 → 推广结算 · 订单明细 Mock */
+  const channelLinkOrders = [
+    {
+      id: "LO-260601",
+      channelId: "CH-CARD",
+      linkPurpose: "App 首页 Banner",
+      riderName: "骑手A",
+      phone: "138****2001",
+      skuName: "包月30天卡",
+      paidPrice: 279,
+      commission: 25.11,
+      commissionSettlement: "即时分账",
+      payTime: "2026-06-01 09:12",
+      commissionClawback: 0,
+    },
+    {
+      id: "LO-260610",
+      channelId: "CH-CARD",
+      linkPurpose: "社群福利帖",
+      riderName: "刘骑士",
+      phone: "138****3001",
+      skuName: "包月30天卡",
+      paidPrice: 279,
+      commission: 25.11,
+      commissionSettlement: "即时分账",
+      payTime: "2026-06-10 16:30",
+      commissionClawback: 25.11,
+      refundPkg: 279,
+    },
+    {
+      id: "LO-260612",
+      channelId: "CH-CARD",
+      linkPurpose: "短信召回活动",
+      riderName: "骑手D",
+      phone: "136****2004",
+      skuName: "包月30天卡",
+      paidPrice: 279,
+      commission: 25,
+      commissionSettlement: "线下结算",
+      payTime: "2026-06-12 11:08",
+      commissionClawback: 0,
+    },
+    {
+      id: "LO-260518",
+      channelId: "CH-DELIV",
+      linkPurpose: "闪送 App 内嵌",
+      riderName: "闪送骑手E",
+      phone: "136****4002",
+      skuName: "包月30天卡",
+      paidPrice: 269,
+      commission: 30,
+      commissionSettlement: "线下结算",
+      payTime: "2026-05-18 11:20",
+      commissionClawback: 0,
+    },
+    {
+      id: "LO-260611",
+      channelId: "CH-DELIV",
+      linkPurpose: "闪送 App 内嵌",
+      riderName: "闪送骑手D",
+      phone: "136****4001",
+      skuName: "包月30天卡",
+      paidPrice: 269,
+      commission: 30,
+      commissionSettlement: "线下结算",
+      payTime: "2026-06-11 10:00",
+      commissionClawback: 0,
+    },
+  ];
+
+  /** @type {Array<object>} */
+  let offlineCommissionSettlements = [
+    {
+      id: "OCS-DELIV-202605",
+      channelId: "CH-DELIV",
+      month: "2026-05",
+      status: "已线下结清",
+      voucherNo: "TXN-DEL-2605-01",
+      settledAt: "2026-06-05",
+    },
+    {
+      id: "OCS-DELIV-202606",
+      channelId: "CH-DELIV",
+      month: "2026-06",
+      status: "已线下结清",
+      voucherNo: "TXN-DEL-2606-08",
+      settledAt: "2026-07-03",
+    },
+  ];
+
+  const LINK_SETTLE_SUB_TABS = [
+    { id: "summary", label: "月度汇总" },
+    { id: "detail", label: "订单明细" },
   ];
 
   /** 运营商 APP 一期：仅人天批发订单（月租/激活码见待办·渠道充值） */
@@ -622,7 +753,238 @@
       ledgerChannelId: "全部",
       ledgerType: "全部",
       poolForm: {},
+      linkSettleSub: "summary",
+      linkSettleFilter: {
+        monthFrom: "2026-05",
+        monthTo: "2026-06",
+        channelId: "全部",
+        settleType: "全部",
+      },
+      quotaEditId: null,
+      cardEditId: null,
+      linkSettleRegisterKey: null,
+      quotaForm: {},
+      cardForm: {},
+      offlineSettleForm: {},
     };
+  }
+
+  function payMonthKey(payTime) {
+    if (!payTime) return "";
+    return String(payTime).slice(0, 7);
+  }
+
+  function orderCommissionSettleType(o) {
+    return o.commissionSettlement || "线下结算";
+  }
+
+  function orderCommissionClawback(o) {
+    if (o.commissionClawback != null) return Number(o.commissionClawback) || 0;
+    return 0;
+  }
+
+  function myLinkContracts() {
+    return channelContracts.filter(
+      (c) => c.operatorId === OPERATOR_ID && contractSettlementMode(c) === "链接类"
+    );
+  }
+
+  function channelDisplayName(channelId) {
+    const c = channelContracts.find((x) => x.channelId === channelId);
+    if (c) return c.channelName;
+    const p = platformChannels.find((x) => x.id === channelId);
+    return p ? p.name : channelId;
+  }
+
+  function offlineCommissionSettleRecord(channelId, month) {
+    return offlineCommissionSettlements.find(
+      (s) => s.channelId === channelId && s.month === month
+    );
+  }
+
+  function promoSettleRangeMonths(f) {
+    const from = f.monthFrom || "2026-05";
+    const to = f.monthTo || "2026-06";
+    const out = [];
+    let y = parseInt(from.slice(0, 4), 10);
+    let m = parseInt(from.slice(5, 7), 10);
+    const endY = parseInt(to.slice(0, 4), 10);
+    const endM = parseInt(to.slice(5, 7), 10);
+    while (y < endY || (y === endY && m <= endM)) {
+      out.push(`${y}-${String(m).padStart(2, "0")}`);
+      m += 1;
+      if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+    }
+    return out;
+  }
+
+  function operatorLinkSettleMonthRows(rangeMonths, channelFilter) {
+    const months = rangeMonths || [];
+    const contracts = myLinkContracts().filter(
+      (c) => !channelFilter || channelFilter === "全部" || c.channelId === channelFilter
+    );
+    const rows = [];
+    contracts.forEach((c) => {
+      months.forEach((month) => {
+        const orders = channelLinkOrders.filter(
+          (o) => o.channelId === c.channelId && payMonthKey(o.payTime) === month
+        );
+        if (!orders.length) return;
+        const grouped = new Map();
+        orders.forEach((o) => {
+          const t = orderCommissionSettleType(o);
+          if (!grouped.has(t)) grouped.set(t, []);
+          grouped.get(t).push(o);
+        });
+        ["即时分账", "线下结算"].forEach((t) => {
+          const list = grouped.get(t);
+          if (!list) return;
+          const clawback = list.reduce((s, o) => s + orderCommissionClawback(o), 0);
+          const comm = list.reduce((s, o) => s + Number(o.commission || 0), 0);
+          const rec =
+            t === "线下结算" ? offlineCommissionSettleRecord(c.channelId, month) : null;
+          rows.push({
+            key: `${c.channelId}|${month}|${t}`,
+            channelId: c.channelId,
+            channelName: c.channelName,
+            month,
+            settleType: t,
+            orderCount: list.length,
+            totalPaid: list.reduce((s, o) => s + Number(o.paidPrice || 0), 0),
+            totalCommission: comm,
+            totalClawback: clawback,
+            netCommission: Math.round((comm - clawback) * 100) / 100,
+            status:
+              t === "即时分账"
+                ? "已即时分账"
+                : rec?.status || "待线下结清",
+            voucherNo: rec?.voucherNo || "",
+            settledAt: rec?.settledAt || "",
+          });
+        });
+      });
+    });
+    return rows.sort((a, b) => {
+      if (a.month !== b.month) return b.month.localeCompare(a.month);
+      return String(a.channelName).localeCompare(String(b.channelName), "zh");
+    });
+  }
+
+  function pendingLinkSettleBadgeCount() {
+    return operatorLinkSettleMonthRows(promoSettleRangeMonths({ monthFrom: "2026-01", monthTo: "2026-12" }), "全部").filter(
+      (r) => r.status === "待线下结清"
+    ).length;
+  }
+
+  function operatorQuotaRows() {
+    return operatorDayQuotaPrices
+      .filter((r) => r.operatorId === OPERATOR_ID)
+      .slice()
+      .sort((a, b) => {
+        if (a.channelId === "*") return -1;
+        if (b.channelId === "*") return 1;
+        return String(a.channelName).localeCompare(String(b.channelName), "zh");
+      });
+  }
+
+  function quotaPriceForChannel(channelId) {
+    return operatorDayQuotaPrices.find(
+      (q) => q.operatorId === OPERATOR_ID && q.channelId === channelId
+    );
+  }
+
+  function dayPoolContractsForQuota() {
+    return channelContracts.filter(
+      (c) => c.operatorId === OPERATOR_ID && contractSettlementMode(c) === "人天池"
+    );
+  }
+
+  function cardPricingRows() {
+    const linkIds = new Set(myLinkContracts().map((c) => c.channelId));
+    return channelSalePackages
+      .filter((s) => linkIds.has(s.channelId))
+      .map((s) =>
+        Object.assign({}, s, { channelName: channelDisplayName(s.channelId) })
+      );
+  }
+
+  function registerOfflineCommissionSettle(channelId, month, voucherNo, settledAt) {
+    const no = String(voucherNo || "").trim();
+    if (!no) return { ok: false, msg: "请填写打款流水号" };
+    const day = String(settledAt || "").trim() || formatLocal().slice(0, 10);
+    let rec = offlineCommissionSettlements.find(
+      (s) => s.channelId === channelId && s.month === month
+    );
+    if (rec) {
+      rec.status = "已线下结清";
+      rec.voucherNo = no;
+      rec.settledAt = day;
+    } else {
+      offlineCommissionSettlements.push({
+        id: `OCS-${channelId}-${month.replace("-", "")}`,
+        channelId,
+        month,
+        status: "已线下结清",
+        voucherNo: no,
+        settledAt: day,
+      });
+    }
+    return { ok: true };
+  }
+
+  function saveQuotaPricing(form, editId) {
+    const price = Number(form.wholesalePrice);
+    const minDays = parseInt(form.minDays, 10);
+    if (!Number.isFinite(price) || price <= 0) return { ok: false, msg: "批发价无效" };
+    if (!Number.isFinite(minDays) || minDays < 1) return { ok: false, msg: "起购人天无效" };
+    if (editId === "new") {
+      const channelId = form.channelId;
+      if (!channelId || channelId === "*") return { ok: false, msg: "请选择渠道" };
+      if (quotaPriceForChannel(channelId)) return { ok: false, msg: "该渠道已配置" };
+      const c = channelContracts.find((x) => x.channelId === channelId);
+      operatorDayQuotaPrices.push({
+        id: "OP-Q-" + Date.now(),
+        operatorId: OPERATOR_ID,
+        channelId,
+        channelName: c ? c.channelName : channelId,
+        wholesalePrice: price,
+        minDays,
+        status: form.status || "生效",
+      });
+      return { ok: true, created: true };
+    }
+    const row = operatorDayQuotaPrices.find((r) => r.id === editId);
+    if (!row) return { ok: false, msg: "记录不存在" };
+    row.wholesalePrice = price;
+    row.minDays = minDays;
+    row.status = form.status || row.status;
+    if (row.channelId !== "*") {
+      const contract = channelContracts.find((c) => c.channelId === row.channelId);
+      if (contract) {
+        contract.wholesalePrice = price;
+        contract.minDays = minDays;
+      }
+    }
+    return { ok: true };
+  }
+
+  function saveCardPricing(form, editId) {
+    const official = Number(form.officialPrice);
+    const channel = Number(form.channelPrice);
+    const comm = Number(form.commissionPerOrder);
+    if (channel > official) return { ok: false, msg: "专享价不能高于正式价" };
+    if (comm > official - channel) return { ok: false, msg: "佣金不能高于可分配收入" };
+    if (editId === "new") return { ok: false, msg: "演示：请编辑已有 SKU" };
+    const sku = channelSalePackages.find((s) => s.id === editId);
+    if (!sku) return { ok: false, msg: "SKU 不存在" };
+    sku.officialPrice = official;
+    sku.channelPrice = channel;
+    sku.commissionPerOrder = comm;
+    sku.status = form.status || sku.status;
+    return { ok: true };
   }
 
   function getPoolById(id) {
@@ -850,6 +1212,12 @@
   }
 
   function inheritDayQuota() {
+    const def = operatorDayQuotaPrices.find(
+      (r) => r.operatorId === OPERATOR_ID && r.channelId === "*"
+    );
+    if (def) {
+      return { wholesalePrice: def.wholesalePrice, minDays: def.minDays };
+    }
     return { wholesalePrice: DEFAULT_DAY_WHOLESALE, minDays: DEFAULT_DAY_MIN };
   }
 
@@ -1879,24 +2247,457 @@
   }
 
   function menuEntryTitle(tabId) {
-    const row = MAIN_TABS.find((t) => t.id === tabId);
+    const row =
+      MENU_ENTRIES.find((t) => t.id === tabId) ||
+      MAIN_TABS.find((t) => t.id === tabId);
     return row ? row.label : "渠道管理";
+  }
+
+  function renderStatusPill(status) {
+    const cls = status === "生效" || status === "启用" ? "ok" : "";
+    return `<span class="sites-tag ${cls}">${status}</span>`;
+  }
+
+  function renderQuotaPricingTab(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const rows = operatorQuotaRows();
+    const cards = rows
+      .map((r) => {
+        const isDef = r.channelId === "*";
+        const title = isDef
+          ? "默认批发价"
+          : escapeHtml(r.channelName || r.channelId);
+        const sub = isDef ? "无渠道 · 新建签约继承" : escapeHtml(r.channelId);
+        const kv = renderChannelKvRows(
+          [
+            ["平台标准价", `¥${PLATFORM_STD_DAY_PRICE}/人天 · 只读`],
+            ["我的批发价", `¥${r.wholesalePrice}/人天`],
+            ["最低起购", `${r.minDays} 人天`],
+            ["状态", renderStatusPill(r.status)],
+          ],
+          escapeHtml
+        );
+        return `<article class="sites-card channel-card">
+          <div class="sites-card-hd">
+            <div class="channel-card-title"><strong>${title}</strong>${isDef ? `<span class="sites-tag ok">默认</span>` : ""}</div>
+            <span class="sites-tag">${sub}</span>
+          </div>
+          <div class="channel-card-kv">${kv}</div>
+          <div class="channel-card-ft">
+            <button type="button" class="btn-secondary channel-card-btn" data-action="ch-quota-edit" data-id="${escapeAttr(
+              r.id
+            )}">${isDef ? "设置" : "编辑"}</button>
+          </div>
+        </article>`;
+      })
+      .join("");
+    const pending = dayPoolContractsForQuota().filter((c) => !quotaPriceForChannel(c.channelId));
+    return `
+      <p class="ops-hint channel-page-note">默认价供无渠道/新建签约继承；各渠道可单独覆盖（PC：平台设置 → 人天批发价）。</p>
+      <div class="channel-list-toolbar">
+        <button type="button" class="btn-primary channel-add-btn" data-action="ch-quota-new"${
+          pending.length ? "" : ' disabled title="所有人天池渠道已配置"'
+        }>+ 新增渠道批发价</button>
+      </div>
+      <div class="channel-card-list">${cards}</div>`;
+  }
+
+  function renderCardPricingTab(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const rows = cardPricingRows();
+    if (!myLinkContracts().length) {
+      return `<p class="empty-inline">暂无推广（链接类）签约。请先在「签约渠道」新增后再维护分销价。</p>`;
+    }
+    const cards = rows
+      .map(
+        (r) => `<article class="sites-card channel-card">
+        <div class="sites-card-hd">
+          <div class="channel-card-title"><strong>${escapeHtml(r.name)}</strong></div>
+          <span class="sites-tag">${escapeHtml(r.channelName)}</span>
+        </div>
+        <div class="channel-card-kv">${renderChannelKvRows(
+          [
+            ["电池型号", escapeHtml(r.batteryModel || "—")],
+            ["正式零售价", `¥${r.officialPrice}`],
+            ["渠道专享价", `¥${r.channelPrice}`],
+            ["佣金/单", `¥${r.commissionPerOrder}`],
+            ["状态", renderStatusPill(r.status)],
+          ],
+          escapeHtml
+        )}</div>
+        <div class="channel-card-ft">
+          <button type="button" class="btn-secondary channel-card-btn" data-action="ch-card-edit" data-id="${escapeAttr(
+            r.id
+          )}">编辑</button>
+        </div>
+      </article>`
+      )
+      .join("");
+    return `
+      <p class="ops-hint channel-page-note">按签约渠道分别设定正式价、专享价与佣金（PC：平台设置 → 渠道分销价）。</p>
+      <div class="channel-card-list">${cards || '<p class="empty-inline">暂无分销 SKU</p>'}</div>`;
+  }
+
+  function renderLinkSettleFilters(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const f = ch.linkSettleFilter || {};
+    const channels = [{ id: "全部", name: "全部渠道" }].concat(
+      myLinkContracts().map((c) => ({ id: c.channelId, name: c.channelName }))
+    );
+    const chOpts = channels
+      .map(
+        (o) =>
+          `<option value="${escapeAttr(o.id)}"${
+            (f.channelId || "全部") === o.id ? " selected" : ""
+          }>${escapeHtml(o.name)}</option>`
+      )
+      .join("");
+    const settleOpts = ["全部", "即时分账", "线下结算"]
+      .map(
+        (t) =>
+          `<option value="${escapeAttr(t)}"${
+            (f.settleType || "全部") === t ? " selected" : ""
+          }>${escapeHtml(t)}</option>`
+      )
+      .join("");
+    return `<div class="channel-filter-bar">
+      <label class="sites-field">月份起<input type="month" id="ch-ls-monthFrom" value="${escapeAttr(
+        f.monthFrom || "2026-05"
+      )}" /></label>
+      <label class="sites-field">月份止<input type="month" id="ch-ls-monthTo" value="${escapeAttr(
+        f.monthTo || "2026-06"
+      )}" /></label>
+      <label class="sites-field">渠道<select id="ch-ls-channelId">${chOpts}</select></label>
+      <label class="sites-field">结算方式<select id="ch-ls-settleType">${settleOpts}</select></label>
+      <button type="button" class="btn-primary" data-action="ch-link-settle-query">查询</button>
+    </div>`;
+  }
+
+  function renderLinkSettleTab(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    if (!myLinkContracts().length) {
+      return `<p class="empty-inline">暂无链接类签约渠道。请先新增<strong>推广（链接类）</strong>签约，并在「推广分销价」授权套餐。</p>
+        <button type="button" class="btn-primary" data-action="ch-enter-section" data-tab="contracts">去签约渠道</button>`;
+    }
+    const f = ch.linkSettleFilter || {};
+    const rangeMonths = promoSettleRangeMonths(f);
+    const monthSet = new Set(rangeMonths);
+    let monthRows = operatorLinkSettleMonthRows(rangeMonths, f.channelId || "全部").filter(
+      (r) => (f.settleType || "全部") === "全部" || r.settleType === f.settleType
+    );
+    monthRows = monthRows.map((r) => {
+      const settled =
+        r.settleType === "即时分账" || r.status === "已线下结清" ? r.netCommission : 0;
+      const pending = r.status === "待线下结清" ? r.netCommission : 0;
+      const statusLabel =
+        r.status === "待线下结清"
+          ? "待线下结算"
+          : r.status === "已线下结清"
+            ? "已线下结算"
+            : r.status;
+      return Object.assign({}, r, {
+        settledAmount: settled,
+        pendingAmount: pending,
+        statusLabel,
+      });
+    });
+    const grand = monthRows.reduce(
+      (acc, r) => ({
+        orderCount: acc.orderCount + r.orderCount,
+        totalCommission: acc.totalCommission + r.totalCommission,
+        totalClawback: acc.totalClawback + r.totalClawback,
+        pendingNet: acc.pendingNet + r.pendingAmount,
+      }),
+      { orderCount: 0, totalCommission: 0, totalClawback: 0, pendingNet: 0 }
+    );
+    const sub = ch.linkSettleSub || "summary";
+    const subTabs = renderSubTabs(
+      LINK_SETTLE_SUB_TABS,
+      sub,
+      "ch-link-settle-sub",
+      "sub",
+      escapeHtml,
+      escapeAttr
+    );
+    const kpi = `<div class="channel-kpi-grid">
+      <div class="channel-kpi"><span>成交</span><strong>${grand.orderCount} 笔</strong></div>
+      <div class="channel-kpi"><span>佣金毛额</span><strong>¥${grand.totalCommission.toFixed(2)}</strong></div>
+      <div class="channel-kpi"><span>退款冲正</span><strong>¥${grand.totalClawback.toFixed(2)}</strong></div>
+      <div class="channel-kpi warn"><span>待线下结算</span><strong>¥${grand.pendingNet.toFixed(2)}</strong></div>
+    </div>`;
+    let body = "";
+    if (sub === "detail") {
+      const orders = channelLinkOrders
+        .filter((o) => monthSet.has(payMonthKey(o.payTime)))
+        .filter((o) => (f.channelId || "全部") === "全部" || o.channelId === f.channelId)
+        .filter(
+          (o) =>
+            (f.settleType || "全部") === "全部" ||
+            orderCommissionSettleType(o) === f.settleType
+        )
+        .sort((a, b) => String(b.payTime).localeCompare(String(a.payTime)));
+      body = orders
+        .map((o) => {
+          const claw = orderCommissionClawback(o);
+          return `<article class="sites-card channel-card channel-order-card">
+            <div class="sites-card-hd"><div class="channel-card-title"><strong>${escapeHtml(
+              o.id
+            )}</strong></div><span class="sites-tag">${escapeHtml(
+              orderCommissionSettleType(o)
+            )}</span></div>
+            <div class="channel-card-kv">${renderChannelKvRows(
+              [
+                ["渠道", escapeHtml(channelDisplayName(o.channelId))],
+                ["用户", `${escapeHtml(o.riderName)} · ${escapeHtml(o.phone)}`],
+                ["套餐", escapeHtml(o.skuName)],
+                ["实付", `¥${Number(o.paidPrice).toFixed(2)}`],
+                ["佣金", `¥${Number(o.commission).toFixed(2)}`],
+                ["冲正", claw > 0 ? `¥${claw.toFixed(2)}` : "—"],
+                ["链接用途", escapeHtml(o.linkPurpose || "—")],
+                ["支付时间", escapeHtml(o.payTime)],
+              ],
+              escapeHtml
+            )}</div>
+          </article>`;
+        })
+        .join("");
+      body = `<div class="channel-card-list">${body || '<p class="empty-inline">暂无订单</p>'}</div>`;
+    } else {
+      body = monthRows
+        .map((r) => {
+          let op = "";
+          if (r.settleType === "线下结算" && r.status === "待线下结清") {
+            op = `<button type="button" class="btn-primary channel-card-btn" data-action="ch-offline-settle-open" data-key="${escapeAttr(
+              r.key
+            )}">登记线下结算</button>`;
+          } else if (r.settleType === "线下结算" && r.status === "已线下结清") {
+            op = `<button type="button" class="btn-secondary channel-card-btn" data-action="ch-offline-settle-view" data-key="${escapeAttr(
+              r.key
+            )}">查看凭证</button>`;
+          }
+          return `<article class="sites-card channel-card">
+            <div class="sites-card-hd">
+              <div class="channel-card-title"><strong>${escapeHtml(r.month)}</strong> · ${escapeHtml(
+                r.channelName
+              )}</div>
+              <span class="sites-tag">${escapeHtml(r.settleType)}</span>
+            </div>
+            <div class="channel-card-kv">${renderChannelKvRows(
+              [
+                ["成交", `${r.orderCount} 笔 · 实付 ¥${r.totalPaid.toFixed(2)}`],
+                ["佣金毛额", `¥${r.totalCommission.toFixed(2)}`],
+                ["退款冲正", r.totalClawback > 0 ? `¥${r.totalClawback.toFixed(2)}` : "—"],
+                ["当期应付", `¥${r.netCommission.toFixed(2)}`],
+                ["累计已结", `¥${r.settledAmount.toFixed(2)}`],
+                ["剩余待结", `¥${r.pendingAmount.toFixed(2)}`],
+                ["状态", renderStatusPill(r.statusLabel)],
+              ],
+              escapeHtml
+            )}</div>
+            ${op ? `<div class="channel-card-ft">${op}</div>` : ""}
+          </article>`;
+        })
+        .join("");
+      body = `<div class="channel-card-list">${body || '<p class="empty-inline">所选范围暂无汇总</p>'}</div>`;
+    }
+    return `
+      <p class="ops-hint channel-page-note">即时分账支付时完成；线下结算可登记凭证（PC：渠道管理 → 推广结算）。</p>
+      ${renderLinkSettleFilters(ch, ctx)}
+      ${kpi}
+      <div class="lease-filters">${subTabs}</div>
+      ${body}`;
+  }
+
+  function renderQuotaPricingForm(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const editId = ch.quotaEditId || "new";
+    const row =
+      editId === "new" ? null : operatorDayQuotaPrices.find((r) => r.id === editId);
+    const form = ch.quotaForm || {};
+    const isDef = row && row.channelId === "*";
+    const isNew = editId === "new";
+    let channelField = "";
+    if (isNew) {
+      const opts = dayPoolContractsForQuota()
+        .filter((c) => !quotaPriceForChannel(c.channelId))
+        .map(
+          (c) =>
+            `<option value="${escapeAttr(c.channelId)}">${escapeHtml(c.channelName)}</option>`
+        )
+        .join("");
+      channelField = `<label class="sites-field">渠道商<select id="ch-quota-channelId"><option value="">请选择</option>${opts}</select></label>`;
+    } else if (row) {
+      channelField = `<p class="ops-hint">${escapeHtml(row.channelName)}${
+        isDef ? " · 无渠道默认" : ""
+      }</p>`;
+    }
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-quota-list" aria-label="返回">‹</button>
+          <h1>${isNew ? "新增渠道批发价" : isDef ? "默认批发价" : "编辑批发价"}</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="sites-form-body">
+          <p class="ops-hint">平台标准价 ¥${PLATFORM_STD_DAY_PRICE}/人天（只读）</p>
+          ${channelField}
+          <label class="sites-field">批发单价（元/人天）
+            <input id="ch-quota-wholesalePrice" type="number" step="0.1" min="0.1" value="${escapeAttr(
+              form.wholesalePrice ??
+                (row ? row.wholesalePrice : PLATFORM_STD_DAY_PRICE)
+            )}" />
+          </label>
+          <label class="sites-field">最低起购（人天）
+            <input id="ch-quota-minDays" type="number" min="1" step="1" value="${escapeAttr(
+              form.minDays ?? (row ? row.minDays : 500)
+            )}" />
+          </label>
+          <label class="sites-field">状态
+            <select id="ch-quota-status">
+              <option${(form.status || row?.status || "生效") === "生效" ? " selected" : ""}>生效</option>
+              <option${(form.status || row?.status) === "停用" ? " selected" : ""}>停用</option>
+            </select>
+          </label>
+          <button type="button" class="btn-primary" data-action="ch-save-quota">保存</button>
+        </div>
+      </div>`;
+  }
+
+  function renderCardPricingForm(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const sku = channelSalePackages.find((s) => s.id === ch.cardEditId);
+    if (!sku) {
+      return `<div class="empty-full">SKU 不存在<button type="button" class="btn-secondary" data-action="ch-back-card-list">返回</button></div>`;
+    }
+    const form = ch.cardForm || {};
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-card-list" aria-label="返回">‹</button>
+          <h1>编辑分销价</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="sites-form-body">
+          <p class="ops-hint">${escapeHtml(channelDisplayName(sku.channelId))} · ${escapeHtml(
+            sku.name
+          )} · ${escapeHtml(sku.batteryModel || "")}</p>
+          <label class="sites-field">正式零售价（元）
+            <input id="ch-card-officialPrice" type="number" step="0.01" min="0" value="${escapeAttr(
+              form.officialPrice ?? sku.officialPrice
+            )}" />
+          </label>
+          <label class="sites-field">渠道专享价（元）
+            <input id="ch-card-channelPrice" type="number" step="0.01" min="0" value="${escapeAttr(
+              form.channelPrice ?? sku.channelPrice
+            )}" />
+          </label>
+          <label class="sites-field">佣金/单（元）
+            <input id="ch-card-commissionPerOrder" type="number" step="0.01" min="0" value="${escapeAttr(
+              form.commissionPerOrder ?? sku.commissionPerOrder
+            )}" />
+          </label>
+          <label class="sites-field">状态
+            <select id="ch-card-status">
+              <option${(form.status || sku.status) === "启用" ? " selected" : ""}>启用</option>
+              <option${(form.status || sku.status) === "停用" ? " selected" : ""}>停用</option>
+            </select>
+          </label>
+          <button type="button" class="btn-primary" data-action="ch-save-card">保存</button>
+        </div>
+      </div>`;
+  }
+
+  function renderOfflineSettleForm(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const key = ch.linkSettleRegisterKey || "";
+    const keyParts = key.split("|");
+    const channelId = keyParts[0] || "";
+    const month = keyParts[1] || "";
+    const rec = offlineCommissionSettleRecord(channelId, month);
+    const viewOnly = ch.view === "linkSettleVoucher";
+    const form = ch.offlineSettleForm || {};
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-link-settle" aria-label="返回">‹</button>
+          <h1>${viewOnly ? "结算凭证" : "登记线下结算"}</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="sites-form-body">
+          <p class="ops-hint">${escapeHtml(channelDisplayName(channelId))} · ${escapeHtml(month)}</p>
+          ${
+            viewOnly
+              ? `<div class="sites-card-rows">
+            <div><span>流水号</span><em>${escapeHtml(rec?.voucherNo || "—")}</em></div>
+            <div><span>结算日期</span><em>${escapeHtml(rec?.settledAt || "—")}</em></div>
+          </div>`
+              : `<label class="sites-field">打款流水号
+            <input id="ch-offline-voucherNo" value="${escapeAttr(form.voucherNo || "")}" placeholder="必填" />
+          </label>
+          <label class="sites-field">结算日期
+            <input id="ch-offline-settledAt" type="date" value="${escapeAttr(
+              form.settledAt || ""
+            )}" />
+          </label>
+          <button type="button" class="btn-primary" data-action="ch-save-offline-settle">确认登记</button>`
+          }
+        </div>
+      </div>`;
+  }
+
+  function readQuotaFormFromDom(isNew) {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    };
+    return {
+      channelId: isNew ? g("ch-quota-channelId") : undefined,
+      wholesalePrice: g("ch-quota-wholesalePrice"),
+      minDays: g("ch-quota-minDays"),
+      status: g("ch-quota-status"),
+    };
+  }
+
+  function readCardFormFromDom() {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    };
+    return {
+      officialPrice: g("ch-card-officialPrice"),
+      channelPrice: g("ch-card-channelPrice"),
+      commissionPerOrder: g("ch-card-commissionPerOrder"),
+      status: g("ch-card-status"),
+    };
+  }
+
+  function readOfflineSettleFromDom() {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    };
+    return { voucherNo: g("ch-offline-voucherNo"), settledAt: g("ch-offline-settledAt") };
   }
 
   function renderMenu(ch, ctx) {
     const { escapeHtml, escapeAttr, session } = ctx;
-    const items = MENU_ENTRIES.map(
-      (e) => `
+    const pendingLs = pendingLinkSettleBadgeCount();
+    const items = MENU_ENTRIES.map((e) => {
+      const badge =
+        e.id === "linkSettle" && pendingLs > 0
+          ? ` <span class="sites-tag warn">${pendingLs} 待结</span>`
+          : "";
+      return `
       <button type="button" class="channel-menu-item" data-action="ch-enter-section" data-tab="${escapeAttr(
         e.id
       )}">
         <span class="channel-menu-item-main">
-          <strong>${escapeHtml(e.label)}</strong>
+          <strong>${escapeHtml(e.label)}${badge}</strong>
           <span class="channel-menu-item-desc">${escapeHtml(e.desc)}</span>
         </span>
         <span class="channel-menu-item-chevron" aria-hidden="true">›</span>
-      </button>`
-    ).join("");
+      </button>`;
+    }).join("");
 
     return `
       <div class="sites-page ops-page">
@@ -1916,6 +2717,9 @@
     let body = "";
     if (tab === "orders") body = renderOrdersTab(ch, ctx);
     else if (tab === "assets") body = renderAssetsTab(ch, ctx);
+    else if (tab === "quotaPricing") body = renderQuotaPricingTab(ch, ctx);
+    else if (tab === "cardPricing") body = renderCardPricingTab(ch, ctx);
+    else if (tab === "linkSettle") body = renderLinkSettleTab(ch, ctx);
     else body = renderContractsTab(ch, ctx);
 
     return `
@@ -1972,6 +2776,11 @@
     if (view === "creditForm") return renderCreditForm(ch, ctx);
     if (view === "poolAdjust") return renderPoolAdjust(ch, ctx);
     if (view === "poolLedger") return renderPoolLedger(ch, ctx);
+    if (view === "quotaForm") return renderQuotaPricingForm(ch, ctx);
+    if (view === "cardForm") return renderCardPricingForm(ch, ctx);
+    if (view === "linkSettleRegister" || view === "linkSettleVoucher") {
+      return renderOfflineSettleForm(ch, ctx);
+    }
     if (view === "hub") return renderHub(ch, ctx);
     return renderMenu(ch, ctx);
   }
@@ -2024,6 +2833,12 @@
     readPoolAdjustFromDom,
     filterLedgerRows,
     POOL_ADJUST_TYPES,
+    saveQuotaPricing,
+    saveCardPricing,
+    registerOfflineCommissionSettle,
+    readQuotaFormFromDom,
+    readCardFormFromDom,
+    readOfflineSettleFromDom,
     render,
     get channelContracts() {
       return channelContracts;

@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.90",
+      version: "V1.91",
       date: formatLocalDateTime(),
+      title: "渠道管理 · 定价与推广结算",
+      items: [
+        "入口新增：人天批发价、推广分销价、推广结算（对齐 PC 三模块）",
+        "移动端卡片列表 + 编辑/登记线下结算 Mock",
+      ],
+    },
+    {
+      version: "V1.90",
+      date: "2026-10-29 13:40",
       title: "渠道管理 · 模块入口页",
       items: [
         "首页仅展示签约渠道/渠道订单/渠道权益三个入口，点击进入子页",

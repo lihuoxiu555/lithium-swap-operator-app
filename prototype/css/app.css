@@ -2774,6 +2774,49 @@ button.btn-mock.offcab-btn {
   color: var(--muted, #888);
   line-height: 1.35;
 }
+.channel-page-note {
+  margin: 0 12px 8px;
+  font-size: 12px;
+}
+.channel-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 16px;
+}
+.channel-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.channel-filter-bar .sites-field {
+  margin: 0;
+}
+.channel-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.channel-kpi {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-soft, #f6f7f9);
+  border: 1px solid var(--border, #e8e8ec);
+}
+.channel-kpi span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted, #888);
+}
+.channel-kpi strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.channel-kpi.warn strong {
+  color: var(--warn, #c67600);
+}
 .channel-menu-item-chevron {
   flex-shrink: 0;
   margin-left: 12px;

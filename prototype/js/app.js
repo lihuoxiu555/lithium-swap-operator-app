@@ -6981,6 +6981,143 @@
           render();
           break;
         }
+        case "ch-quota-new":
+        case "ch-quota-edit": {
+          if (!Channels) break;
+          state.channel.tab = "quotaPricing";
+          state.channel.quotaEditId =
+            t.dataset.action === "ch-quota-new" ? "new" : t.dataset.id;
+          state.channel.quotaForm = {};
+          state.channel.view = "quotaForm";
+          render();
+          break;
+        }
+        case "ch-back-quota-list": {
+          if (!state.channel) break;
+          state.channel.view = "hub";
+          state.channel.tab = "quotaPricing";
+          state.channel.quotaEditId = null;
+          state.channel.quotaForm = {};
+          render();
+          break;
+        }
+        case "ch-save-quota": {
+          if (!Channels) break;
+          const editId = state.channel.quotaEditId || "new";
+          const form = Channels.readQuotaFormFromDom(editId === "new");
+          const res = Channels.saveQuotaPricing(form, editId);
+          if (!res.ok) {
+            toast(res.msg || "保存失败");
+            break;
+          }
+          toast(res.created ? "已新增批发价" : "已保存");
+          state.channel.view = "hub";
+          state.channel.tab = "quotaPricing";
+          state.channel.quotaEditId = null;
+          render();
+          break;
+        }
+        case "ch-card-edit": {
+          if (!Channels) break;
+          state.channel.tab = "cardPricing";
+          state.channel.cardEditId = t.dataset.id;
+          state.channel.cardForm = {};
+          state.channel.view = "cardForm";
+          render();
+          break;
+        }
+        case "ch-back-card-list": {
+          if (!state.channel) break;
+          state.channel.view = "hub";
+          state.channel.tab = "cardPricing";
+          state.channel.cardEditId = null;
+          state.channel.cardForm = {};
+          render();
+          break;
+        }
+        case "ch-save-card": {
+          if (!Channels) break;
+          const form = Channels.readCardFormFromDom();
+          const res = Channels.saveCardPricing(form, state.channel.cardEditId);
+          if (!res.ok) {
+            toast(res.msg || "保存失败");
+            break;
+          }
+          toast("分销价已更新");
+          state.channel.view = "hub";
+          state.channel.tab = "cardPricing";
+          state.channel.cardEditId = null;
+          render();
+          break;
+        }
+        case "ch-link-settle-sub": {
+          if (!state.channel) break;
+          state.channel.linkSettleSub = t.dataset.sub || "summary";
+          render();
+          break;
+        }
+        case "ch-link-settle-query": {
+          if (!state.channel) break;
+          const g = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : "";
+          };
+          state.channel.linkSettleFilter = {
+            monthFrom: g("ch-ls-monthFrom") || "2026-05",
+            monthTo: g("ch-ls-monthTo") || "2026-06",
+            channelId: g("ch-ls-channelId") || "全部",
+            settleType: g("ch-ls-settleType") || "全部",
+          };
+          render();
+          break;
+        }
+        case "ch-offline-settle-open": {
+          if (!state.channel) break;
+          state.channel.tab = "linkSettle";
+          state.channel.linkSettleRegisterKey = t.dataset.key || "";
+          state.channel.offlineSettleForm = {};
+          state.channel.view = "linkSettleRegister";
+          render();
+          break;
+        }
+        case "ch-offline-settle-view": {
+          if (!state.channel) break;
+          state.channel.tab = "linkSettle";
+          state.channel.linkSettleRegisterKey = t.dataset.key || "";
+          state.channel.view = "linkSettleVoucher";
+          render();
+          break;
+        }
+        case "ch-back-link-settle": {
+          if (!state.channel) break;
+          state.channel.view = "hub";
+          state.channel.tab = "linkSettle";
+          state.channel.linkSettleRegisterKey = null;
+          render();
+          break;
+        }
+        case "ch-save-offline-settle": {
+          if (!Channels || !state.channel) break;
+          const key = state.channel.linkSettleRegisterKey || "";
+          const parts = key.split("|");
+          const form = Channels.readOfflineSettleFromDom();
+          const res = Channels.registerOfflineCommissionSettle(
+            parts[0],
+            parts[1],
+            form.voucherNo,
+            form.settledAt
+          );
+          if (!res.ok) {
+            toast(res.msg || "登记失败");
+            break;
+          }
+          toast("已登记线下结算");
+          state.channel.view = "hub";
+          state.channel.tab = "linkSettle";
+          state.channel.linkSettleRegisterKey = null;
+          render();
+          break;
+        }
         case "ch-orders-sub": {
           if (!Channels) break;
           state.channel.ordersSub = t.dataset.sub || "day";
