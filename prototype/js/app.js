@@ -526,6 +526,7 @@
       state.placeholderModule = mod;
       if (!state.chPartner) state.chPartner = ChPartner ? ChPartner.defaultState() : {};
       state.chPartner.module = mod.id;
+      state.chPartner.creditView = "home";
       if (mod.id === "ch.dayPool" && !state.chPartner.dayTab) {
         state.chPartner.dayTab = "pools";
       }
@@ -6661,9 +6662,48 @@
           break;
         }
         case "ch-partner-back":
-          if (state.chPartner) state.chPartner.module = null;
+          if (state.chPartner) {
+            state.chPartner.creditView = "home";
+            state.chPartner.module = null;
+          }
           goTab("workbench");
           break;
+        case "ch-deposit-proof-open":
+          if (state.chPartner) {
+            state.chPartner.creditView = "depositForm";
+            if (!state.chPartner.depositForm) {
+              state.chPartner.depositForm = { amount: "10000", transferRef: "", transferDate: "" };
+            }
+            render();
+          }
+          break;
+        case "ch-credit-form-back":
+          if (state.chPartner) {
+            state.chPartner.creditView = "home";
+            render();
+          }
+          break;
+        case "ch-deposit-proof-submit": {
+          if (!ChPartner || !state.chPartner) break;
+          const amtEl = document.getElementById("ch-deposit-amount");
+          const refEl = document.getElementById("ch-deposit-ref");
+          const dateEl = document.getElementById("ch-deposit-date");
+          const payload = {
+            amount: amtEl ? amtEl.value : "",
+            transferRef: refEl ? refEl.value : "",
+            transferDate: dateEl ? dateEl.value : "",
+          };
+          state.chPartner.depositForm = payload;
+          const res = ChPartner.submitDepositProof(state.chPartner, payload);
+          if (res.error) {
+            toast(res.error);
+            break;
+          }
+          toast(res.message);
+          track("ch_deposit_proof_submit", { amount: payload.amount });
+          render();
+          break;
+        }
         case "ch-day-tab":
           if (state.chPartner) {
             state.chPartner.dayTab = t.dataset.tab || "pools";

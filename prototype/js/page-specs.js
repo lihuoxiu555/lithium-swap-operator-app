@@ -111,6 +111,27 @@
       fields: [{ name: "模式", def: "人天池采购消耗 vs 链接推广分账/线下" }],
       roles: "两种渠道商均可见",
     }),
+    "chPartner:credit": S({
+      title: "渠道商 · 渠道信用额度",
+      source: "PC channelCredit",
+      fields: [
+        { name: "KPI", def: "信用额度、应押、待补缴、持电骑手" },
+        { name: "凭证列表", def: "押金补缴凭证状态" },
+        { name: "提交", def: "进入打款凭证表单" },
+      ],
+      roles: "人天池 channelDay",
+    }),
+    "chPartner:depositForm": S({
+      title: "渠道商 · 提交打款凭证",
+      source: "PC data-submit-deposit-proof",
+      fields: [
+        { name: "补缴金额", def: "正数，必填" },
+        { name: "银行流水号", def: "必填" },
+        { name: "转账日期", def: "选填，默认当天" },
+      ],
+      error: "金额无效或未填流水号 toast",
+      roles: "人天池渠道商",
+    }),
     "chPartner:commission": S({
       title: "渠道商 · 佣金对账",
       source: "原型-外卖 · commissionStatement",
@@ -816,7 +837,11 @@
       if (mod === "ch.links") return "chPartner:links";
       if (mod === "ch.settlement") return "chPartner:settlement";
       if (mod === "ch.commission") return "chPartner:commission";
-      if (mod === "ch.credit") return "chPartner:settlement";
+      if (mod === "ch.credit") {
+        return (state.chPartner && state.chPartner.creditView === "depositForm")
+          ? "chPartner:depositForm"
+          : "chPartner:credit";
+      }
       if (mod === "ch.cardOrders") return "chPartner:links";
       if (mod === "ch.account") return "chPartner:commission";
       if (mod === "ch.orderAudit") return "chPartner:orderAudit";

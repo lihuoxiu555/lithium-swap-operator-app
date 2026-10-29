@@ -421,8 +421,46 @@
       linksSub: "packages",
       commissionSub: "summary",
       auditKw: "",
+      creditView: "home",
+      depositProofs: null,
+      depositForm: { amount: "10000", transferRef: "", transferDate: "" },
       view: "hub",
     };
+  }
+
+  function getDepositProofs(ch) {
+    if (!ch.depositProofs) {
+      ch.depositProofs = DEPOSIT_PROOFS.map((p) => ({ ...p }));
+    }
+    return ch.depositProofs;
+  }
+
+  function submitDepositProof(ch, raw) {
+    const amount = Number(raw.amount);
+    const transferRef = String(raw.transferRef || "").trim();
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { error: "请输入有效补缴金额" };
+    }
+    if (!transferRef) {
+      return { error: "请填写银行流水号" };
+    }
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const transferDate =
+      String(raw.transferDate || "").trim() || now.toISOString().slice(0, 10);
+    getDepositProofs(ch).unshift({
+      id: "DP-" + String(now.getTime()).slice(-6),
+      amount,
+      transferRef,
+      transferDate,
+      status: "待审核",
+      submitTime: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(
+        now.getHours()
+      )}:${pad(now.getMinutes())}`,
+    });
+    ch.creditView = "home";
+    ch.depositForm = { amount: "10000", transferRef: "", transferDate: "" };
+    return { ok: true, message: "已提交打款凭证，等待运营商审核" };
   }
 
   function profile(session) {
@@ -763,15 +801,51 @@
     </article>${contractPanel(session, escapeHtml)}</div>`;
   }
 
-  function renderCredit(session, ctx) {
+  function renderDepositProofForm(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const f = ch.depositForm || {};
+    const gap = CREDIT.gap;
+    return `
+      <p class="ops-hint">线下对公打款后提交凭证，由签约运营商审核入账（对齐 PC 提交打款凭证）。</p>
+      <div class="sites-form-body channel-deposit-form">
+        <div class="sites-field">
+          <label for="ch-deposit-amount">补缴金额（元）</label>
+          <input id="ch-deposit-amount" type="number" inputmode="decimal" placeholder="如 10000"
+            value="${escapeAttr(f.amount != null ? f.amount : "")}" />
+          <p class="ops-hint">当前待补缴约 ¥${gap.toLocaleString("zh-CN")}（演示）</p>
+        </div>
+        <div class="sites-field">
+          <label for="ch-deposit-ref">银行流水号</label>
+          <input id="ch-deposit-ref" type="text" placeholder="对公转账流水号"
+            value="${escapeAttr(f.transferRef || "")}" />
+        </div>
+        <div class="sites-field">
+          <label for="ch-deposit-date">转账日期</label>
+          <input id="ch-deposit-date" type="date" value="${escapeAttr(f.transferDate || "")}" />
+        </div>
+        <div class="sites-field">
+          <label>收款信息（只读）</label>
+          <p class="ops-hint" style="margin:4px 0 0">开户名：绿色出行 · 招商银行上海分行 · 对公专户（演示）</p>
+        </div>
+      </div>
+      <div class="sites-form-footer">
+        <button type="button" class="sites-footer-ghost" data-action="ch-credit-form-back">取消</button>
+        <button type="button" class="sites-footer-primary" data-action="ch-deposit-proof-submit">提交</button>
+      </div>`;
+  }
+
+  function renderCredit(session, ch, ctx) {
     const { escapeHtml } = ctx;
     if (isChannelLink(session)) {
       return `<div class="channel-card-list"><article class="sites-card channel-card">
         <p class="ops-hint">推广分销渠道不涉及渠道信用额度；用户押金按 C 端规则处理（对齐 PC channelCredit 链接类空态）。</p>
       </article></div>`;
     }
+    if ((ch.creditView || "home") === "depositForm") {
+      return renderDepositProofForm(ch, ctx);
+    }
     const c = CREDIT;
-    const proofs = DEPOSIT_PROOFS.map(
+    const proofs = getDepositProofs(ch).map(
       (p) =>
         `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
           p.id
@@ -794,7 +868,7 @@
       </div>
       <p class="ops-hint">应押 = 电池押金 ¥${c.batteryDepositUnit.toLocaleString("zh-CN")} × 持电 ${c.holdersWithBattery}；信用分一期不展示。</p>
       <div class="channel-card-ft" style="padding:0 16px 8px">
-        <button type="button" class="btn-primary channel-card-btn" data-action="ch-mock-toast" data-msg="已提交打款凭证（Mock）">提交打款凭证</button>
+        <button type="button" class="btn-primary channel-card-btn" data-action="ch-deposit-proof-open">提交打款凭证</button>
       </div>
       <div class="group-title" style="padding:8px 16px 0">押金补缴凭证</div>
       <div class="channel-card-list">${proofs}</div>`;
@@ -1038,7 +1112,7 @@
   function renderModuleBody(moduleId, ch, session, ctx) {
     if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx);
     if (moduleId === "ch.settlement") return renderSettlement(session, ctx);
-    if (moduleId === "ch.credit") return renderCredit(session, ctx);
+    if (moduleId === "ch.credit") return renderCredit(session, ch, ctx);
     if (moduleId === "ch.links") return renderLinks(ch, ctx);
     if (moduleId === "ch.cardOrders") return renderCardOrders(ctx);
     if (moduleId === "ch.commission") return renderCommission(ch, ctx);
@@ -1056,11 +1130,14 @@
       return `<div class="empty-full">未选择模块</div>`;
     }
     const { escapeHtml, session: s } = ctx;
+    const creditForm = mod === "ch.credit" && ch.creditView === "depositForm";
+    const backAction = creditForm ? "ch-credit-form-back" : "ch-partner-back";
+    const pageTitle = creditForm ? "提交打款凭证" : moduleTitle(mod);
     return `
       <div class="sites-page ops-page">
         <div class="sites-header">
-          <button type="button" class="sites-back" data-action="ch-partner-back" aria-label="返回">‹</button>
-          <h1>${escapeHtml(moduleTitle(mod))}</h1>
+          <button type="button" class="sites-back" data-action="${backAction}" aria-label="返回">‹</button>
+          <h1>${escapeHtml(pageTitle)}</h1>
           <div class="sites-header-spacer"></div>
         </div>
         <p class="ops-hint">${escapeHtml(scopeHint(s))}</p>
@@ -1085,6 +1162,7 @@
     isChannelDay,
     isChannelLink,
     scopeHint,
+    submitDepositProof,
     renderDataStats,
     render,
     moduleTitle,

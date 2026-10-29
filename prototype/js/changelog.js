@@ -17,8 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.98",
+      version: "V1.99",
       date: formatLocalDateTime(),
+      title: "渠道信用 · 提交打款凭证表单",
+      items: ["「提交打款凭证」进入表单页，校验金额/流水号，提交后写入凭证列表待审核"],
+    },
+    {
+      version: "V1.98",
+      date: "2026-10-29 16:00",
       title: "渠道商 · PC 菜单全量对齐",
       items: [
         "补变更记录、员工；人天池额度池六 Tab+子 Tab；链接套餐/佣金双 Tab",
