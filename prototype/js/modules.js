@@ -10,7 +10,16 @@
  * 字段：id / name / group / icon / status / roles / badge? / route
  */
 (function (global) {
-  const MODULE_GROUPS = ["经营", "运维", "财务", "其他", "渠道"];
+  const MODULE_GROUPS = [
+    "经营",
+    "运维",
+    "财务",
+    "其他",
+    "基础信息",
+    "业务管理",
+    "组织关联",
+    "渠道",
+  ];
 
   /** @type {Array<{
    *   id: string,
@@ -189,43 +198,16 @@
     {
       id: "ch.dayPool",
       name: "人天额度池",
-      group: "渠道",
+      group: "基础信息",
       icon: "🏊",
       status: "ready",
       roles: ["channelDay"],
       route: "#/module/ch.dayPool",
     },
     {
-      id: "ch.dayRiders",
-      name: "骑手登记",
-      group: "渠道",
-      icon: "🛵",
-      status: "ready",
-      roles: ["channelDay"],
-      route: "#/module/ch.dayRiders",
-    },
-    {
-      id: "ch.dayAlloc",
-      name: "额度分配",
-      group: "渠道",
-      icon: "📤",
-      status: "ready",
-      roles: ["channelDay"],
-      route: "#/module/ch.dayAlloc",
-    },
-    {
-      id: "ch.dayExceptions",
-      name: "异常记录",
-      group: "渠道",
-      icon: "⚠️",
-      status: "ready",
-      roles: ["channelDay"],
-      route: "#/module/ch.dayExceptions",
-    },
-    {
       id: "ch.credit",
       name: "渠道信用额度",
-      group: "渠道",
+      group: "基础信息",
       icon: "💳",
       status: "ready",
       roles: ["channelDay"],
@@ -234,16 +216,34 @@
     {
       id: "ch.settlement",
       name: "结算模式说明",
-      group: "渠道",
+      group: "基础信息",
       icon: "📜",
       status: "ready",
       roles: ["channelDay", "channelLink"],
       route: "#/module/ch.settlement",
     },
     {
+      id: "ch.dayRiders",
+      name: "骑手登记",
+      group: "业务管理",
+      icon: "🛵",
+      status: "ready",
+      roles: ["channelDay"],
+      route: "#/module/ch.dayRiders",
+    },
+    {
+      id: "ch.dayAlloc",
+      name: "额度分配",
+      group: "业务管理",
+      icon: "📤",
+      status: "ready",
+      roles: ["channelDay"],
+      route: "#/module/ch.dayAlloc",
+    },
+    {
       id: "ch.orderAudit",
       name: "变更记录",
-      group: "渠道",
+      group: "业务管理",
       icon: "📝",
       status: "ready",
       roles: ["channelDay", "channelLink"],
@@ -252,7 +252,7 @@
     {
       id: "ch.employees",
       name: "员工",
-      group: "渠道",
+      group: "组织关联",
       icon: "👥",
       status: "ready",
       roles: ["channelDay"],

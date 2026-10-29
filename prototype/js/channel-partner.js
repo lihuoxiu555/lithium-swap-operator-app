@@ -113,6 +113,7 @@
       todayEligibility: "待还电",
       quotaStatus: "已用尽",
       status: "在职",
+      holdingBattery: true,
     },
   ];
 
@@ -140,11 +141,6 @@
   const DAY_RETAIL = [
     { sku: "按次换电", price: "¥3/次", site: "浦东骑手驿站", note: "渠道骑手零售价只读" },
     { sku: "应急换电", price: "¥5/次", site: "全签约站点", note: "与 PC「零售价」Tab 同口径演示" },
-  ];
-
-  const DAY_EXCEPTIONS = [
-    { id: "EX-01", time: "2026-06-08 22:10", rider: "吴骑手", type: "待还电未确认", status: "处理中" },
-    { id: "EX-02", time: "2026-06-07 09:00", rider: "周骑手", type: "分配收回异常", status: "已关闭" },
   ];
 
   const CREDIT = {
@@ -401,7 +397,46 @@
     },
   ];
 
-  /** 人天额度池模块内 Tab（骑手登记/额度分配/异常记录已拆至工作台独立入口） */
+  /** 无额度仍持电 → 待办 Tab「异常」（非工作台模块） */
+  function riderQuotaExceptions() {
+    return DAY_RIDERS.filter(
+      (r) =>
+        r.status === "在职" &&
+        r.remainingDays <= 0 &&
+        (r.holdingBattery ||
+          r.todayEligibility === "待还电" ||
+          r.quotaStatus === "已用尽")
+    ).map((r) => ({
+      id: "CHX-" + r.id,
+      riderId: r.id,
+      riderName: r.name,
+      phone: r.phone,
+      team: r.team,
+      subtype: "无额度持电",
+      severity: "高",
+      message: `个人剩余 ${r.remainingDays} 人天 · ${r.todayEligibility}，仍持有运营商电池`,
+      status: "待处理",
+      raisedAt: "今天 08:20",
+      suggestAction: "分配额度或督促还电回池",
+    }));
+  }
+
+  function getExceptionById(id) {
+    return riderQuotaExceptions().find((x) => x.id === id) || null;
+  }
+
+  function exceptionCount(session) {
+    if (!isChannelDay(session)) return 0;
+    return riderQuotaExceptions().length;
+  }
+
+  function exceptionSummaries(session) {
+    const n = exceptionCount(session);
+    if (!n) return [];
+    return [{ id: "quotaHold", title: "无额度持电", count: n }];
+  }
+
+  /** 人天额度池模块内 Tab（登记/分配已拆至工作台；异常进待办） */
   const DAY_POOL_TABS = [
     { id: "pools", label: "额度池" },
     { id: "consume", label: "消耗明细" },
@@ -647,23 +682,67 @@
     return `<p class="ops-hint channel-page-note">向骑手分配或收回人天额度（对齐 PC dayPool · 额度分配）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
   }
 
-  function renderDayExceptions(ctx) {
-    const { escapeHtml } = ctx;
-    const body = DAY_EXCEPTIONS.map(
-      (e) =>
-        `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
-          e.type
-        )}</strong><span class="sites-tag">${escapeHtml(e.status)}</span></div>
-        <div class="channel-card-kv">${renderKv(
-          [
-            ["时间", escapeHtml(e.time)],
-            ["骑手", escapeHtml(e.rider)],
-            ["单号", escapeHtml(e.id)],
-          ],
-          escapeHtml
-        )}</div></article>`
-    ).join("");
-    return `<p class="ops-hint channel-page-note">待还电、分配异常等（对齐 PC dayPool · 异常记录）。</p><div class="channel-card-list">${body}</div>`;
+  function renderExceptionInbox(session, ctx, itemId) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const items = riderQuotaExceptions();
+    if (itemId) {
+      const a = getExceptionById(itemId);
+      if (!a) {
+        return `<div class="todo-page"><div class="empty-full">异常不存在<button type="button" class="btn-secondary" data-action="ch-exceptions-back-list">返回</button></div></div>`;
+      }
+      return `
+        <div class="todo-page">
+          <div class="todo-header">
+            <button type="button" class="todo-back" data-action="ch-exceptions-back-list" aria-label="返回">‹</button>
+            <h1>异常详情</h1>
+            <span class="todo-header-spacer"></span>
+          </div>
+          <article class="sites-card channel-card" style="margin:12px">
+            <div class="channel-card-kv">${renderKv(
+              [
+                ["类型", escapeHtml(a.subtype)],
+                ["骑手", `${escapeHtml(a.riderName)} · ${escapeHtml(a.phone)}`],
+                ["团队", escapeHtml(a.team)],
+                ["说明", escapeHtml(a.message)],
+                ["建议", escapeHtml(a.suggestAction)],
+                ["状态", escapeHtml(a.status)],
+                ["时间", escapeHtml(a.raisedAt)],
+              ],
+              escapeHtml
+            )}</div>
+            <div class="channel-card-ft">
+              <button type="button" class="btn-primary channel-card-btn" data-action="open-module" data-id="ch.dayAlloc">去分配额度</button>
+              <button type="button" class="btn-secondary channel-card-btn" data-action="open-module" data-id="ch.dayRiders">查看骑手登记</button>
+            </div>
+          </article>
+        </div>`;
+    }
+    const cards =
+      items.length === 0
+        ? `<div class="empty-full"><div class="icon">✓</div>暂无异常</div>`
+        : items
+            .map(
+              (a) => `
+        <article class="todo-card" data-action="ch-exception-open" data-id="${escapeAttr(a.id)}">
+          <div class="todo-card-hd">
+            <strong>${escapeHtml(a.subtype)} · ${escapeHtml(a.riderName)}</strong>
+            <span class="todo-tag hot">${escapeHtml(a.severity)}</span>
+          </div>
+          <div class="todo-card-sum">${escapeHtml(a.message)}</div>
+          <div class="todo-card-meta">${escapeHtml(a.status)} · ${escapeHtml(a.raisedAt)}</div>
+        </article>`
+            )
+            .join("");
+    return `
+      <div class="todo-page">
+        <div class="todo-header">
+          <button type="button" class="todo-back" data-action="alerts-back-wb" aria-label="返回">‹</button>
+          <h1>异常</h1>
+          <span class="todo-header-count">${items.length}</span>
+        </div>
+        <p class="todo-source">无额度仍持电骑手 · 由待办推送（非历史异常台账）</p>
+        <div class="todo-list">${cards}</div>
+      </div>`;
   }
 
   function renderDayPool(ch, ctx) {
@@ -781,7 +860,7 @@
     }
 
     return `
-      <p class="ops-hint channel-page-note">额度池概况与消耗；登记/分配/异常见工作台独立入口。</p>
+      <p class="ops-hint channel-page-note">额度池概况与消耗；登记/分配见工作台；无额度持电见待办·异常。</p>
       <div class="lease-filters"><div class="sites-tabs sites-tabs-scroll" role="tablist">${mainTabs}</div></div>
       ${subTabs}
       <div class="channel-card-list">${body}</div>`;
@@ -1111,7 +1190,6 @@
       "ch.dayPool": "人天额度池",
       "ch.dayRiders": "骑手登记",
       "ch.dayAlloc": "额度分配",
-      "ch.dayExceptions": "异常记录",
       "ch.settlement": "结算模式说明",
       "ch.credit": "渠道信用额度",
       "ch.links": "套餐与链接",
@@ -1128,7 +1206,6 @@
     if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx);
     if (moduleId === "ch.dayRiders") return renderDayRiders(ch, ctx);
     if (moduleId === "ch.dayAlloc") return renderDayAlloc(ch, ctx);
-    if (moduleId === "ch.dayExceptions") return renderDayExceptions(ctx);
     if (moduleId === "ch.settlement") return renderSettlement(session, ctx);
     if (moduleId === "ch.credit") return renderCredit(session, ch, ctx);
     if (moduleId === "ch.links") return renderLinks(ch, ctx);
@@ -1181,6 +1258,10 @@
     isChannelLink,
     scopeHint,
     submitDepositProof,
+    exceptionCount,
+    exceptionSummaries,
+    getExceptionById,
+    renderExceptionInbox,
     renderDataStats,
     render,
     moduleTitle,

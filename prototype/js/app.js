@@ -328,6 +328,9 @@
     if (route.type === "alertList") {
       state.tab = "todos";
       state.alerts.group = route.group || "all";
+      state.alerts.channelDayMode =
+        route.group === "channel" &&
+        !!(state.session && ChPartner && ChPartner.isChannelDay(state.session));
       state.alerts.itemId = route.itemId;
       state.alerts.view = route.itemId ? "detail" : "list";
       state.screen = "alerts";
@@ -946,7 +949,9 @@
   function pendingInboxCount() {
     if (!state.session) return 0;
     if (isChannelSession()) {
-      return ChPartner.todoSummaries(state.session).reduce((n, g) => n + g.count, 0);
+      const todos = ChPartner.todoSummaries(state.session).reduce((n, g) => n + g.count, 0);
+      const exc = ChPartner.exceptionCount(state.session);
+      return todos + exc;
     }
     return (
       Todos.totalCount(state.session.role, inboxOpts()) +
@@ -972,6 +977,19 @@
             )
             .join("")
         : `<div class="empty-inline compact">暂无渠道待办</div>`;
+      const excGroups = ChPartner.exceptionSummaries(s);
+      const excCount = ChPartner.exceptionCount(s);
+      const excHtml = excGroups.length
+        ? excGroups
+            .map(
+              (g) => `
+        <button type="button" class="split-row warn" data-action="open-alert" data-group="all">
+          <span>${escapeHtml(g.title)}</span>
+          <em>${g.count}</em>
+        </button>`
+            )
+            .join("")
+        : `<div class="empty-inline compact">暂无异常</div>`;
       return `
       <div class="home-split inbox-split">
         <div class="card-block">
@@ -981,8 +999,8 @@
           ${todoHtml}
         </div>
         <div class="card-block warn-card">
-          <div class="card-hd">警告 <span>0</span></div>
-          <div class="empty-inline compact">渠道端暂无设备告警</div>
+          <button type="button" class="card-hd as-btn" data-action="open-alert" data-group="all">异常 <span>${excCount}</span></button>
+          ${excHtml}
         </div>
       </div>`;
     }
@@ -3844,14 +3862,31 @@
     state.alerts.group = groupId || "all";
     state.alerts.type = "all";
     state.alerts.itemId = null;
+    state.alerts.channelDayMode = !!(isChannelSession() && ChPartner.isChannelDay(state.session));
     state.tab = "todos";
     state.screen = "alerts";
-    setHash("#/alerts/" + state.alerts.group);
-    track("alert_open", { group: state.alerts.group });
+    setHash(
+      state.alerts.channelDayMode ? "#/alerts/channel" : "#/alerts/" + state.alerts.group
+    );
+    track("alert_open", { group: state.alerts.group, channel_day: state.alerts.channelDayMode });
     render();
   }
 
   function openAlertDetail(id) {
+    if (state.alerts.channelDayMode && ChPartner) {
+      const item = ChPartner.getExceptionById(id);
+      if (!item) {
+        toast("异常不存在");
+        return;
+      }
+      state.alerts.view = "detail";
+      state.alerts.itemId = id;
+      state.screen = "alerts";
+      setHash("#/alerts/channel/" + encodeURIComponent(id));
+      track("ch_exception_detail", { id });
+      render();
+      return;
+    }
     const item = Alerts.getAlertById(id);
     if (!item) {
       toast("告警不存在");
@@ -3867,6 +3902,12 @@
   }
 
   function renderAlerts() {
+    if (state.alerts.channelDayMode && ChPartner) {
+      if (state.alerts.view === "detail") {
+        return ChPartner.renderExceptionInbox(state.session, channelCtx(), state.alerts.itemId);
+      }
+      return ChPartner.renderExceptionInbox(state.session, channelCtx(), null);
+    }
     if (state.alerts.view === "detail") return renderAlertDetail();
     return renderAlertList();
   }
@@ -6776,6 +6817,14 @@
           break;
         case "open-alert":
           openAlertGroup(t.dataset.group);
+          break;
+        case "ch-exception-open":
+          openAlertDetail(t.dataset.id);
+          break;
+        case "ch-exceptions-back-list":
+          state.alerts.view = "list";
+          state.alerts.itemId = null;
+          render();
           break;
         case "retry-load":
           state.loadError = false;

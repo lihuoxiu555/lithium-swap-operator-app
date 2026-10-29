@@ -69,7 +69,7 @@
         { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。其他含渠道管理/用户管理/用户支付记录" },
       ],
       empty: "空宫格场景：「暂无可用应用」",
-      roles: "管理员与员工宫格按 roles 裁；员工不见财务账户。渠道商仅见「渠道」分组模块",
+      roles: "管理员与员工宫格按 roles 裁。人天池渠道商：基础信息/业务管理/组织关联；推广渠道商仍为「渠道」分组",
     }),
     "chPartner:dayPool": S({
       title: "渠道商 · 人天额度池",
@@ -78,7 +78,7 @@
         { name: "主 Tab", def: "额度池 / 消耗明细 / 零售价" },
         { name: "额度池子 Tab", def: "额度池列表 / 额度明细" },
       ],
-      note: "骑手登记、额度分配、异常记录为工作台独立宫格",
+      note: "无额度持电骑手推送待办·异常，非工作台模块",
       roles: "人天池渠道商 channelDay",
     }),
     "chPartner:dayRiders": S({
@@ -93,11 +93,14 @@
       fields: [{ name: "子 Tab", def: "按骑手 / 变动记录" }],
       roles: "channelDay",
     }),
-    "chPartner:dayExceptions": S({
-      title: "渠道商 · 异常记录",
-      source: "PC dayPool · exceptions",
-      fields: [{ name: "列表", def: "异常类型、骑手、状态、时间" }],
-      roles: "channelDay",
+    "chPartner:exceptions": S({
+      title: "待办 · 异常（人天池）",
+      source: "无额度仍持电骑手",
+      fields: [
+        { name: "推送规则", def: "在职、剩余 0 人天且仍持电/待还电" },
+        { name: "详情", def: "建议分配额度或督促还电" },
+      ],
+      roles: "channelDay · 原「警告」位改为「异常」",
     }),
     "chPartner:orderAudit": S({
       title: "渠道商 · 变更记录",
@@ -854,7 +857,6 @@
       if (mod === "ch.dayPool") return "chPartner:dayPool";
       if (mod === "ch.dayRiders") return "chPartner:dayRiders";
       if (mod === "ch.dayAlloc") return "chPartner:dayAlloc";
-      if (mod === "ch.dayExceptions") return "chPartner:dayExceptions";
       if (mod === "ch.links") return "chPartner:links";
       if (mod === "ch.settlement") return "chPartner:settlement";
       if (mod === "ch.commission") return "chPartner:commission";
@@ -912,6 +914,9 @@
       return "todos";
     }
     if (sc === "alerts") {
+      if (state.alerts && state.alerts.channelDayMode) {
+        return state.alerts.view === "detail" ? "chPartner:exceptions" : "chPartner:exceptions";
+      }
       return state.alerts && state.alerts.view === "detail" ? "alerts:detail" : "alerts";
     }
     if (sc === "todosHub") return "todosHub";

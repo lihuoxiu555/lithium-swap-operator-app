@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.100",
+      version: "V1.101",
       date: formatLocalDateTime(),
+      title: "人天池工作台三分组 + 待办异常",
+      items: [
+        "基础信息 / 业务管理 / 组织关联；移除异常记录宫格",
+        "无额度持电推送待办·异常（原警告位）",
+      ],
+    },
+    {
+      version: "V1.100",
+      date: "2026-10-29 16:30",
       title: "人天池 · 登记/分配/异常拆工作台入口",
       items: [
         "ch.dayRiders / ch.dayAlloc / ch.dayExceptions 独立宫格",
