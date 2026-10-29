@@ -73,14 +73,28 @@
     }),
     "chPartner:dayPool": S({
       title: "渠道商 · 人天额度池",
-      source: "原型-外卖 · 客户·人天池 · dayPool",
+      source: "原型-外卖 · dayPool 全 Tab",
       fields: [
-        { name: "子 Tab", def: "额度 / 团队 / 登记 / 分配 / 消耗" },
-        { name: "额度", def: "可用/总量、冻结、已消耗、批发价、有效期、池状态" },
-        { name: "登记", def: "骑手、团队、剩余/分配人天、今日资格、额度状态" },
+        { name: "主 Tab", def: "额度池 / 骑手登记 / 额度分配 / 消耗明细 / 零售价 / 异常记录" },
+        { name: "子 Tab", def: "列表+明细；登记+团队；分配骑手+变动；消耗骑手+团队" },
       ],
       note: "额度池不支持在线退款（decision-126）",
       roles: "人天池渠道商 channelDay",
+    }),
+    "chPartner:orderAudit": S({
+      title: "渠道商 · 变更记录",
+      source: "PC orderAudit · 本渠道成员",
+      fields: [
+        { name: "筛选", def: "手机/单号/摘要" },
+        { name: "列", def: "时间、事件、摘要、变更前后、操作人、关联单" },
+      ],
+      roles: "两种渠道商",
+    }),
+    "chPartner:employees": S({
+      title: "渠道商 · 员工",
+      source: "PC employees",
+      fields: [{ name: "列表", def: "姓名、手机、岗位、权限摘要、状态" }],
+      roles: "人天池 channelDay",
     }),
     "chPartner:links": S({
       title: "渠道商 · 套餐与链接",
@@ -805,6 +819,8 @@
       if (mod === "ch.credit") return "chPartner:settlement";
       if (mod === "ch.cardOrders") return "chPartner:links";
       if (mod === "ch.account") return "chPartner:commission";
+      if (mod === "ch.orderAudit") return "chPartner:orderAudit";
+      if (mod === "ch.employees") return "chPartner:employees";
       return "chPartner:settlement";
     }
     if (sc === "bizStats") {

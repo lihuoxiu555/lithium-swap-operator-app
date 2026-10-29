@@ -527,7 +527,7 @@
       if (!state.chPartner) state.chPartner = ChPartner ? ChPartner.defaultState() : {};
       state.chPartner.module = mod.id;
       if (mod.id === "ch.dayPool" && !state.chPartner.dayTab) {
-        state.chPartner.dayTab = "pool";
+        state.chPartner.dayTab = "pools";
       }
       state.screen = "channelPartner";
       setHash(mod.route);
@@ -6666,12 +6666,60 @@
           break;
         case "ch-day-tab":
           if (state.chPartner) {
-            state.chPartner.dayTab = t.dataset.tab || "pool";
+            state.chPartner.dayTab = t.dataset.tab || "pools";
             render();
           }
           break;
+        case "ch-day-pool-sub":
+          if (state.chPartner) {
+            state.chPartner.dayPoolSub = t.dataset.sub || "list";
+            render();
+          }
+          break;
+        case "ch-riders-sub":
+          if (state.chPartner) {
+            state.chPartner.ridersSub = t.dataset.sub || "list";
+            render();
+          }
+          break;
+        case "ch-alloc-sub":
+          if (state.chPartner) {
+            state.chPartner.allocSub = t.dataset.sub || "logs";
+            render();
+          }
+          break;
+        case "ch-consume-sub":
+          if (state.chPartner) {
+            state.chPartner.consumeSub = t.dataset.sub || "rider";
+            render();
+          }
+          break;
+        case "ch-links-sub":
+          if (state.chPartner) {
+            state.chPartner.linksSub = t.dataset.sub || "packages";
+            render();
+          }
+          break;
+        case "ch-commission-sub":
+          if (state.chPartner) {
+            state.chPartner.commissionSub = t.dataset.sub || "summary";
+            render();
+          }
+          break;
+        case "ch-audit-search": {
+          const inp = document.getElementById("ch-audit-kw");
+          if (state.chPartner && inp) state.chPartner.auditKw = inp.value;
+          render();
+          break;
+        }
+        case "ch-mock-toast":
+          toast(t.dataset.msg || "演示操作");
+          break;
         case "ch-mock-copy-link":
-          copyText("https://demo.lithium-swap.cn/promo/mock-link", "推广链接已复制（Mock）");
+          copyText(
+            "wxmp://OP-SX/pages/landing?ch=demo&lnk=" + (t.dataset.link || "mock"),
+            "推广链接已复制（Mock）"
+          );
           break;
         case "data-stats-tab":
           state.dataStats.subTab = t.dataset.tab === "asset" ? "asset" : "biz";

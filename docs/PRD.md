@@ -955,24 +955,35 @@ Mock 用户：史建国（持电退/换）、王骑手（待领取/领电）、�
 | **人天池渠道商** | 客户·人天池 | `13900003100` / `123456` | CH-SF |
 | **推广渠道商** | 分销商·链接类 | `13900003201` / `123456` | CH-CARD |
 
-### 25.1 工作台模块（`modules.js` · group=渠道）
+### 25.1 与 PC `CHANNEL_NAV` 对齐
 
-| 模块 id | 人天池 | 链接类 | 说明 |
-|---------|--------|--------|------|
-| `ch.dayPool` | ✓ | — | 额度池五 Tab：额度/团队/登记/分配/消耗 |
-| `ch.credit` | ✓ | — | 授信/应押/已入账（信用分一期不展示） |
-| `ch.settlement` | ✓ | ✓ | 结算模式规则摘要 |
-| `ch.links` | — | ✓ | 推广链接与 SKU 专享价展示 |
-| `ch.cardOrders` | — | ✓ | 用户购卡记录 |
-| `ch.commission` | — | ✓ | 月度佣金对账 |
-| `ch.account` | — | ✓ | 收款/分账账户只读 |
+| PC 菜单 | 移动端 |
+|---------|--------|
+| overview | **数据统计** Tab（KPI + 签约运营商卡片 + 预警条） |
+| channelSettlement | `ch.settlement` 结算模式说明 |
+| dayPool | `ch.dayPool` 六 Tab + 子 Tab（同 PC） |
+| channelCredit | `ch.credit` 渠道信用额度 + 押金凭证 |
+| employees | `ch.employees` 员工（仅人天池） |
+| channelLinks | `ch.links` 可销售套餐 / 推广链接 |
+| channelOrders | `ch.cardOrders` 购卡记录 |
+| commissionStatement | `ch.commission` 月度汇总 / 订单明细 |
+| accounts | `ch.account` 收款账户 |
+| orderAudit | `ch.orderAudit` 变更记录 |
 
-### 25.2 数据统计 / 待办
+### 25.2 人天额度池 Tab（`ch.dayPool`）
+
+额度池列表/额度明细 · 登记骑手/骑手团队 · 额度分配（按骑手/变动记录）· 消耗明细（按骑手/按团队）· **零售价** · **异常记录**。
+
+### 25.3 工作台注册（group=渠道）
+
+人天池 5 模块 + 链接类 6 模块（均含变更记录）；名称与 PC `NAV_LABEL` 一致。
+
+### 25.4 数据统计 / 待办
 
 - **数据统计**：渠道 KPI 总览（无经营/资产子 Tab）；明细进工作台模块。
 - **待办**：Mock — 人天池「额度池余额不足」；链接类「佣金对账关注」。无运营商退款/告警队列。
 
-### 25.3 Non-goals
+### 25.5 Non-goals
 
 渠道端不做 PC 全量菜单（概览二审、员工权限、订单审核等二期）；不做真实链接短链与支付分账接口。
 

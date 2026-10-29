@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.97",
+      version: "V1.98",
       date: formatLocalDateTime(),
+      title: "渠道商 · PC 菜单全量对齐",
+      items: [
+        "补变更记录、员工；人天池额度池六 Tab+子 Tab；链接套餐/佣金双 Tab",
+        "总览 KPI+签约卡+预警；信用额度含押金凭证",
+      ],
+    },
+    {
+      version: "V1.97",
+      date: "2026-10-29 15:45",
       title: "渠道商门户 · 人天池 / 推广链接类",
       items: [
         "新增角色 channelDay / channelLink，演示号 13900003100、13900003201",
