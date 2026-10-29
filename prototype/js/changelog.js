@@ -17,6 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.76",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 两步主路径与兜底",
+      decisions: ["067", "068"],
+      items: [
+        "① 重开出电格口成功即完结；失败进入 ② 禁用+改发",
+        "本柜仅故障出电有电：允许取走还入电池赴他站换电",
+        "李骑手 sparseCabinet Mock 演示兜底",
+      ],
+    },
+    {
       version: "V1.75",
       date: formatLocalDateTime(),
       title: "远程出电 · 还电必有与 MOCK 色",

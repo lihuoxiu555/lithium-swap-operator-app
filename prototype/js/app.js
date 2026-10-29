@@ -160,6 +160,7 @@
       remotePort: null,
       remoteSn: null,
       outboundRefreshAt: null,
+      remotePhase: "reopen",
     },
   };
 
@@ -484,6 +485,7 @@
       state.offCab.lastOrder = null;
       state.offCab.remotePort = null;
       state.offCab.remoteSn = null;
+      state.offCab.remotePhase = "reopen";
       state.screen = "offCabinet";
       setHash(mod.route);
       track("off_cabinet_open", {});
@@ -6915,6 +6917,8 @@
           state.offCab.remotePort = null;
           state.offCab.remoteSn = null;
           state.offCab.outboundRefreshAt = new Date().toISOString();
+          state.offCab.remotePhase = "reopen";
+          state.offCab.flowSteps = [];
           {
             const user = OffCab.userById(uid);
             const sw = user && OffCab.latestCabinetSwap(user.id);
@@ -6954,6 +6958,7 @@
           state.offCab.remotePort = null;
           state.offCab.remoteSn = null;
           state.offCab.outboundRefreshAt = null;
+          state.offCab.remotePhase = "reopen";
           render();
           break;
         case "offcab-out-refresh": {
@@ -6967,27 +6972,78 @@
           render();
           break;
         }
-        case "offcab-reopen-port": {
+        case "offcab-reopen-outbound": {
           if (!OffCab) break;
-          const port = Number(t.dataset.port);
           const user = OffCab.userById(state.offCab.userId);
           const sw = user && OffCab.latestCabinetSwap(user.id);
-          if (!sw) break;
-          const res = OffCab.reopenPort(sw.cabinetId, port);
-          toast(res.msg);
-          if (res.ok) track("off_cab_reopen_port", { port });
+          if (!user || !sw) break;
+          const op = offCabOperatorName();
+          const res = OffCab.tryReopenForRemote(sw, user, op);
+          if (res.reopenSuccess) {
+            state.offCab.flowSteps.push(offCabLogStep(res.log));
+            state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, state.offCab.flowSteps, {
+              siteName: sw.siteName || sw.cabinetName,
+            });
+            state.offCab.view = "result";
+            track("off_cab_remote_reopen_ok", { port: OffCab.outboundPortNumber(sw) });
+            toast(res.msg);
+          } else if (res.reopenFailed) {
+            state.offCab.remotePhase = "alternate";
+            track("off_cab_remote_reopen_fail", { port: OffCab.outboundPortNumber(sw) });
+            toast(res.msg);
+          } else {
+            toast(res.msg || "操作失败");
+          }
           render();
           break;
         }
-        case "offcab-disable-port": {
+        case "offcab-alternate-issue": {
           if (!OffCab) break;
-          const port = Number(t.dataset.port);
           const user = OffCab.userById(state.offCab.userId);
           const sw = user && OffCab.latestCabinetSwap(user.id);
-          if (!sw) break;
-          const res = OffCab.disablePort(sw.cabinetId, port);
+          if (!user || !sw) break;
+          const outPort = OffCab.outboundPortNumber(sw);
+          const port = state.offCab.remotePort;
+          const sn = state.offCab.remoteSn;
+          if (!outPort || !port || !sn) {
+            toast("请选择新发格口");
+            break;
+          }
+          const op = offCabOperatorName();
+          const res = OffCab.disableAndIssueAlternate(sw, outPort, port, sn, user, op);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          (res.logs || []).forEach((log) => state.offCab.flowSteps.push(offCabLogStep(log)));
+          state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, state.offCab.flowSteps, {
+            siteName: sw.siteName || sw.cabinetName,
+          });
+          state.offCab.view = "result";
+          track("off_cab_remote_alternate", { disable: outPort, issue: port });
           toast(res.msg);
-          if (res.ok) track("off_cab_disable_port", { port });
+          render();
+          break;
+        }
+        case "offcab-return-pickup": {
+          if (!OffCab) break;
+          const user = OffCab.userById(state.offCab.userId);
+          const sw = user && OffCab.latestCabinetSwap(user.id);
+          if (!user || !sw) break;
+          const op = offCabOperatorName();
+          const res = OffCab.allowReturnPickupElsewhere(sw, user, op);
+          if (!res.ok) {
+            toast(res.msg);
+            break;
+          }
+          (res.logs || []).forEach((log) => state.offCab.flowSteps.push(offCabLogStep(log)));
+          state.offCab.lastOrder = OffCab.createOffOrder("remote_out", user, op, state.offCab.flowSteps, {
+            siteName: sw.siteName || sw.cabinetName,
+            returnPickupElsewhere: true,
+          });
+          state.offCab.view = "result";
+          track("off_cab_return_pickup_elsewhere", { user_id: user.id });
+          toast(res.msg);
           render();
           break;
         }

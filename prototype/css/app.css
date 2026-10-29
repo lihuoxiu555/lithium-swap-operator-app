@@ -3401,19 +3401,64 @@ button.btn-mock.offcab-btn {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.offcab-port-actions {
-  display: flex;
-  gap: 8px;
-  margin: 0 12px 8px;
+.offcab-remote-ops {
+  margin-bottom: 8px;
 }
-.offcab-port-btn {
-  flex: 1;
-  min-width: 0;
-  height: 36px !important;
-  margin: 0 !important;
-  width: auto !important;
-  padding: 0 6px !important;
-  font-size: 12px !important;
+.offcab-remote-step-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 8px;
+}
+.offcab-remote-step {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.offcab-remote-step.is-current {
+  border-color: var(--brand-line);
+  box-shadow: 0 0 0 1px var(--brand-soft);
+}
+.offcab-remote-step.is-done.is-fail {
+  border-color: #f0c9a8;
+  background: #fffaf5;
+}
+.offcab-remote-step.is-wait {
+  opacity: 0.72;
+  background: var(--surface-soft);
+}
+.offcab-remote-step-hd {
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.offcab-step-note {
+  margin: 0 0 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.offcab-step-note.fail {
+  color: var(--warning);
+  font-weight: 600;
+}
+.offcab-step-note.warn {
+  color: #b45309;
+}
+.offcab-step-note.muted {
+  color: var(--muted);
+}
+.offcab-step-btn {
+  margin-top: 4px !important;
+}
+.offcab-remote-fallback {
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px dashed #c9bce8;
+  background: #faf8ff;
 }
 .offcab-slot-list {
   display: flex;

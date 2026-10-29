@@ -190,6 +190,8 @@
       returnPort: 2,
       returnAt: "2026-10-28 16:18",
       outboundAt: "2026-10-28 16:20",
+      /** Mock：本柜除出电/还入外无其他可发电池 → 演示「取走还入电赴他站」 */
+      sparseCabinet: true,
     },
   ];
 
@@ -455,6 +457,108 @@
     return { ok: true, msg: `已下发重开 ${port} 号格口（Mock）` };
   }
 
+  function listAlternateIssueSlots(sw) {
+    if (!sw) return [];
+    return listRemoteSlots(sw).filter((s) => {
+      if (s.sn === sw.outboundSn) return false;
+      if (s.sn === sw.returnedSn) return false;
+      if (isPortDisabled(sw.cabinetId, s.port)) return false;
+      return true;
+    });
+  }
+
+  /** 步骤②无其他可发格口（仅故障出电格口有电） */
+  function onlyFailedOutboundAvailable(sw) {
+    return listAlternateIssueSlots(sw).length === 0;
+  }
+
+  /** ① 重开出电格口：成功则绑用户并完结；失败进入步骤② */
+  function tryReopenForRemote(sw, user, operatorName) {
+    const port = outboundPortNumber(sw);
+    const sn = sw.outboundSn;
+    if (!port || !sn) return { ok: false, msg: "无出电格口信息" };
+    if (sw.openFail) {
+      return {
+        ok: false,
+        reopenFailed: true,
+        msg: `重开 ${port} 号格口失败（柜门/通讯异常）`,
+      };
+    }
+    const open = reopenPort(sw.cabinetId, port);
+    if (!open.ok) return { ok: false, reopenFailed: true, msg: open.msg };
+    const bind = remoteOpenPort(sw, port, sn, user, operatorName);
+    if (!bind.ok) return { ok: false, reopenFailed: true, msg: bind.msg };
+    return {
+      ok: true,
+      reopenSuccess: true,
+      log: {
+        ...bind.log,
+        label: `重开成功 · ${bind.log.label}`,
+      },
+      msg: `重开 ${port} 号成功，用户可取电，流程结束`,
+    };
+  }
+
+  /** ② 禁用故障格口 + 新开其他格口并绑用户 */
+  function disableAndIssueAlternate(sw, disablePortNum, issuePort, issueSn, user, operatorName) {
+    if (!sw || !issuePort || !issueSn) return { ok: false, msg: "请选择新发格口" };
+    if (issueSn === sw.outboundSn) return { ok: false, msg: "不可重复选择故障出电格口" };
+    const dis = disablePort(sw.cabinetId, disablePortNum);
+    if (!dis.ok) return dis;
+    const open = reopenPort(sw.cabinetId, issuePort);
+    if (!open.ok) return open;
+    const bind = remoteOpenPort(sw, issuePort, issueSn, user, operatorName);
+    if (!bind.ok) return bind;
+    return {
+      ok: true,
+      logs: [
+        {
+          type: "disable_port",
+          port: disablePortNum,
+          operatorName,
+          label: `禁用 ${disablePortNum} 号格口`,
+        },
+        { ...bind.log, label: `改发 ${issuePort} 号 · ${bind.log.label}` },
+      ],
+      msg: `已禁用 ${disablePortNum} 号并改发 ${issuePort} 号`,
+    };
+  }
+
+  /** 本柜仅故障出电：允许用户取走还入电池，赴其他站/柜换电 */
+  function allowReturnPickupElsewhere(sw, user, operatorName) {
+    const retSn = sw.returnedSn;
+    const outSn = sw.outboundSn;
+    if (!retSn || !sw.returnRecorded) return { ok: false, msg: "无还入电池信息" };
+    const retB = BATTERIES[retSn];
+    if (!retB || !retB.inCabinet) return { ok: false, msg: "还入电池不在柜" };
+    const retPort = sw.returnPort != null ? sw.returnPort : retB.inCabinet.port;
+    reopenPort(sw.cabinetId, retPort);
+    if (outSn && BATTERIES[outSn]) {
+      delete BATTERIES[outSn].boundUserPhone;
+    }
+    delete retB.inCabinet;
+    retB.boundUserPhone = user.phone;
+    user.heldSn = retSn;
+    user.waitPickup = false;
+    if (outSn && BATTERIES[outSn] && BATTERIES[outSn].inCabinet) {
+      /* 故障出电仍在柜，保持禁用由步骤②处理 */
+    }
+    sw.status = "completed";
+    return {
+      ok: true,
+      logs: [
+        {
+          type: "return_pickup_elsewhere",
+          sn: retSn,
+          port: retPort,
+          operatorName,
+          label: `开 ${retPort} 号 · 用户取走还入电池 · 赴他站换电`,
+        },
+      ],
+      msg: "已开还入格口，用户可取还入电池赴其他站换电",
+    };
+  }
+
   function disablePort(cabinetId, port) {
     if (!cabinetId || !port) return { ok: false, msg: "格口无效" };
     DISABLED_PORTS.add(cabinetId + ":" + port);
@@ -527,6 +631,7 @@
       const b = BATTERIES[sn];
       const ic = b && b.inCabinet;
       if (!ic || ic.cabinetId !== sw.cabinetId) return;
+      if (sw.sparseCabinet && sn !== sw.outboundSn && sn !== sw.returnedSn) return;
       rows.push({
         port: ic.port,
         sn,
@@ -807,14 +912,23 @@
     const tags = el.tags.map((t) => `<span class="offcab-tag">${escapeHtml(t)}</span>`).join("");
     const statusLabel = SWAP_STATUS[sw.status] || sw.status;
     const remainMin = Math.max(0, Math.round((sw.outboundDeadlineMs - Date.now()) / 60000));
-    const slots = el.slots || [];
-    const fallback = defaultRemoteSlot(sw, slots);
-    const selectedSn = oc.remoteSn || (fallback && fallback.sn) || "";
+    const phase = oc.remotePhase || "reopen";
+    const alternates = listAlternateIssueSlots(sw);
+    const onlyFailed = phase === "alternate" && onlyFailedOutboundAvailable(sw);
+    const altSlots = alternates;
+    const altFallback = altSlots[0];
+    const selectedSn =
+      oc.remoteSn || (phase === "alternate" && altFallback ? altFallback.sn : sw.outboundSn) || "";
+    const selectedPort =
+      oc.remotePort != null
+        ? oc.remotePort
+        : phase === "alternate" && altFallback
+          ? altFallback.port
+          : outboundPortNumber(sw);
 
-    const slotCards = slots
+    const slotCards = altSlots
       .map((s) => {
         const selected = s.sn === selectedSn;
-        const isOutbound = s.sn === sw.outboundSn;
         const socLabel = s.soc != null ? `${s.soc}%` : "—";
         return `<button type="button" class="offcab-slot${selected ? " is-selected" : ""}" data-action="offcab-select-slot" data-port="${s.port}" data-sn="${escapeAttr(
           s.sn
@@ -822,12 +936,11 @@
           <span class="offcab-slot-port">${s.port} 号</span>
           <span class="offcab-slot-soc">SOC ${escapeHtml(socLabel)}</span>
           <span class="offcab-slot-sn">${escapeHtml(s.sn)}</span>
-          ${isOutbound ? `<span class="offcab-slot-tag">换出电</span>` : ""}
         </button>`;
       })
       .join("");
 
-    const selectedSlot = slots.find((s) => s.sn === selectedSn);
+    const selectedSlot = altSlots.find((s) => s.sn === selectedSn);
     const loc = remoteLocationSummary(sw, user);
     const returnSn = sw.returnedSn || "—";
     const returnTime = sw.returnAt || sw.createdAt || "—";
@@ -878,11 +991,39 @@
         </div>
       </div>`;
 
-    const portBtns =
-      outPortNum != null
-        ? `<div class="offcab-port-actions">
-            <button type="button" class="btn-mock offcab-port-btn" data-action="offcab-reopen-port" data-port="${outPortNum}">重开格口：${outPortNum}</button>
-            <button type="button" class="btn-mock offcab-port-btn" data-action="offcab-disable-port" data-port="${outPortNum}">禁用格口：${outPortNum}</button>
+    const step1Class =
+      phase === "reopen" ? "is-current" : phase === "alternate" ? "is-done is-fail" : "is-done";
+    const step2Class = phase === "alternate" ? "is-current" : "is-wait";
+    const step1Btn =
+      phase === "reopen" && outPortNum != null
+        ? `<button type="button" class="btn-primary offcab-btn offcab-step-btn" data-action="offcab-reopen-outbound" data-port="${outPortNum}">重开格口：${outPortNum}</button>`
+        : "";
+    const step1Note =
+      phase === "alternate"
+        ? `<p class="offcab-step-note fail">步骤 ① 重开失败，请继续步骤 ② 或下方兜底方案。</p>`
+        : `<p class="offcab-step-note">成功则用户取走出电电池，流程结束。</p>`;
+    const step2Body =
+      phase === "alternate" && !onlyFailed
+        ? `<p class="offcab-step-note">先禁用 ${outPortNum} 号故障格口，再选择其他有电格口新开并绑给用户。</p>
+          <div class="offcab-slot-list">${slotCards}</div>
+          ${
+            selectedSlot
+              ? `<p class="offcab-slot-pick">已选新发 ${selectedSlot.port} 号 · ${escapeHtml(selectedSlot.sn)}</p>`
+              : ""
+          }
+          <button type="button" class="btn-primary offcab-btn offcab-step-btn" data-action="offcab-alternate-issue" ${
+            selectedSn && outPortNum != null ? "" : "disabled"
+          }>禁用 ${outPortNum} 号 · 新开 ${selectedPort != null ? selectedPort : "—"} 号并绑定</button>`
+        : phase === "alternate"
+          ? `<p class="offcab-step-note warn">本柜无其他可发电池（仅 ${outPortNum} 号出电故障格口有电）。</p>`
+          : `<p class="offcab-step-note muted">仅在步骤 ① 重开失败时启用。</p>`;
+    const fallbackBlock =
+      onlyFailed && outPortNum != null
+        ? `<div class="offcab-remote-fallback">
+            <p class="offcab-step-note">允许用户取走<strong>还入</strong>电池（${escapeHtml(
+              swapLegPort(sw, "return")
+            )} · ${escapeHtml(returnSn)}），前往其他站点或电柜完成换电。</p>
+            <button type="button" class="btn-mock offcab-btn offcab-step-btn" data-action="offcab-return-pickup">允许取走还入电池 · 赴他站换电</button>
           </div>`
         : "";
 
@@ -919,21 +1060,20 @@
             <span>与站点距离</span><em>${escapeHtml(loc.distanceLabel)}</em>
           </div>
         </section>
-        ${portBtns}
-        <section class="devstat-sec offcab-sec">
-          <div class="devstat-hd"><strong>C · 选择格口并远程出电</strong></div>
-          <p class="ops-hint">仅展示<strong>有电池</strong>的格口；请选择后远程开门并绑给用户。</p>
-          <div class="offcab-slot-list">${slotCards}</div>
-          ${
-            selectedSlot
-              ? `<p class="offcab-slot-pick">已选 ${selectedSlot.port} 号 · SOC ${
-                  selectedSlot.soc != null ? selectedSlot.soc + "%" : "—"
-                } · ${escapeHtml(selectedSlot.sn)}</p>`
-              : ""
-          }
-          <button type="button" class="btn-primary offcab-btn" data-action="offcab-remote-open" ${
-            selectedSn ? "" : "disabled"
-          }>远程开门 · 绑给用户</button>
+        <section class="devstat-sec offcab-remote-ops">
+          <div class="devstat-hd"><strong>操作步骤</strong></div>
+          <ol class="offcab-remote-step-list">
+            <li class="offcab-remote-step ${step1Class}">
+              <div class="offcab-remote-step-hd">① 重开出电格口${outPortNum != null ? " · " + outPortNum + " 号" : ""}</div>
+              ${step1Note}
+              ${step1Btn}
+            </li>
+            <li class="offcab-remote-step ${step2Class}">
+              <div class="offcab-remote-step-hd">② 禁用故障格口并改发其他有电格口</div>
+              ${step2Body}
+            </li>
+          </ol>
+          ${fallbackBlock}
           <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="remote">模拟用户扫码确认</button>
         </section>
       </div>`;
@@ -962,6 +1102,11 @@
     reopenPort,
     disablePort,
     isPortDisabled,
+    listAlternateIssueSlots,
+    onlyFailedOutboundAvailable,
+    tryReopenForRemote,
+    disableAndIssueAlternate,
+    allowReturnPickupElsewhere,
     outboundPortNumber,
     formatRefreshClock,
     simulateUserConfirm,
