@@ -17,6 +17,12 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.80",
+      date: formatLocalDateTime(),
+      title: "顶栏文档链接修复",
+      items: ["PRD/验收/决策改 doc.html 渲染 Markdown，避免 error response"],
+    },
+    {
       version: "V1.79",
       date: formatLocalDateTime(),
       title: "柜外绑定电池 · 扫描",

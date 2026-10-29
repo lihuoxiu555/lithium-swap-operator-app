@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>产品文档 · 锂电快换运营商 APP</title>
+  <style>
+    :root {
+      --bg: #f4f7fb; --surface: #fff; --ink: #17212b; --muted: #657383;
+      --line: #dce5ee; --brand: #2563eb; --brand-dark: #1d4ed8; --brand-soft: #eff6ff;
+      --radius: 8px; --shadow: 0 10px 30px rgba(22, 33, 43, .08); --sidebar-w: 260px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--ink); background: var(--bg); }
+    a { color: var(--brand-dark); }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    .sidebar {
+      background: #1a2332; color: #e8eef4; padding: 18px 14px; overflow-y: auto;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar h1 { margin: 0; font-size: 16px; }
+    .sidebar .sub { font-size: 12px; color: #9aa8b8; margin: 6px 0 16px; line-height: 1.5; }
+    .doc-list { display: grid; gap: 4px; }
+    .doc-list button {
+      border: none; background: transparent; color: #dce5ee; text-align: left;
+      padding: 8px 10px; border-radius: var(--radius); font-size: 13px; cursor: pointer; width: 100%;
+    }
+    .doc-list button:hover { background: rgba(255,255,255,.06); }
+    .doc-list button.active { background: rgba(37, 99, 235, .28); color: #fff; font-weight: 600; }
+    .sidebar .proto-link {
+      display: block; margin-top: 16px; padding: 10px; background: rgba(37,99,235,.2);
+      border-radius: var(--radius); color: #93c5fd; font-size: 12px; text-decoration: none; text-align: center;
+    }
+    .main { min-width: 0; padding: 20px 28px 40px; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
+    .toolbar .file { font-weight: 600; color: var(--ink); }
+    .article { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 32px 36px; max-width: 960px; }
+    .article .loading, .article .error { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .md h1 { font-size: 26px; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+    .md h2 { font-size: 20px; margin: 28px 0 12px; }
+    .md h3 { font-size: 16px; margin: 22px 0 10px; }
+    .md p, .md li { font-size: 14px; line-height: 1.75; }
+    .md ul, .md ol { padding-left: 1.4em; }
+    .md table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+    .md th, .md td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+    .md th { background: var(--brand-soft); }
+    .md code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .md pre { background: #1e293b; color: #e2e8f0; padding: 14px; border-radius: var(--radius); overflow-x: auto; font-size: 12px; line-height: 1.6; }
+    .md pre code { background: none; padding: 0; color: inherit; }
+    .md blockquote { margin: 12px 0; padding: 10px 14px; border-left: 4px solid var(--brand); background: var(--brand-soft); color: var(--muted); }
+    .md hr { border: none; border-top: 1px solid var(--line); margin: 24px 0; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { position: relative; height: auto; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>运营商 APP</h1>
+      <p class="sub">PRD · 验收 · 决策卡片</p>
+      <div class="doc-list" id="docNav"></div>
+      <a class="proto-link" href="index.html">← 返回可交互原型</a>
+    </aside>
+    <main class="main">
+      <div class="toolbar">
+        <span class="file" id="currentFile">—</span>
+        <span id="loadStatus"></span>
+      </div>
+      <article class="article">
+        <div id="content" class="md loading">加载中…</div>
+      </article>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    /** hash 键 → 相对 prototype/ 的路径 */
+    const DOCS = [
+      { id: "PRD.md", file: "../docs/PRD.md", label: "PRD" },
+      { id: "acceptance-criteria.md", file: "../docs/acceptance-criteria.md", label: "验收标准" },
+      { id: "decision-001.md", file: "../decisions/decision-001.md", label: "决策 #001" },
+      { id: "decision-067.md", file: "../decisions/decision-067.md", label: "决策 #067 柜外" },
+      { id: "decision-068.md", file: "../decisions/decision-068.md", label: "决策 #068 远程出电" },
+    ];
+
+    const RAW_BASE =
+      "https://raw.githubusercontent.com/lihuoxiu555/lithium-swap-operator-app/main/";
+
+    let currentDocId = "";
+
+    function docById(id) {
+      return DOCS.find((d) => d.id === id) || DOCS[0];
+    }
+
+    function docFileUrl(relativePath) {
+      return new URL(relativePath, location.href).href;
+    }
+
+    function parseHash() {
+      const raw = decodeURIComponent(location.hash.slice(1) || "PRD.md");
+      const match = raw.match(/^([^#]+\.md)(?:#(.*))?$/);
+      if (match) return { id: match[1], anchor: match[2] || "" };
+      return { id: raw.endsWith(".md") ? raw : "PRD.md", anchor: "" };
+    }
+
+    function setHash(id, anchor, push) {
+      const h = anchor ? `${id}#${anchor}` : id;
+      if (push) location.hash = h;
+      else history.replaceState(null, "", "#" + h);
+    }
+
+    function renderNav(activeId) {
+      const nav = document.getElementById("docNav");
+      nav.innerHTML = DOCS.map(
+        (it) =>
+          `<button type="button" class="${it.id === activeId ? "active" : ""}" data-doc="${it.id}">${it.label}</button>`
+      ).join("");
+      nav.querySelectorAll("[data-doc]").forEach((btn) => {
+        btn.onclick = () => loadDoc(btn.dataset.doc, true);
+      });
+    }
+
+    function resolveDocLink(href, baseDoc) {
+      if (!href || /^https?:\/\//i.test(href) || href.startsWith("mailto:")) return null;
+      let pathPart = href;
+      let anchor = "";
+      if (href.startsWith("#")) {
+        anchor = decodeURIComponent(href.slice(1));
+        return anchor ? { id: baseDoc.id, anchor } : null;
+      }
+      const hashIdx = href.indexOf("#");
+      if (hashIdx >= 0) {
+        anchor = decodeURIComponent(href.slice(hashIdx + 1));
+        pathPart = href.slice(0, hashIdx);
+      }
+      if (pathPart.startsWith("./")) pathPart = pathPart.slice(2);
+      if (!pathPart) return { id: baseDoc.id, anchor };
+      const baseUrl = new URL(baseDoc.file, location.href);
+      const resolved = new URL(pathPart, baseUrl);
+      const hit = DOCS.find((d) => docFileUrl(d.file) === resolved.href);
+      if (hit) return { id: hit.id, anchor };
+      const name = pathPart.split("/").pop();
+      if (name && name.endsWith(".md")) return { id: name, anchor };
+      return null;
+    }
+
+    async function loadDoc(id, pushHash, anchor) {
+      const doc = docById(id);
+      currentDocId = doc.id;
+      const content = document.getElementById("content");
+      const status = document.getElementById("loadStatus");
+      document.getElementById("currentFile").textContent = doc.label;
+      content.className = "md loading";
+      content.textContent = "加载中…";
+      status.textContent = "";
+      renderNav(doc.id);
+      if (pushHash) setHash(doc.id, anchor || "", true);
+      else if (anchor) setHash(doc.id, anchor, false);
+
+      if (location.protocol === "file:") {
+        content.className = "md error";
+        content.innerHTML =
+          "<p><strong>请用本地 HTTP 服务打开原型</strong>（例如在仓库根目录或 <code>prototype/</code> 下运行 <code>python3 -m http.server 8788</code>），再访问 <code>doc.html</code>。</p>";
+        return;
+      }
+
+      try {
+        const urls = [docFileUrl(doc.file)];
+        if (doc.file.startsWith("../docs/")) {
+          urls.push(RAW_BASE + "docs/" + doc.file.replace("../docs/", ""));
+        } else if (doc.file.startsWith("../decisions/")) {
+          urls.push(RAW_BASE + "decisions/" + doc.file.replace("../decisions/", ""));
+        }
+        let md = "";
+        let lastErr = "";
+        for (const url of urls) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) {
+              lastErr = res.statusText || "HTTP " + res.status;
+              continue;
+            }
+            md = await res.text();
+            status.textContent = url.includes("raw.githubusercontent.com") ? doc.file + " (online)" : doc.file;
+            break;
+          } catch (e) {
+            lastErr = e.message || String(e);
+          }
+        }
+        if (!md) throw new Error(lastErr || "error response");
+        content.className = "md";
+        content.innerHTML = marked.parse(md, { gfm: true, breaks: false });
+        if (!status.textContent) status.textContent = doc.file;
+        if (anchor) {
+          const el = document.getElementById(anchor) || document.querySelector(`[name="${CSS.escape(anchor)}"]`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } catch (e) {
+        content.className = "md error";
+        content.innerHTML = `<p>无法加载 <code>${doc.file}</code>（${e.message || "error response"}）。</p>
+          <p>若使用 <code>prototype/</code> 作为静态根目录，请改在<strong>项目根目录</strong>启动 HTTP 服务，或打开在线 Pages。</p>`;
+      }
+    }
+
+    document.getElementById("content").addEventListener("click", (e) => {
+      const a = e.target.closest("a");
+      if (!a) return;
+      const base = docById(currentDocId);
+      const resolved = resolveDocLink(a.getAttribute("href"), base);
+      if (!resolved) return;
+      e.preventDefault();
+      loadDoc(resolved.id, true, resolved.anchor);
+    });
+
+    const { id: initialId, anchor: initialAnchor } = parseHash();
+    loadDoc(initialId, false, initialAnchor);
+    window.addEventListener("hashchange", () => {
+      const { id, anchor } = parseHash();
+      if (id) loadDoc(id, false, anchor);
+    });
+  </script>
+</body>
+</html>
