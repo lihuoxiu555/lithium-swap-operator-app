@@ -3248,44 +3248,53 @@ input:focus-visible,
 .offcab-remote-dual {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0 12px 8px;
+  gap: 6px;
+  margin: 0 12px 6px;
 }
 .offcab-remote-leg {
-  padding: 8px 10px;
-  border-radius: 12px;
+  padding: 4px 7px 5px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--surface-soft);
   min-width: 0;
 }
 .offcab-remote-leg-hd {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 750;
   color: var(--ink-2);
-  margin-bottom: 6px;
+  margin-bottom: 2px;
+  line-height: 1.2;
   letter-spacing: 0.02em;
 }
 .offcab-leg-row {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-bottom: 5px;
-  font-size: 10px;
-  line-height: 1.35;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 3px;
+  margin-bottom: 1px;
+  font-size: 9px;
+  line-height: 1.2;
 }
 .offcab-leg-row:last-child {
   margin-bottom: 0;
 }
 .offcab-leg-row > span {
+  flex: 0 0 auto;
+  max-width: 4.2em;
   color: var(--muted);
   font-weight: 600;
+  white-space: nowrap;
 }
 .offcab-leg-row > em {
+  flex: 1;
+  min-width: 0;
   font-style: normal;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 650;
   color: var(--ink);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .offcab-remote-site {
   margin-top: 0;

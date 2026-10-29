@@ -17,6 +17,13 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.73",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 还电/出电区紧凑",
+      decisions: ["067"],
+      items: ["还电/出电双栏改为单行字段，内边距减半"],
+    },
+    {
       version: "V1.72",
       date: formatLocalDateTime(),
       title: "远程出电 · 信息分区",
