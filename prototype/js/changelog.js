@@ -17,6 +17,12 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.86",
+      date: formatLocalDateTime(),
+      title: "新增渠道商 · 结算模式收敛",
+      items: ["新增仅可选人天池、推广（链接类）；列表展示链接类为推广（链接类）"],
+    },
+    {
       version: "V1.85",
       date: formatLocalDateTime(),
       title: "渠道管理 · 一期裁剪子 Tab",

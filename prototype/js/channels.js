@@ -7,11 +7,18 @@
   const PAYEE_OPERATOR = "绿色出行";
   const CHANNEL_DEFAULT_CREDIT_LIMIT = 100000;
 
+  /** 展示用（含历史签约 · 二期） */
   const SETTLEMENT_MODES = [
     { id: "人天池", label: "人天池" },
-    { id: "链接类", label: "链接类" },
+    { id: "链接类", label: "推广（链接类）" },
     { id: "设备租赁", label: "设备租赁（二期）" },
     { id: "激活码", label: "激活码（二期）" },
+  ];
+
+  /** 新增渠道商可选结算模式（运营商 APP 一期） */
+  const NEW_CHANNEL_SETTLEMENT_MODES = [
+    { id: "人天池", label: "人天池" },
+    { id: "链接类", label: "推广（链接类）" },
   ];
 
   const MAIN_TABS = [
@@ -816,6 +823,11 @@
       return { ok: false, msg: "登录账号须为 11 位手机号" };
     }
 
+    const isNew = !editId || editId === "new";
+    if (isNew && settlementMode !== "人天池" && settlementMode !== "链接类") {
+      return { ok: false, msg: "新增仅支持人天池或推广（链接类）" };
+    }
+
     const inherited = inheritDayQuota();
     let wholesalePrice = null;
     let minDays = null;
@@ -1465,7 +1477,8 @@
     const c = isNew ? null : getContractById(ch.editId);
     const form = ch.form && Object.keys(ch.form).length ? ch.form : formFromContract(c);
     const mode = form.settlementMode || "人天池";
-    const modeOpts = SETTLEMENT_MODES.map(
+    const modeList = isNew ? NEW_CHANNEL_SETTLEMENT_MODES : SETTLEMENT_MODES;
+    const modeOpts = modeList.map(
       (m) =>
         `<option value="${escapeAttr(m.id)}" ${mode === m.id ? "selected" : ""}>${escapeHtml(
           m.label
@@ -1537,7 +1550,7 @@
             )}" placeholder="选填" />
           </label>
           <p class="sites-hint ch-form-callout" data-ch-field="人天池">人天池：批发单价与最低起购请在「平台设置 → 人天批发价」维护；新建签约继承<strong>默认批发价</strong>（当前 ¥${DEFAULT_DAY_WHOLESALE}/人天，起购 ${DEFAULT_DAY_MIN} 人天）。</p>
-          <p class="sites-hint ch-form-callout" data-ch-field="链接类">授权套餐与专享价请在「平台设置 → 渠道分销价」维护。</p>
+          <p class="sites-hint ch-form-callout" data-ch-field="链接类">推广（链接类）：授权套餐与专享价请在「平台设置 → 渠道分销价」维护。</p>
           <label class="sites-field" data-ch-field="链接类">佣金及时到付
             <select id="ch-form-instantCommissionPayout">
               <option value="0" ${form.instantCommissionPayout !== "1" ? "selected" : ""}>关闭 · 佣金线下结算</option>
@@ -1596,7 +1609,7 @@
               form.codeValidityDays || "30"
             )}" />
           </label>
-          <p class="sites-hint" data-ch-field="all">人天池：自动建池 · 链接类：SKU 在「渠道分销价」 · 二期：设备租赁 / 激活码见上方字段。停服用「状态」。</p>
+          <p class="sites-hint" data-ch-field="all">新增仅支持<strong>人天池</strong>或<strong>推广（链接类）</strong>；停服用「状态」。</p>
           <button type="button" class="btn-primary" data-action="ch-save-contract">保存</button>
         </div>
       </div>`;
@@ -1712,6 +1725,7 @@
     PAYEE_OPERATOR,
     CHANNEL_DEFAULT_CREDIT_LIMIT,
     SETTLEMENT_MODES,
+    NEW_CHANNEL_SETTLEMENT_MODES,
     MAIN_TABS,
     ORDER_SUB_TABS,
     ASSET_SUB_TABS,
