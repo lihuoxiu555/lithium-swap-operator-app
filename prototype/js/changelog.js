@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.71",
+      date: "2026-10-29 10:16",
+      title: "远程出电入口条件",
+      decisions: ["067"],
+      items: [
+        "远程出电：换电单 + 持电 + 持电仍在柜（出电误绑定）",
+        "李骑手 Mock 持电仍在柜；陈晓无持电不展示远程",
+      ],
+    },
+    {
       version: "V1.70",
       date: "2026-10-29 09:21",
       title: "柜外订单 · 换电列表",
