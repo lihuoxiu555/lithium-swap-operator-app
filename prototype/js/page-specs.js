@@ -66,7 +66,7 @@
       source: "框架 · 操作入口",
       fields: [
         { name: "分组", def: "经营 / 运维 / 财务 / 其他。经营含站点繁忙度；不含经营统计/设备统计宫格（已迁数据统计 Tab）" },
-        { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。placeholder 不进宫格" },
+        { name: "宫格", def: "只读 modules.js；仅 status=ready 展示。其他含渠道管理/用户管理/用户支付记录" },
       ],
       empty: "空宫格场景：「暂无可用应用」",
       roles: "管理员与员工宫格按 roles 裁；员工不见财务账户",

@@ -6394,10 +6394,32 @@
         .join("");
       return `<div class="spec-sec"><h3>${escapeHtml(h)}</h3>${items}</div>`;
     };
+    let extra = "";
+    if (state.screen === "workbench" && state.session) {
+      const mods = visibleModules();
+      const hasCh = mods.some((m) => m.id === "ops.channels");
+      extra = block("当前宫格（本机 modules.js）", [
+        {
+          name: "模块列表",
+          def: mods.map((m) => m.name).join(" · ") || "—",
+        },
+        {
+          name: "渠道管理",
+          def: hasCh
+            ? "已注册 ops.channels，应在「其他」第一格"
+            : "未加载：请强制刷新或确认 index 为 V1.83+",
+        },
+        {
+          name: "原型版本",
+          def: String(global.__OP_APP_BUILD__ || "未知"),
+        },
+      ]);
+    }
     body.innerHTML =
       block("统计定义", spec.stats) +
       block("字段", spec.fields) +
       block("枚举", spec.enums) +
+      extra +
       `<div class="spec-meta">
         <div><strong>空态</strong>　${escapeHtml(spec.empty || "—")}</div>
         <div><strong>错误</strong>　${escapeHtml(spec.error || "—")}</div>

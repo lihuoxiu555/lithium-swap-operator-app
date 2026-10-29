@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.83",
+      date: formatLocalDateTime(),
+      title: "渠道管理 · 缓存与可见性",
+      items: [
+        "index 脚本/样式加 ?v=1.83，避免旧 modules.js 缓存导致工作台缺「渠道管理」",
+        "顶栏与右侧栏展示版本号及当前宫格模块列表",
+      ],
+    },
+    {
       version: "V1.82",
       date: formatLocalDateTime(),
       title: "其他 · 渠道管理（移动端）",
