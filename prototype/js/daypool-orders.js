@@ -40,7 +40,7 @@
       case "return_due":
         return [
           { id: "urge", label: "催还", color: "yellow" },
-          { id: "mock_return", label: "模拟还电", color: "red" },
+          { id: "mock_return", label: "模拟还电", color: "mock" },
           ...records,
         ];
       case "ended":

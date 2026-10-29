@@ -17,6 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.75",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 还电必有与 MOCK 色",
+      decisions: ["067"],
+      items: [
+        "远程出电前提还电成功；李骑手 Mock 补还入 2 号/492391883344",
+        "还电/出电 KV 对齐排版；MOCK 按钮统一紫色系",
+        "待办模拟还电/续配、人天模拟还电改 btn-mock",
+      ],
+    },
+    {
       version: "V1.74",
       date: formatLocalDateTime(),
       title: "远程出电 · 换电信息与格口操作",

@@ -31,7 +31,17 @@
         soc: 41,
       },
     },
-    "492391883344": { sn: "492391883344" },
+    "492391883344": {
+      sn: "492391883344",
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 2,
+        door: "关闭",
+        soc: 55,
+      },
+    },
     "492399990003": {
       sn: "492399990003",
       inCabinet: {
@@ -168,17 +178,17 @@
       outboundDeadlineMs: Date.now() - 60000,
       r1: false,
       r2: true,
-      returnedSn: null,
+      returnedSn: "492391883344",
       outboundSn: "492399990002",
-      returnRecorded: false,
+      returnRecorded: true,
       openFail: true,
       cabinetId: "cab-pd-1",
       siteName: "浦东骑手驿站",
       cabinetName: "浦东 1 号柜",
       cab: "浦东 1 号柜",
       outPort: 5,
-      returnPort: null,
-      returnAt: null,
+      returnPort: 2,
+      returnAt: "2026-10-28 16:18",
       outboundAt: "2026-10-28 16:20",
     },
   ];
@@ -541,6 +551,8 @@
   function remoteEligibility(sw, user) {
     refreshSwapTimeout(sw);
     if (!sw) return { ok: false, msg: "无换电订单" };
+    if (!sw.returnRecorded || !sw.returnedSn)
+      return { ok: false, msg: "还电未成功，无法远程出电" };
     if (!user || !user.heldSn) return { ok: false, msg: "用户未持电，无法远程出电" };
     if (!heldBatteryInCabinet(user))
       return { ok: false, msg: "持电不在柜内，请走柜外退/换电" };
@@ -740,7 +752,7 @@
         <div class="devstat-hd"><strong>A · 绑定电池</strong></div>
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind">确认绑定</button>
-        <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
+        <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
       </section>`;
     } else if (oc.flowType === "off_swap") {
       body = `<section class="devstat-sec offcab-sec">
@@ -752,7 +764,7 @@
         <div class="devstat-hd"><strong>B · 绑定新电池</strong></div>
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind" ${user.waitPickup && !oc.recycledThisSession ? " disabled" : ""}>确认绑定新电</button>
-        <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
+        <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
       </section>`;
     }
 
@@ -817,52 +829,60 @@
 
     const selectedSlot = slots.find((s) => s.sn === selectedSn);
     const loc = remoteLocationSummary(sw, user);
-    const returnSn = sw.returnRecorded || sw.returnedSn ? sw.returnedSn || "—" : "—";
-    const returnTime = sw.returnAt || (sw.returnRecorded ? sw.createdAt : "—");
+    const returnSn = sw.returnedSn || "—";
+    const returnTime = sw.returnAt || sw.createdAt || "—";
     const outboundTime = sw.outboundAt || sw.createdAt || "—";
     const userAddr = (loc.user && loc.user.address) || "暂无定位";
     const userReported = (loc.user && loc.user.reportedAt) || "—";
     const siteAddr = loc.cab.address || "—";
 
-    const legRow = (label, value) =>
-      `<div class="offcab-leg-row"><span>${escapeHtml(label)}</span><em>${escapeHtml(value)}</em></div>`;
+    const kvRow = (label, value) =>
+      `<div class="offcab-kv-row"><span class="offcab-kv-k">${escapeHtml(label)}</span><span class="offcab-kv-v">${escapeHtml(
+        value
+      )}</span></div>`;
 
     const outPortNum = outboundPortNumber(sw);
     const outPortLabel = outPortNum != null ? outPortNum + " 号" : "—";
     const outInCab = refreshOutboundInCab(sw).inCab;
     const refreshLabel = formatRefreshClock(oc.outboundRefreshAt);
     const swapRow = (label, value) =>
-      `<div class="offcab-swap-row"><span>${escapeHtml(label)}</span><em>${escapeHtml(value)}</em></div>`;
+      `<div class="offcab-kv-row offcab-kv-row-swap"><span class="offcab-kv-k">${escapeHtml(
+        label
+      )}</span><span class="offcab-kv-v">${escapeHtml(value)}</span></div>`;
     const limitHint =
       sw.status === "in_progress" ? ` · 出电限时约 ${remainMin} 分钟` : "";
 
     const returnLeg = `
       <div class="offcab-remote-leg">
         <div class="offcab-remote-leg-hd">还电信息</div>
-        ${legRow("还入格口", swapLegPort(sw, "return"))}
-        ${legRow("还入电池", returnSn)}
-        ${legRow("是否在柜", returnSn === "—" ? "—" : batteryInCabLabel(sw.returnedSn))}
-        ${legRow("时间", returnTime)}
+        <div class="offcab-kv-list">
+          ${kvRow("还入格口", swapLegPort(sw, "return"))}
+          ${kvRow("还入电池", returnSn)}
+          ${kvRow("是否在柜", batteryInCabLabel(sw.returnedSn))}
+          ${kvRow("时间", returnTime)}
+        </div>
       </div>`;
 
     const outboundLeg = `
       <div class="offcab-remote-leg offcab-remote-leg-out">
         <div class="offcab-remote-leg-hd-row">
           <span class="offcab-remote-leg-hd">出电信息</span>
-          <button type="button" class="offcab-refresh-btn" data-action="offcab-out-refresh">刷新</button>
+          <button type="button" class="btn-mock btn-mock-xs offcab-refresh-btn" data-action="offcab-out-refresh">刷新</button>
         </div>
         <p class="offcab-out-updated">更新 ${escapeHtml(refreshLabel)}</p>
-        ${legRow("出电格口", outPortLabel)}
-        ${legRow("出电电池", sw.outboundSn || "—")}
-        ${legRow("是否在柜", outInCab)}
-        ${legRow("时间", outboundTime)}
+        <div class="offcab-kv-list">
+          ${kvRow("出电格口", outPortLabel)}
+          ${kvRow("出电电池", sw.outboundSn || "—")}
+          ${kvRow("是否在柜", outInCab)}
+          ${kvRow("时间", outboundTime)}
+        </div>
       </div>`;
 
     const portBtns =
       outPortNum != null
         ? `<div class="offcab-port-actions">
-            <button type="button" class="btn-secondary offcab-port-btn" data-action="offcab-reopen-port" data-port="${outPortNum}">重开格口：${outPortNum}</button>
-            <button type="button" class="btn-secondary offcab-port-btn" data-action="offcab-disable-port" data-port="${outPortNum}">禁用格口：${outPortNum}</button>
+            <button type="button" class="btn-mock offcab-port-btn" data-action="offcab-reopen-port" data-port="${outPortNum}">重开格口：${outPortNum}</button>
+            <button type="button" class="btn-mock offcab-port-btn" data-action="offcab-disable-port" data-port="${outPortNum}">禁用格口：${outPortNum}</button>
           </div>`
         : "";
 
@@ -884,7 +904,7 @@
             ${swapRow("换电状态", statusLabel + limitHint.replace(/^ · /, ""))}
             ${swapRow("场景", swapScenarioLabel(sw))}
             ${swapRow("发起时间", sw.createdAt || "—")}
-            ${swapRow("还入记录", sw.returnRecorded ? "有" : "无")}
+            ${swapRow("还电结果", sw.returnRecorded ? "还电成功" : "未还电")}
           </div>
           <div class="offcab-tags offcab-tags-inline">${tags}</div>
         </section>
@@ -914,7 +934,7 @@
           <button type="button" class="btn-primary offcab-btn" data-action="offcab-remote-open" ${
             selectedSn ? "" : "disabled"
           }>远程开门 · 绑给用户</button>
-          <button type="button" class="btn-secondary offcab-btn" data-action="offcab-user-confirm" data-step="remote">模拟用户扫码确认</button>
+          <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="remote">模拟用户扫码确认</button>
         </section>
       </div>`;
   }

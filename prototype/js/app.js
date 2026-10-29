@@ -3676,10 +3676,10 @@
           <button type="button" class="todo-footer-ghost" data-action="todo-overdue-remind">催还</button>
           ${
             isDay
-              ? `<button type="button" class="todo-footer-ghost" data-action="todo-overdue-alloc">模拟续配</button>`
+              ? `<button type="button" class="todo-footer-mock" data-action="todo-overdue-alloc">模拟续配</button>`
               : ""
           }
-          <button type="button" class="todo-footer-primary" data-action="todo-overdue-return">模拟还电</button>
+          <button type="button" class="todo-footer-mock" data-action="todo-overdue-return">模拟还电</button>
         </div>`
             : ""
         }
