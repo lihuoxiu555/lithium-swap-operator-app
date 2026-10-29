@@ -59,15 +59,6 @@
       minDays: 1000,
       status: "生效",
     },
-    {
-      id: "OP-Q-TEMP",
-      operatorId: OPERATOR_ID,
-      channelId: "CH-TEMP",
-      channelName: "临时渠道",
-      wholesalePrice: 8.5,
-      minDays: 500,
-      status: "生效",
-    },
   ];
 
   /** @type {Array<object>} 渠道管理 → 推广结算 · 订单明细 Mock */
@@ -2537,6 +2528,11 @@
         </div>
         <div class="sites-form-body">
           <p class="ops-hint">平台标准价 ¥${PLATFORM_STD_DAY_PRICE}/人天（只读）</p>
+          ${
+            isNew
+              ? `<p class="ops-hint channel-page-note">新增字段：渠道商、批发单价、最低起购、状态；保存后写入列表并同步签约 wholesalePrice/minDays。</p>`
+              : ""
+          }
           ${channelField}
           <label class="sites-field">批发单价（元/人天）
             <input id="ch-quota-wholesalePrice" type="number" step="0.1" min="0.1" value="${escapeAttr(
