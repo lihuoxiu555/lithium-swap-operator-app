@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.82",
+      date: formatLocalDateTime(),
+      title: "其他 · 渠道管理（移动端）",
+      decisions: ["069"],
+      items: [
+        "工作台其他新增「渠道管理」：签约渠道/渠道订单/渠道权益（Mock 对齐外卖 PC）",
+        "签约新增编辑、信用额度调整；订单待确认到账可确认",
+      ],
+    },
+    {
       version: "V1.81",
       date: formatLocalDateTime(),
       title: "柜外回收原电池 · 扫描",

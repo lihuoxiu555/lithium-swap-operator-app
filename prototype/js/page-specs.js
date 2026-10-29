@@ -348,6 +348,34 @@
       empty: "0 值灰字占位，不隐藏",
       note: "手机页只留数字格子；公式在本栏。电池 3+3 格。**无告警电柜组**；柜异常见待办 Tab·警告、电柜详情·本柜告警。",
     }),
+    channels: S({
+      title: "渠道管理 · Hub",
+      source: "decision-069 · 原型-外卖 PC 迁移",
+      fields: [
+        { name: "Tab", def: "签约渠道 / 渠道订单 / 渠道权益（不含链接结算、平台营销）" },
+        { name: "数据范围", def: "本运营商 OP-SX · 绿色出行 Mock" },
+        { name: "签约", def: "卡片列表；+新增；详情编辑/调整额度（人天池/租赁/激活码信用）" },
+        { name: "订单", def: "人天批发 / 设备月租 / 激活码批发；待确认到账可 Mock 确认" },
+        { name: "权益", def: "人天池池子+流水；分销 SKU；租赁概要；激活码库存" },
+      ],
+      roles: "管理员 / 员工无差异",
+    }),
+    "channels:detail": S({
+      title: "渠道管理 · 签约详情",
+      source: "decision-069",
+      fields: [
+        { name: "结算模式", def: "人天池 / 链接类 / 设备租赁 / 激活码" },
+        { name: "信用", def: "人天池·租赁·激活码可调整授信；链接类不适用" },
+      ],
+    }),
+    "channels:form": S({
+      title: "渠道管理 · 签约表单",
+      source: "decision-069",
+      fields: [
+        { name: "新增", def: "默认人天池；名称/批发价/起购/站点必填" },
+        { name: "编辑", def: "结算模式锁定；可改名称与人天池价/站点" },
+      ],
+    }),
     offCabinet: S({
       title: "柜外电池作业 · 搜索",
       source: "decision-067 · 10-28 纪要",
@@ -366,7 +394,7 @@
       title: "柜外电池作业 · 流程",
       source: "decision-067",
       fields: [
-        { name: "步骤", def: "回收手输 SN；绑定 SN 可手输或点「扫描」Mock 回填" },
+        { name: "步骤", def: "回收/绑定 SN 均可手输或点「扫描」Mock 回填" },
         { name: "订单类型", def: "柜外换电 / 柜外退电 / 柜外领电" },
       ],
     }),
@@ -642,6 +670,12 @@
     }
     if (sc === "siteBusy") {
       return state.ops && state.ops.siteBusyId ? "siteBusy:detail" : "siteBusy";
+    }
+    if (sc === "channels") {
+      const ch = state.channel || {};
+      if (ch.view === "contractDetail") return "channels:detail";
+      if (ch.view === "contractForm" || ch.view === "creditForm") return "channels:form";
+      return "channels";
     }
     if (sc === "offCabinet") {
       const oc = state.offCab || {};

@@ -105,6 +105,15 @@
       route: "#/module/ops.offCabinet",
     },
     {
+      id: "ops.channels",
+      name: "渠道管理",
+      group: "其他",
+      icon: "🤝",
+      status: "ready",
+      roles: ["admin", "staff"],
+      route: "#/module/ops.channels",
+    },
+    {
       id: "users.list",
       name: "用户管理",
       group: "其他",

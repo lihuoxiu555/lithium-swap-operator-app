@@ -918,12 +918,9 @@
 
   function renderSnInput(stepKey, oc, escapeAttr) {
     const v = (oc.draftSn && oc.draftSn[stepKey]) || "";
-    const scanBtn =
-      stepKey === "bind"
-        ? `<button type="button" class="offcab-scan-btn" data-action="offcab-scan" data-step="${escapeAttr(
-            stepKey
-          )}">扫描</button>`
-        : "";
+    const scanBtn = `<button type="button" class="offcab-scan-btn" data-action="offcab-scan" data-step="${escapeAttr(
+      stepKey
+    )}">扫描</button>`;
     return `<div class="offcab-sn-row">
       <div class="offcab-sn-field">
         <input type="text" class="offcab-sn" data-action="offcab-sn" data-step="${escapeAttr(

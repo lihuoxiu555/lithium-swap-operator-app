@@ -17,6 +17,7 @@
   const Alerts = window.OperatorAppAlerts;
   const Batteries = window.OperatorAppBatteries;
   const OffCab = window.OperatorAppOffCabinet;
+  const Channels = window.OperatorAppChannels;
 
   const SCENARIOS = {
     admin: { label: "管理员已登录", forceEmptyGrid: false, unread: false, loadError: false },
@@ -162,6 +163,7 @@
       outboundRefreshAt: null,
       remotePhase: "reopen",
     },
+    channel: Channels ? Channels.defaultState() : { tab: "contracts", view: "hub" },
   };
 
   const els = {};
@@ -489,6 +491,15 @@
       state.screen = "offCabinet";
       setHash(mod.route);
       track("off_cabinet_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "ops.channels") {
+      state.placeholderModule = mod;
+      state.channel = Channels ? Channels.defaultState() : { tab: "contracts", view: "hub" };
+      state.screen = "channels";
+      setHash(mod.route);
+      track("channels_open", {});
       render();
       return;
     }
@@ -4969,6 +4980,15 @@
     return OffCab.render(state, offCabCtx());
   }
 
+  function channelCtx() {
+    return { escapeHtml, escapeAttr, session: state.session };
+  }
+
+  function renderChannels() {
+    if (!Channels) return `<div class="empty-full">模块未加载</div>`;
+    return Channels.render(state, channelCtx());
+  }
+
   function renderCabinets() {
     if (state.ops.cabView === "detail") return renderCabinetDetail();
     if (state.ops.cabView === "move") return renderCabinetMove();
@@ -5912,6 +5932,7 @@
       state.screen === "bizStats" ||
       state.screen === "siteBusy" ||
       state.screen === "offCabinet" ||
+      state.screen === "channels" ||
       state.screen === "cabinets" ||
       state.screen === "deviceStats" ||
       state.screen === "userList" ||
@@ -6006,6 +6027,9 @@
         break;
       case "offCabinet":
         html = renderOffCabinet();
+        break;
+      case "channels":
+        html = renderChannels();
         break;
       case "deviceStats":
         html = renderDeviceStats();
@@ -6892,6 +6916,134 @@
           openModule("ops.cabinets", true);
           toast("已打开电柜管理（原型：请选站点下拉）");
           break;
+        case "ch-tab": {
+          if (!Channels) break;
+          state.channel.tab = t.dataset.tab || "contracts";
+          state.channel.view = "hub";
+          render();
+          break;
+        }
+        case "ch-orders-sub": {
+          if (!Channels) break;
+          state.channel.ordersSub = t.dataset.sub || "day";
+          render();
+          break;
+        }
+        case "ch-assets-sub": {
+          if (!Channels) break;
+          state.channel.assetsSub = t.dataset.sub || "dayPool";
+          render();
+          break;
+        }
+        case "ch-new-contract": {
+          if (!Channels) break;
+          state.channel.editId = "new";
+          state.channel.form = Channels.emptyForm();
+          state.channel.view = "contractForm";
+          render();
+          break;
+        }
+        case "ch-open-contract": {
+          if (!Channels) break;
+          state.channel.editId = t.dataset.id;
+          state.channel.view = "contractDetail";
+          render();
+          break;
+        }
+        case "ch-edit-contract": {
+          if (!Channels) break;
+          const cid = t.dataset.id || state.channel.editId;
+          const row = Channels.getContractById(cid);
+          if (!row) {
+            toast("签约不存在");
+            break;
+          }
+          state.channel.editId = cid;
+          state.channel.form = Channels.formFromContract(row);
+          state.channel.view = "contractForm";
+          render();
+          break;
+        }
+        case "ch-save-contract": {
+          if (!Channels) break;
+          const form = Channels.readContractFormFromDom();
+          state.channel.form = form;
+          const editId = state.channel.editId || "new";
+          const res = Channels.saveContract(form, editId);
+          if (!res.ok) {
+            toast(res.msg || "保存失败");
+            break;
+          }
+          state.channel.editId = res.contract.id;
+          state.channel.view = "contractDetail";
+          track("channel_contract_save", { id: res.contract.id, created: !!res.created });
+          toast(res.created ? "已新增签约" : "已保存");
+          render();
+          break;
+        }
+        case "ch-open-credit": {
+          if (!Channels) break;
+          state.channel.creditChannelId = t.dataset.channelId;
+          state.channel.view = "creditForm";
+          render();
+          break;
+        }
+        case "ch-save-credit": {
+          if (!Channels) break;
+          const limit = Channels.readCreditLimitFromDom();
+          const chId = state.channel.creditChannelId;
+          const res = Channels.adjustCreditLimit(chId, limit, offCabOperatorName());
+          if (!res.ok) {
+            toast(res.msg || "调整失败");
+            break;
+          }
+          state.channel.view = "contractDetail";
+          track("channel_credit_adjust", { channel_id: chId });
+          toast("额度已更新");
+          render();
+          break;
+        }
+        case "ch-confirm-order": {
+          if (!Channels) break;
+          const kind = t.dataset.kind || "day";
+          const oid = t.dataset.id;
+          const res = Channels.confirmOrder(kind, oid, offCabOperatorName());
+          if (!res.ok) {
+            toast(res.msg || "无法确认");
+            break;
+          }
+          track("channel_order_confirm", { kind, order_id: oid });
+          toast("已确认到账");
+          render();
+          break;
+        }
+        case "ch-back-hub": {
+          if (!state.channel) break;
+          state.channel.view = "hub";
+          state.channel.editId = null;
+          state.channel.creditChannelId = null;
+          state.channel.form = {};
+          render();
+          break;
+        }
+        case "ch-back-detail": {
+          if (!state.channel) break;
+          if (state.channel.editId && state.channel.editId !== "new") {
+            state.channel.view = "contractDetail";
+          } else {
+            state.channel.view = "hub";
+            state.channel.editId = null;
+          }
+          state.channel.form = {};
+          render();
+          break;
+        }
+        case "ch-ledger-pool": {
+          if (!Channels) break;
+          state.channel.ledgerPoolId = t.dataset.pool;
+          render();
+          break;
+        }
         case "offcab-start": {
           const uid = t.dataset.uid;
           const flow = t.dataset.flow;
