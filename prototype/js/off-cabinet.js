@@ -13,6 +13,7 @@
   const SWAP_STATUS = {
     in_progress: "进行中",
     swap_timeout: "换电超时",
+    swap_failed: "换电失败",
     completed: "已完成",
   };
 
@@ -496,7 +497,7 @@
   function remoteMockScenarioLabel(sw) {
     if (!sw || !sw.remoteScenario) return "";
     if (sw.remoteScenario === 1) return "Mock·场景一：重开失败可改发他格口";
-    if (sw.remoteScenario === 2) return "Mock·场景二：重开失败仅可取还入电赴他站";
+    if (sw.remoteScenario === 2) return "Mock·场景二：禁用出电格口·取还入电·换电失败";
     return "";
   }
 
@@ -586,14 +587,17 @@
     };
   }
 
-  /** 本柜仅故障出电：允许用户取走还入电池，赴其他站/柜换电 */
+  /** 本柜仅故障出电：禁用出电格口 + 取走还入电池；换电单标记失败 */
   function allowReturnPickupElsewhere(sw, user, operatorName) {
     const retSn = sw.returnedSn;
     const outSn = sw.outboundSn;
+    const outPort = outboundPortNumber(sw);
     if (!retSn || !sw.returnRecorded) return { ok: false, msg: "无还入电池信息" };
+    if (outPort == null) return { ok: false, msg: "无出电格口信息" };
     const retB = BATTERIES[retSn];
     if (!retB || !retB.inCabinet) return { ok: false, msg: "还入电池不在柜" };
     const retPort = sw.returnPort != null ? sw.returnPort : retB.inCabinet.port;
+    disablePort(sw.cabinetId, outPort);
     reopenPort(sw.cabinetId, retPort);
     if (outSn && BATTERIES[outSn]) {
       delete BATTERIES[outSn].boundUserPhone;
@@ -602,22 +606,30 @@
     retB.boundUserPhone = user.phone;
     user.heldSn = retSn;
     user.waitPickup = false;
-    if (outSn && BATTERIES[outSn] && BATTERIES[outSn].inCabinet) {
-      /* 故障出电仍在柜，保持禁用由步骤②处理 */
-    }
-    sw.status = "completed";
+    sw.status = "swap_failed";
     return {
       ok: true,
       logs: [
+        {
+          type: "disable_port",
+          port: outPort,
+          operatorName,
+          label: `禁用 ${outPort} 号格口`,
+        },
         {
           type: "return_pickup_elsewhere",
           sn: retSn,
           port: retPort,
           operatorName,
-          label: `开 ${retPort} 号 · 用户取走还入电池 · 赴他站换电`,
+          label: `开 ${retPort} 号 · 允许取走还入电池`,
+        },
+        {
+          type: "swap_mark_failed",
+          operatorName,
+          label: `换电订单 ${sw.orderNo || ""} 标记为换电失败`.trim(),
         },
       ],
-      msg: "已开还入格口，用户可取还入电池赴其他站换电",
+      msg: `已禁用 ${outPort} 号格口，用户可取还入电池；换电单已标记为换电失败`,
     };
   }
 

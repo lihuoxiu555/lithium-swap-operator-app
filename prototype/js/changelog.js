@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.78",
+      date: formatLocalDateTime(),
+      title: "场景二兜底文案与换电失败",
+      decisions: ["068"],
+      items: [
+        "按钮：禁用 x 号格口·允许取走还入电池",
+        "执行后换电单状态 swap_failed（换电失败）",
+      ],
+    },
+    {
       version: "V1.77",
       date: formatLocalDateTime(),
       title: "远程出电 · 双场景 Mock",
