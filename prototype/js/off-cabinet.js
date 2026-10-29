@@ -20,7 +20,17 @@
   let BATTERIES = {
     "035211127474": { sn: "035211127474", boundUserPhone: "18915821617" },
     "035211210001": { sn: "035211210001", boundUserPhone: "13800138001" },
-    "492391002233": { sn: "492391002233" },
+    "492391002233": {
+      sn: "492391002233",
+      inCabinet: {
+        cabinetId: "cab-pd-1",
+        siteName: "浦东骑手驿站",
+        cabinetName: "浦东 1 号柜",
+        port: 7,
+        door: "关闭",
+        soc: 41,
+      },
+    },
     "492391883344": { sn: "492391883344" },
     "492399990003": {
       sn: "492399990003",
@@ -142,6 +152,9 @@
       cabinetName: "浦东 1 号柜",
       cab: "浦东 1 号柜",
       outPort: 3,
+      returnPort: 7,
+      returnAt: "2026-10-28 16:11",
+      outboundAt: "2026-10-28 16:12",
     },
     {
       id: "sw-r2",
@@ -161,6 +174,9 @@
       cabinetName: "浦东 1 号柜",
       cab: "浦东 1 号柜",
       outPort: 5,
+      returnPort: null,
+      returnAt: null,
+      outboundAt: "2026-10-28 16:20",
     },
   ];
 
@@ -375,6 +391,28 @@
     if (!s) return "—";
     if (s.length <= maxLen) return s;
     return s.slice(0, maxLen - 1) + "…";
+  }
+
+  function batteryInCabLabel(sn) {
+    if (!sn) return "—";
+    const b = BATTERIES[sn];
+    if (!b) return "未知";
+    return b.inCabinet ? "在柜" : "不在柜";
+  }
+
+  function swapLegPort(sw, leg) {
+    if (leg === "return") {
+      if (!sw.returnRecorded && !sw.returnedSn) return "—";
+      if (sw.returnPort != null) return sw.returnPort + " 号";
+      const b = sw.returnedSn && BATTERIES[sw.returnedSn];
+      if (b && b.inCabinet && b.inCabinet.port != null) return b.inCabinet.port + " 号";
+      return "—";
+    }
+    if (!sw.outboundSn) return "—";
+    if (sw.outPort != null) return sw.outPort + " 号";
+    const ob = BATTERIES[sw.outboundSn];
+    if (ob && ob.inCabinet && ob.inCabinet.port != null) return ob.inCabinet.port + " 号";
+    return "—";
   }
 
   function remoteLocationSummary(sw, user) {
@@ -724,11 +762,33 @@
 
     const selectedSlot = slots.find((s) => s.sn === selectedSn);
     const loc = remoteLocationSummary(sw, user);
-    const cabLine = truncateLocText(loc.cab.address, 26);
-    const userLine = loc.user
-      ? truncateLocText(loc.user.address, 22) +
-        (loc.user.reportedAt ? " · " + loc.user.reportedAt : "")
-      : "暂无定位";
+    const returnSn = sw.returnRecorded || sw.returnedSn ? sw.returnedSn || "—" : "—";
+    const returnTime = sw.returnAt || (sw.returnRecorded ? sw.createdAt : "—");
+    const outboundTime = sw.outboundAt || sw.createdAt || "—";
+    const userAddr = (loc.user && loc.user.address) || "暂无定位";
+    const userReported = (loc.user && loc.user.reportedAt) || "—";
+    const siteAddr = loc.cab.address || "—";
+
+    const legRow = (label, value) =>
+      `<div class="offcab-leg-row"><span>${escapeHtml(label)}</span><em>${escapeHtml(value)}</em></div>`;
+
+    const returnLeg = `
+      <div class="offcab-remote-leg">
+        <div class="offcab-remote-leg-hd">还电信息</div>
+        ${legRow("还入格口", swapLegPort(sw, "return"))}
+        ${legRow("还入电池", returnSn)}
+        ${legRow("电池是否在柜", returnSn === "—" ? "—" : batteryInCabLabel(sw.returnedSn))}
+        ${legRow("时间", returnTime)}
+      </div>`;
+
+    const outboundLeg = `
+      <div class="offcab-remote-leg">
+        <div class="offcab-remote-leg-hd">出电信息</div>
+        ${legRow("出电格口", swapLegPort(sw, "out"))}
+        ${legRow("出电电池", sw.outboundSn || "—")}
+        ${legRow("电池是否在柜", sw.outboundSn ? batteryInCabLabel(sw.outboundSn) : "—")}
+        ${legRow("时间", outboundTime)}
+      </div>`;
 
     return `
       <div class="sites-page ops-page">
@@ -741,23 +801,19 @@
           statusLabel
         )}</strong>${sw.status === "in_progress" ? ` · 出电限时约 ${remainMin} 分钟` : ""}</p>
         <div class="offcab-tags">${tags}</div>
-        <section class="devstat-sec offcab-remote-cab">
-          <div class="devstat-hd"><strong>柜机</strong></div>
+        <div class="offcab-remote-dual">${returnLeg}${outboundLeg}</div>
+        <section class="devstat-sec offcab-remote-site">
           <div class="sites-card-rows inline">
             <div><span>站点</span><em>${escapeHtml(sw.siteName || "—")}</em></div>
-            <div><span>柜机名称</span><em>${escapeHtml(sw.cabinetName || sw.cab || "—")}</em></div>
-            <div><span>换出编码</span><em>${escapeHtml(sw.outboundSn)}</em></div>
-            <div><span>还入记录</span><em>${sw.returnRecorded ? "有（R1）" : "无（R2）"}</em></div>
+            <div><span>柜机</span><em>${escapeHtml(sw.cabinetName || sw.cab || "—")}</em></div>
+            <div class="offcab-site-addr"><span>站点位置</span><em>${escapeHtml(siteAddr)}</em></div>
           </div>
         </section>
         <section class="devstat-sec offcab-loc-sec" title="球面直线估算">
-          <div class="offcab-loc-bar">
-            <span class="offcab-loc-title">定位 · 直线距离</span>
-            <strong class="offcab-loc-km">${escapeHtml(loc.distanceLabel)}</strong>
-          </div>
-          <div class="offcab-loc-rows">
-            <div class="offcab-loc-row"><span>柜机</span><em>${escapeHtml(cabLine)}</em></div>
-            <div class="offcab-loc-row"><span>用户</span><em>${escapeHtml(userLine)}</em></div>
+          <div class="sites-card-rows inline">
+            <div class="offcab-site-addr"><span>用户定位</span><em>${escapeHtml(userAddr)}</em></div>
+            <div><span>最近回传</span><em>${escapeHtml(userReported)}</em></div>
+            <div><span>与站点距离</span><em>${escapeHtml(loc.distanceLabel)}</em></div>
           </div>
         </section>
         <section class="devstat-sec offcab-sec">

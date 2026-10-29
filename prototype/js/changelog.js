@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.72",
+      date: formatLocalDateTime(),
+      title: "远程出电 · 信息分区",
+      decisions: ["067"],
+      items: [
+        "顶部双栏：还电信息 / 出电信息（格口·电池·在柜·时间）",
+        "下方站点·柜机·站点位置；再下用户定位·回传·距离",
+      ],
+    },
+    {
       version: "V1.71",
       date: "2026-10-29 10:16",
       title: "远程出电入口条件",
