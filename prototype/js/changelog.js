@@ -17,6 +17,24 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.89",
+      date: formatLocalDateTime(),
+      title: "渠道管理 · 规则说明同步",
+      items: [
+        "PRD §24、decision-069、验收 AC-148/149、字段口径与 page-specs 对齐 V1.88 能力",
+        "评审侧栏渠道模块说明与 Tab/新增结算/调账口径一致",
+      ],
+    },
+    {
+      version: "V1.88",
+      date: "2026-10-29 12:00",
+      title: "渠道管理 · 列表排版",
+      items: [
+        "签约/订单卡片改单列键值对齐，去掉双列错位",
+        "新增渠道商圆角主按钮；确认到账与正文分隔",
+      ],
+    },
+    {
       version: "V1.87",
       date: formatLocalDateTime(),
       title: "渠道权益 · 人天池操作",
