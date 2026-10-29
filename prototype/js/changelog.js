@@ -17,8 +17,26 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.92",
+      version: "V1.94",
       date: formatLocalDateTime(),
+      title: "推广分销价 · 正式价只读",
+      items: [
+        "编辑分销价：正式零售价只读，来源个人套餐设置",
+        "保存仅更新专享价、佣金与状态",
+      ],
+    },
+    {
+      version: "V1.93",
+      date: "2026-10-29 14:05",
+      title: "人天批发价 Mock 减一条",
+      items: [
+        "列表仅默认+顺丰；临时渠道可走新增渠道批发价查看表单字段",
+        "评审侧栏 channels:quotaForm 字段说明",
+      ],
+    },
+    {
+      version: "V1.92",
+      date: "2026-10-29 14:00",
       title: "渠道管理 · 格子入口与按钮排版",
       items: [
         "入口改工作台 grid-apps 四列格子",

@@ -382,6 +382,17 @@
       fields: [
         { name: "默认价", def: "无渠道 · 新建签约继承；平台标准价只读" },
         { name: "渠道覆盖", def: "批发单价 + 最低起购；新增/编辑 Mock 保存" },
+        { name: "Mock", def: "列表 2 条（默认+顺丰）；临时渠道待新增配置" },
+      ],
+    }),
+    "channels:quotaForm": S({
+      title: "人天批发价 · 新增/编辑",
+      source: "PC 新增渠道批发价表单",
+      fields: [
+        { name: "渠道商", def: "新增必选：未配置批发价的人天池签约（如临时渠道）" },
+        { name: "批发单价", def: "元/人天；默认继承平台标准价可改" },
+        { name: "最低起购", def: "人天整数" },
+        { name: "状态", def: "生效 / 停用" },
       ],
     }),
     "channels:cardPricing": S({
@@ -390,6 +401,14 @@
       fields: [
         { name: "范围", def: "链接类签约 SKU：正式价/专享价/佣金" },
         { name: "校验", def: "专享 ≤ 正式；佣金 ≤ 正式 − 专享" },
+      ],
+    }),
+    "channels:cardForm": S({
+      title: "推广分销价 · 编辑",
+      source: "PC 渠道分销价 · decision-085",
+      fields: [
+        { name: "正式零售价", def: "只读 · 继承个人套餐/城市底价，不可在本页编辑" },
+        { name: "可编辑", def: "渠道专享价、佣金/单、状态" },
       ],
     }),
     "channels:linkSettle": S({
@@ -737,8 +756,8 @@
       if (ch.view === "contractForm" || ch.view === "creditForm") return "channels:form";
       if (ch.view === "poolAdjust") return "channels:poolAdjust";
       if (ch.view === "poolLedger") return "channels:poolLedger";
-      if (ch.view === "quotaForm") return "channels:quotaPricing";
-      if (ch.view === "cardForm") return "channels:cardPricing";
+      if (ch.view === "quotaForm") return "channels:quotaForm";
+      if (ch.view === "cardForm") return "channels:cardForm";
       if (ch.view === "linkSettleRegister" || ch.view === "linkSettleVoucher") {
         return "channels:linkSettle";
       }

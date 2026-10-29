@@ -963,15 +963,14 @@
   }
 
   function saveCardPricing(form, editId) {
-    const official = Number(form.officialPrice);
+    if (editId === "new") return { ok: false, msg: "演示：请编辑已有 SKU" };
+    const sku = channelSalePackages.find((s) => s.id === editId);
+    if (!sku) return { ok: false, msg: "SKU 不存在" };
+    const official = Number(sku.officialPrice);
     const channel = Number(form.channelPrice);
     const comm = Number(form.commissionPerOrder);
     if (channel > official) return { ok: false, msg: "专享价不能高于正式价" };
     if (comm > official - channel) return { ok: false, msg: "佣金不能高于可分配收入" };
-    if (editId === "new") return { ok: false, msg: "演示：请编辑已有 SKU" };
-    const sku = channelSalePackages.find((s) => s.id === editId);
-    if (!sku) return { ok: false, msg: "SKU 不存在" };
-    sku.officialPrice = official;
     sku.channelPrice = channel;
     sku.commissionPerOrder = comm;
     sku.status = form.status || sku.status;
@@ -2575,10 +2574,11 @@
             sku.name
           )} · ${escapeHtml(sku.batteryModel || "")}</p>
           <label class="sites-field">正式零售价（元）
-            <input id="ch-card-officialPrice" type="number" step="0.01" min="0" value="${escapeAttr(
-              form.officialPrice ?? sku.officialPrice
+            <input id="ch-card-officialPrice" type="number" step="0.01" min="0" readonly value="${escapeAttr(
+              sku.officialPrice
             )}" />
           </label>
+          <p class="ops-hint channel-page-note">正式零售价来自<strong>个人套餐设置</strong>（平台设置），本页不可改；仅维护专享价与佣金。</p>
           <label class="sites-field">渠道专享价（元）
             <input id="ch-card-channelPrice" type="number" step="0.01" min="0" value="${escapeAttr(
               form.channelPrice ?? sku.channelPrice
