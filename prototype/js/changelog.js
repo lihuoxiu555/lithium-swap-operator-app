@@ -17,8 +17,26 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.94",
+      version: "V1.96",
       date: formatLocalDateTime(),
+      title: "渠道管理 · 文档规则全量同步",
+      items: [
+        "PRD §24、decision-069、字段口径、验收 AC 对齐 V1.95 实现",
+        "六宫格入口、定价/结算/正式价只读、推广结算版式写入 PRD",
+      ],
+    },
+    {
+      version: "V1.95",
+      date: "2026-10-29 14:10",
+      title: "推广结算 · 筛选与版式",
+      items: [
+        "Tab/KPI 置顶；筛选改两行工具条，去掉四块 sites-field 白卡",
+        "查询为小号胶囊按钮，列表首屏可见更多",
+      ],
+    },
+    {
+      version: "V1.94",
+      date: "2026-10-29 14:08",
       title: "推广分销价 · 正式价只读",
       items: [
         "编辑分销价：正式零售价只读，来源个人套餐设置",
