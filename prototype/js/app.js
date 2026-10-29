@@ -163,7 +163,7 @@
       outboundRefreshAt: null,
       remotePhase: "reopen",
     },
-    channel: Channels ? Channels.defaultState() : { tab: "contracts", view: "hub" },
+    channel: Channels ? Channels.defaultState() : { tab: "contracts", view: "menu" },
   };
 
   const els = {};
@@ -496,7 +496,7 @@
     }
     if (mod.status === "ready" && mod.id === "ops.channels") {
       state.placeholderModule = mod;
-      state.channel = Channels ? Channels.defaultState() : { tab: "contracts", view: "hub" };
+      state.channel = Channels ? Channels.defaultState() : { tab: "contracts", view: "menu" };
       state.screen = "channels";
       setHash(mod.route);
       track("channels_open", {});
@@ -6968,10 +6968,16 @@
           openModule("ops.cabinets", true);
           toast("已打开电柜管理（原型：请选站点下拉）");
           break;
-        case "ch-tab": {
+        case "ch-enter-section": {
           if (!Channels) break;
           state.channel.tab = t.dataset.tab || "contracts";
           state.channel.view = "hub";
+          render();
+          break;
+        }
+        case "ch-back-menu": {
+          if (!state.channel) break;
+          state.channel.view = "menu";
           render();
           break;
         }

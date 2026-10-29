@@ -27,6 +27,13 @@
     { id: "assets", label: "渠道权益" },
   ];
 
+  /** 渠道管理首页 · 子模块入口（不直出列表） */
+  const MENU_ENTRIES = [
+    { id: "contracts", label: "签约渠道", desc: "签约列表、新增渠道商、信用额度" },
+    { id: "orders", label: "渠道订单", desc: "人天批发采购单与确认到账" },
+    { id: "assets", label: "渠道权益", desc: "人天池额度、渠道分销 SKU" },
+  ];
+
   /** 运营商 APP 一期：仅人天批发订单（月租/激活码见待办·渠道充值） */
   const ORDER_SUB_TABS = [{ id: "day", label: "人天批发" }];
 
@@ -606,7 +613,7 @@
       tab: "contracts",
       ordersSub: "day",
       assetsSub: "dayPool",
-      view: "hub",
+      view: "menu",
       editId: null,
       creditChannelId: null,
       form: {},
@@ -1402,10 +1409,10 @@
       list.map((c) => renderContractCard(c, escapeHtml, escapeAttr)).join("") ||
       `<div class="empty-inline compact">暂无签约渠道</div>`;
     return `
-      <div class="sites-list">
-        <button type="button" class="btn-primary" style="width:100%;margin-bottom:10px" data-action="ch-new-contract">+ 新增渠道商</button>
-        ${cards}
-      </div>`;
+      <div class="channel-list-toolbar">
+        <button type="button" class="btn-primary channel-add-btn" data-action="ch-new-contract">+ 新增渠道商</button>
+      </div>
+      <div class="sites-list">${cards}</div>`;
   }
 
   function renderOrdersTab(ch, ctx) {
@@ -1871,13 +1878,25 @@
       </div>`;
   }
 
-  function renderHub(ch, ctx) {
+  function menuEntryTitle(tabId) {
+    const row = MAIN_TABS.find((t) => t.id === tabId);
+    return row ? row.label : "渠道管理";
+  }
+
+  function renderMenu(ch, ctx) {
     const { escapeHtml, escapeAttr, session } = ctx;
-    const tab = ch.tab || "contracts";
-    let body = "";
-    if (tab === "orders") body = renderOrdersTab(ch, ctx);
-    else if (tab === "assets") body = renderAssetsTab(ch, ctx);
-    else body = renderContractsTab(ch, ctx);
+    const items = MENU_ENTRIES.map(
+      (e) => `
+      <button type="button" class="channel-menu-item" data-action="ch-enter-section" data-tab="${escapeAttr(
+        e.id
+      )}">
+        <span class="channel-menu-item-main">
+          <strong>${escapeHtml(e.label)}</strong>
+          <span class="channel-menu-item-desc">${escapeHtml(e.desc)}</span>
+        </span>
+        <span class="channel-menu-item-chevron" aria-hidden="true">›</span>
+      </button>`
+    ).join("");
 
     return `
       <div class="sites-page ops-page">
@@ -1887,14 +1906,26 @@
           <div class="sites-header-spacer"></div>
         </div>
         <p class="ops-hint">${escapeHtml(dataScopeHint(session))}</p>
-        <div class="sites-tabs" role="tablist">${renderTabs(
-          MAIN_TABS,
-          tab,
-          "ch-tab",
-          "tab",
-          escapeHtml,
-          escapeAttr
-        )}</div>
+        <nav class="channel-menu-list" aria-label="渠道管理模块">${items}</nav>
+      </div>`;
+  }
+
+  function renderHub(ch, ctx) {
+    const { escapeHtml, session } = ctx;
+    const tab = ch.tab || "contracts";
+    let body = "";
+    if (tab === "orders") body = renderOrdersTab(ch, ctx);
+    else if (tab === "assets") body = renderAssetsTab(ch, ctx);
+    else body = renderContractsTab(ch, ctx);
+
+    return `
+      <div class="sites-page ops-page">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="ch-back-menu" aria-label="返回">‹</button>
+          <h1>${escapeHtml(menuEntryTitle(tab))}</h1>
+          <div class="sites-header-spacer"></div>
+        </div>
+        <p class="ops-hint">${escapeHtml(dataScopeHint(session))}</p>
         ${body}
       </div>`;
   }
@@ -1941,7 +1972,8 @@
     if (view === "creditForm") return renderCreditForm(ch, ctx);
     if (view === "poolAdjust") return renderPoolAdjust(ch, ctx);
     if (view === "poolLedger") return renderPoolLedger(ch, ctx);
-    return renderHub(ch, ctx);
+    if (view === "hub") return renderHub(ch, ctx);
+    return renderMenu(ch, ctx);
   }
 
   global.OperatorAppChannels = {
@@ -1951,6 +1983,7 @@
     SETTLEMENT_MODES,
     NEW_CHANNEL_SETTLEMENT_MODES,
     MAIN_TABS,
+    MENU_ENTRIES,
     ORDER_SUB_TABS,
     ASSET_SUB_TABS,
     defaultState,

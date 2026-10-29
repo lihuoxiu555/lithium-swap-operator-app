@@ -349,16 +349,32 @@
       note: "手机页只留数字格子；公式在本栏。电池 3+3 格。**无告警电柜组**；柜异常见待办 Tab·警告、电柜详情·本柜告警。",
     }),
     channels: S({
-      title: "渠道管理 · Hub",
+      title: "渠道管理 · 入口",
       source: "decision-069 · PRD §24",
       fields: [
-        { name: "Tab", def: "签约渠道 / 渠道订单 / 渠道权益（不含链接结算、平台营销）" },
+        { name: "入口", def: "签约渠道 / 渠道订单 / 渠道权益（点击进入，首页不展示列表）" },
         { name: "数据范围", def: "本运营商 OP-SX · 绿色出行 Mock" },
-        { name: "签约", def: "单列键值卡片；+新增（仅人天池/推广）；详情编辑/调信用" },
-        { name: "订单", def: "仅人天批发；待确认到账→确认（月租/激活码见待办·渠道充值）" },
-        { name: "权益", def: "人天池+渠道分销；池卡片：额度调整、查看变动" },
+        { name: "不含", def: "链接结算、平台营销" },
       ],
       roles: "管理员 / 员工无差异",
+    }),
+    "channels:contracts": S({
+      title: "渠道管理 · 签约渠道",
+      source: "PRD §24.1",
+      fields: [
+        { name: "列表", def: "单列键值卡片；+ 新增（仅人天池/推广）" },
+        { name: "详情", def: "编辑、信用额度（推广类不适用）" },
+      ],
+    }),
+    "channels:orders": S({
+      title: "渠道管理 · 渠道订单",
+      source: "PRD §24.2",
+      fields: [{ name: "范围", def: "仅人天批发；待确认到账→确认" }],
+    }),
+    "channels:assets": S({
+      title: "渠道管理 · 渠道权益",
+      source: "PRD §24.3",
+      fields: [{ name: "子 Tab", def: "人天池 + 渠道分销；额度调整、查看变动" }],
     }),
     "channels:detail": S({
       title: "渠道管理 · 签约详情",
@@ -696,6 +712,12 @@
       if (ch.view === "contractForm" || ch.view === "creditForm") return "channels:form";
       if (ch.view === "poolAdjust") return "channels:poolAdjust";
       if (ch.view === "poolLedger") return "channels:poolLedger";
+      if (ch.view === "hub") {
+        const tab = ch.tab || "contracts";
+        if (tab === "orders") return "channels:orders";
+        if (tab === "assets") return "channels:assets";
+        return "channels:contracts";
+      }
       return "channels";
     }
     if (sc === "offCabinet") {

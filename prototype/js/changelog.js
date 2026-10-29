@@ -17,8 +17,17 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.89",
+      version: "V1.90",
       date: formatLocalDateTime(),
+      title: "渠道管理 · 模块入口页",
+      items: [
+        "首页仅展示签约渠道/渠道订单/渠道权益三个入口，点击进入子页",
+        "子页标题与返回回到入口；去掉顶栏三 Tab 直出列表",
+      ],
+    },
+    {
+      version: "V1.89",
+      date: "2026-10-29 13:15",
       title: "渠道管理 · 规则说明同步",
       items: [
         "PRD §24、decision-069、验收 AC-148/149、字段口径与 page-specs 对齐 V1.88 能力",
