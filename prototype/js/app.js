@@ -7876,8 +7876,13 @@
             );
             state.offCab.view = "result";
             track("off_cab_order", { type: "off_return" });
+            if (res.hint) toast(res.hint);
           } else {
-            toast("已回收，可继续绑定新电或稍后再领");
+            toast(
+              res.hint
+                ? "已回收，可继续绑定新电或稍后再领。" + res.hint
+                : "已回收，可继续绑定新电或稍后再领"
+            );
           }
           render();
           break;
@@ -7906,7 +7911,7 @@
           }
           state.offCab.flowSteps.push(offCabLogStep(res.log));
           delete state.offCab.draftSn.bind;
-          toast("绑定成功");
+          toast(res.hint ? "绑定成功。" + res.hint : "绑定成功");
           render();
           break;
         }

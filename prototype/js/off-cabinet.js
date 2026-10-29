@@ -1,8 +1,11 @@
 /**
  * 柜外电池作业 · Mock + 流程（柜外换电/退电/领电、远程出电）
- * 决策 decision-067
+ * 决策 decision-067 · 跨网作业 decision-071
  */
 (function (global) {
+  const SESSION_OPERATOR = { id: "op-lh", name: "锂电快换" };
+  const L1_BATTERY_FEE = 2.0;
+
   const ORDER_TYPES = {
     off_swap: { id: "off_swap", label: "柜外换电" },
     off_return: { id: "off_return", label: "柜外退电" },
@@ -17,9 +20,20 @@
     completed: "已完成",
   };
 
-  /** @type {Record<string, { sn: string, boundUserPhone?: string, inCabinet?: { cab: string, port: number, door: string } }>} */
+  /** @type {Record<string, { sn: string, boundUserPhone?: string, deviceOwnerId?: string, deviceOwnerName?: string, inCabinet?: { cab: string, port: number, door: string } }>} */
   let BATTERIES = {
-    "035211127474": { sn: "035211127474", boundUserPhone: "18915821617" },
+    "035211127474": {
+      sn: "035211127474",
+      boundUserPhone: "18915821617",
+      deviceOwnerId: SESSION_OPERATOR.id,
+      deviceOwnerName: SESSION_OPERATOR.name,
+    },
+    /** 他网电池 · 柜外作业不校验归属，成单仍计跨网费（decision-071） */
+    "035211888777": {
+      sn: "035211888777",
+      deviceOwnerId: "op-jd",
+      deviceOwnerName: "京东换电",
+    },
     "035211210001": { sn: "035211210001", boundUserPhone: "13800138001" },
     "492391002233": {
       sn: "492391002233",
@@ -287,6 +301,37 @@
         },
       ],
     },
+    {
+      id: "OC-260928003",
+      orderNo: "OC260928003",
+      orderType: "柜外领电",
+      orderTypeKey: "off_pickup",
+      userName: "王骑手",
+      phone: "13800138001",
+      operatorName: "管理员",
+      createdAt: "2026-10-28 14:10",
+      store: "柜外作业",
+      channel: "off_cabinet",
+      batteryNo: "035211888777",
+      batteryNos: ["035211888777"],
+      steps: [
+        {
+          label: "绑定用户 · 他网电池",
+          sn: "035211888777",
+          operatorName: "管理员",
+        },
+      ],
+      crossNetwork: {
+        userOwnerId: "op-lh",
+        userOwnerName: "锂电快换",
+        batteryOwnerId: "op-jd",
+        batteryOwnerName: "京东换电",
+        l1CabinetFee: 0,
+        l1BatteryFee: 2,
+        l1Total: 2,
+        isCrossNetwork: true,
+      },
+    },
   ];
 
   function searchUsers(kw) {
@@ -310,12 +355,52 @@
     return BATTERIES[sn] || null;
   }
 
+  function batteryOwner(sn) {
+    const b = BATTERIES[sn];
+    if (!b) return null;
+    return {
+      id: b.deviceOwnerId || SESSION_OPERATOR.id,
+      name: b.deviceOwnerName || SESSION_OPERATOR.name,
+    };
+  }
+
+  /** 成单后跨网设备服务费（对齐 PC 三元组 · 柜外无柜机时不计柜机维） */
+  function computeCrossNetworkFee(user, sns) {
+    const u = SESSION_OPERATOR;
+    let batteryFee = 0;
+    let crossBattery = null;
+    (sns || []).forEach((sn) => {
+      const bo = batteryOwner(sn);
+      if (bo && bo.id !== u.id) {
+        batteryFee = L1_BATTERY_FEE;
+        crossBattery = bo;
+      }
+    });
+    const l1Total = batteryFee;
+    return {
+      userOwnerId: u.id,
+      userOwnerName: u.name,
+      batteryOwnerId: crossBattery ? crossBattery.id : u.id,
+      batteryOwnerName: crossBattery ? crossBattery.name : u.name,
+      l1CabinetFee: 0,
+      l1BatteryFee: batteryFee,
+      l1Total,
+      isCrossNetwork: l1Total > 0,
+    };
+  }
+
   function validateRecycle(sn, user) {
     const b = BATTERIES[sn];
     if (!b) return { ok: false, msg: "电池编码不存在（体系外不可回收）" };
     if (!user.heldSn || user.heldSn !== sn)
       return { ok: false, msg: "与用户当前持电不一致" };
-    return { ok: true };
+    // decision-071：不校验 battery.deviceOwnerId 是否等于当前运营商
+    const owner = batteryOwner(sn);
+    const hint =
+      owner && owner.id !== SESSION_OPERATOR.id
+        ? `（归属 ${owner.name}，可继续回收；成单后按跨网规则计费）`
+        : "";
+    return { ok: true, hint };
   }
 
   function validateBind(sn, user) {
@@ -324,7 +409,12 @@
     if (b.boundUserPhone && b.boundUserPhone !== user.phone)
       return { ok: false, msg: "电池已绑定其他用户" };
     if (b.inCabinet) return { ok: false, msg: "电池仍在柜内，请走远程出电或柜机流程" };
-    return { ok: true };
+    const owner = batteryOwner(sn);
+    const hint =
+      owner && owner.id !== SESSION_OPERATOR.id
+        ? `（归属 ${owner.name}，可继续绑定；成单后按跨网规则计费）`
+        : "";
+    return { ok: true, hint };
   }
 
   function doRecycle(sn, user, operatorName) {
@@ -376,6 +466,7 @@
     const type = ORDER_TYPES[typeKey];
     const ts = Date.now();
     const sns = batteryNosFromSteps(steps);
+    const crossNetwork = computeCrossNetworkFee(user, sns);
     const row = {
       id: "OC-" + ts,
       orderNo: "OC" + String(ts).slice(-10),
@@ -391,6 +482,7 @@
       batteryNos: sns,
       steps: steps.slice(),
       extra: extra || {},
+      crossNetwork,
     };
     OFF_ORDERS.unshift(row);
     return row;
@@ -410,6 +502,12 @@
     const sns = order.batteryNos || batteryNosFromSteps(order.steps);
     if (sns.length === 1) push("电池编号", sns[0], { copy: true, link: true });
     else if (sns.length > 1) push("电池编号", sns.join(" / "), { copy: true });
+    const cn = order.crossNetwork;
+    if (cn && cn.isCrossNetwork && cn.l1Total > 0) {
+      push("跨网设备服务费", "¥" + cn.l1Total.toFixed(2), { tag: "跨网" });
+      push("用户运营商", cn.userOwnerName);
+      push("电池运营商", cn.batteryOwnerName);
+    }
     return rows;
   }
 

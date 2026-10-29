@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.103",
+      date: formatLocalDateTime(),
+      title: "柜外跨网电池 · 不校验归属、成单计跨网费",
+      items: [
+        "柜外领/换/退：他网 SN 可回收/绑定，不因 deviceOwner 拦截",
+        "换电记录展示跨网设备服务费（Mock 035211888777 / 王骑手样例）",
+        "decision-071 · PRD §23 · 字段口径 · AC-163",
+      ],
+    },
+    {
       version: "V1.102",
       date: formatLocalDateTime(),
       title: "换电记录归位 + 运维电池管理",
