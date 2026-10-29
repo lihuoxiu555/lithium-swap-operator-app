@@ -20,17 +20,13 @@
     { id: "assets", label: "渠道权益" },
   ];
 
-  const ORDER_SUB_TABS = [
-    { id: "day", label: "人天批发" },
-    { id: "rent", label: "设备月租" },
-    { id: "act", label: "激活码批发" },
-  ];
+  /** 运营商 APP 一期：仅人天批发订单（月租/激活码见待办·渠道充值） */
+  const ORDER_SUB_TABS = [{ id: "day", label: "人天批发" }];
 
+  /** 运营商 APP 一期：仅人天池 + 渠道分销（租赁/激活码二期不上线） */
   const ASSET_SUB_TABS = [
     { id: "dayPool", label: "人天池" },
     { id: "card", label: "渠道分销" },
-    { id: "rent", label: "设备租赁" },
-    { id: "act", label: "激活码" },
   ];
 
   const CHANNEL_CITIES = ["上海", "杭州"];
@@ -1261,17 +1257,16 @@
 
   function renderOrdersTab(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
-    const sub = ch.ordersSub || "day";
-    let orders = getDayOrders();
-    if (sub === "rent") orders = getRentOrders();
-    if (sub === "act") orders = getActOrders();
+    const sub = "day";
+    const orders = getDayOrders();
     const cards =
       orders.map((o) => renderOrderCard(o, sub, escapeHtml, escapeAttr)).join("") ||
       `<div class="empty-inline compact">暂无订单</div>`;
-    return (
-      renderSubTabs(ORDER_SUB_TABS, sub, "ch-orders-sub", "sub", escapeHtml, escapeAttr) +
-      `<div class="sites-list">${cards}</div>`
-    );
+    const subTabs =
+      ORDER_SUB_TABS.length > 1
+        ? renderSubTabs(ORDER_SUB_TABS, sub, "ch-orders-sub", "sub", escapeHtml, escapeAttr)
+        : `<p class="ops-hint" style="margin:0 14px 8px">人天批发 · 到账后额度池入账</p>`;
+    return subTabs + `<div class="sites-list">${cards}</div>`;
   }
 
   function renderDayPoolAssets(ch, ctx) {
@@ -1394,16 +1389,19 @@
     return `<div class="sites-list">${cards || `<div class="empty-inline compact">暂无激活码签约</div>`}</div>`;
   }
 
+  function normalizeAssetsSub(sub) {
+    if (sub === "card") return "card";
+    return "dayPool";
+  }
+
   function renderAssetsTab(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
-    const sub = ch.assetsSub || "dayPool";
-    let body = "";
-    if (sub === "card") body = renderCardAssets(ctx);
-    else if (sub === "rent") body = renderRentAssets(ctx);
-    else if (sub === "act") body = renderActAssets(ctx);
-    else body = renderDayPoolAssets(ch, ctx);
+    const sub = normalizeAssetsSub(ch.assetsSub);
+    const body =
+      sub === "card" ? renderCardAssets(ctx) : renderDayPoolAssets(ch, ctx);
     return (
-      renderSubTabs(ASSET_SUB_TABS, sub, "ch-assets-sub", "sub", escapeHtml, escapeAttr) + body
+      renderSubTabs(ASSET_SUB_TABS, sub, "ch-assets-sub", "sub", escapeHtml, escapeAttr) +
+      body
     );
   }
 

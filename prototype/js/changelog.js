@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.85",
+      date: formatLocalDateTime(),
+      title: "渠道管理 · 一期裁剪子 Tab",
+      items: [
+        "渠道订单移除设备月租、激活码批发（仅人天批发）",
+        "渠道权益移除设备租赁、激活码（保留人天池、渠道分销）",
+      ],
+    },
+    {
       version: "V1.84",
       date: formatLocalDateTime(),
       title: "新增渠道商 · 字段对齐 PC",
