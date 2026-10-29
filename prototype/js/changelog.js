@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.70",
+      date: "2026-10-29 09:21",
+      title: "柜外订单 · 换电列表",
+      decisions: ["067"],
+      items: [
+        "柜外/远程出电单汇入换电订单；快捷筛「柜外」",
+        "卡片区分柜外角标；运营商操作记录折叠可展开",
+      ],
+    },
+    {
       version: "V1.69",
       date: "2026-10-28 19:29",
       title: "远程定位区紧凑化",
