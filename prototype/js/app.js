@@ -6916,7 +6916,6 @@
           {
             const user = OffCab.userById(uid);
             const sw = user && OffCab.latestCabinetSwap(user.id);
-            const user = OffCab.userById(uid);
             const el = sw && user && OffCab.remoteEligibility(sw, user);
             if (el && el.ok) {
               const pick = OffCab.defaultRemoteSlot(sw, el.slots);
@@ -7023,7 +7022,6 @@
             if (!sn) {
               const user = OffCab.userById(state.offCab.userId);
               const sw = user && OffCab.latestCabinetSwap(user.id);
-              const user = OffCab.userById(state.offCab.userId);
               const el = sw && user && OffCab.remoteEligibility(sw, user);
               const pick = el && el.ok && OffCab.defaultRemoteSlot(sw, el.slots);
               sn = (pick && pick.sn) || (sw && sw.outboundSn) || "";
