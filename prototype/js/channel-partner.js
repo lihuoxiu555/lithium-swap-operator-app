@@ -44,6 +44,12 @@
     balancePct: 0.55,
   };
 
+  const MIN_PURCHASE_DAYS = 100;
+  const MAX_PURCHASE_DAYS = 10000;
+
+  /** @type {Array<object>} 渠道申购单（待运营商确认到账后入账额度明细） */
+  let CHANNEL_PURCHASE_ORDERS = [];
+
   const DAY_POOL_LEDGER = [
     { id: "PL-001", type: "增购入账", days: 5000, time: "2026-01-02 11:00", remark: "PO-202601-088" },
     { id: "PL-002", type: "消耗扣减", days: -2, time: "2026-06-09 23:59", remark: "日终确认" },
@@ -457,8 +463,91 @@
       creditView: "home",
       depositProofs: null,
       depositForm: { amount: "10000", transferRef: "", transferDate: "" },
+      dayPoolView: "home",
+      purchaseForm: null,
       view: "hub",
     };
+  }
+
+  function defaultPurchaseForm(session) {
+    const p = profile(session);
+    const now = new Date();
+    const y = now.getFullYear();
+    const orderSuffix = String(now.getTime()).slice(-4);
+    return {
+      totalDays: "1000",
+      validFrom: DAY_POOL.validFrom || `${y}-01-01`,
+      validTo: DAY_POOL.validTo || `${y}-12-31`,
+      orderNo: `PO-${y}${String(now.getMonth() + 1).padStart(2, "0")}-${orderSuffix}`,
+      payChannel: "offline",
+      onlinePayMethod: "微信扫码",
+      transferRef: "",
+      payerAccount: "",
+      remark: "向签约运营商增购人天",
+      wholesalePrice: p.wholesalePrice || DAY_POOL.wholesalePrice,
+    };
+  }
+
+  function formatPurchaseTime(d) {
+    const dt = d instanceof Date ? d : new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(
+      dt.getHours()
+    )}:${pad(dt.getMinutes())}`;
+  }
+
+  function submitDayPoolPurchase(ch, session, raw) {
+    const days = Math.floor(Number(raw.totalDays));
+    if (!Number.isFinite(days) || days < MIN_PURCHASE_DAYS) {
+      return { error: `购买人天数至少 ${MIN_PURCHASE_DAYS} 人天` };
+    }
+    if (days > MAX_PURCHASE_DAYS) {
+      return { error: `单次最多 ${MAX_PURCHASE_DAYS.toLocaleString("zh-CN")} 人天` };
+    }
+    const orderNo = String(raw.orderNo || "").trim();
+    if (!orderNo) {
+      return { error: "请填写采购单号" };
+    }
+    const payChannel = raw.payChannel === "online" ? "online" : "offline";
+    const transferRef = String(raw.transferRef || "").trim();
+    if (payChannel === "offline" && !transferRef) {
+      return { error: "线下打款请填写银行流水号（付款回单）" };
+    }
+    const p = profile(session);
+    const unitPrice = Number(raw.wholesalePrice) || p.wholesalePrice || DAY_POOL.wholesalePrice;
+    const amount = Math.round(days * unitPrice * 100) / 100;
+    const now = new Date();
+    const row = {
+      id: orderNo,
+      poolId: DAY_POOL.id,
+      poolName: DAY_POOL.name,
+      channelName: p.channelName,
+      operatorName: p.operatorName,
+      days,
+      unitPrice,
+      amount,
+      payChannel,
+      payMethod:
+        payChannel === "online"
+          ? raw.onlinePayMethod || "微信扫码"
+          : "对公转账",
+      orderStatus: payChannel === "online" ? "待支付" : "待确认到账",
+      payStatus: payChannel === "online" ? "待支付" : "待付款",
+      transferRef: payChannel === "offline" ? transferRef : "",
+      payerAccount: payChannel === "offline" ? String(raw.payerAccount || "").trim() || "—" : "—",
+      validFrom: String(raw.validFrom || "").trim() || DAY_POOL.validFrom,
+      validTo: String(raw.validTo || "").trim() || DAY_POOL.validTo,
+      remark: String(raw.remark || "").trim(),
+      createdAt: formatPurchaseTime(now),
+    };
+    CHANNEL_PURCHASE_ORDERS.unshift(row);
+    ch.dayPoolView = "home";
+    ch.purchaseForm = defaultPurchaseForm(session);
+    const msg =
+      payChannel === "online"
+        ? "已创建在线支付单（Mock），请完成支付"
+        : "增购申请已提交，请等待运营商确认到账";
+    return { ok: true, message: msg, order: row };
   }
 
   function getDepositProofs(ch) {
@@ -745,7 +834,125 @@
       </div>`;
   }
 
-  function renderDayPool(ch, ctx) {
+  function renderPurchaseOrdersBlock(escapeHtml) {
+    if (!CHANNEL_PURCHASE_ORDERS.length) return "";
+    const cards = CHANNEL_PURCHASE_ORDERS.slice(0, 5)
+      .map(
+        (o) =>
+          `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
+            o.id
+          )}</strong><span class="sites-tag">${escapeHtml(o.orderStatus)}</span></div>
+          <div class="channel-card-kv">${renderKv(
+            [
+              ["人天 / 金额", `${o.days} 人天 · ¥${o.amount.toLocaleString("zh-CN")}`],
+              ["支付", escapeHtml(o.payMethod)],
+              ["提交时间", escapeHtml(o.createdAt)],
+              o.transferRef ? ["流水号", escapeHtml(o.transferRef)] : null,
+            ].filter(Boolean),
+            escapeHtml
+          )}</div>
+          <p class="ops-hint" style="margin:8px 0 0">对公<strong>附言请填采购单号</strong>；确认到账后写入「额度明细」。</p>
+          </article>`
+      )
+      .join("");
+    return `<div class="channel-section-hd">最近申购</div>${cards}`;
+  }
+
+  function renderDayPoolPurchaseForm(ch, session, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const p = profile(session);
+    const f = ch.purchaseForm || defaultPurchaseForm(session);
+    const offline = f.payChannel !== "online";
+    return `
+      <p class="ops-hint">向签约运营商按批发价采购人天；<strong>一运营商一池</strong>，增购入账同一池（对齐 PC decision-114/115）。</p>
+      <div class="sites-form-body channel-deposit-form" id="ch-purchase-form">
+        <div class="sites-field">
+          <label>入账额度池</label>
+          <input type="text" readonly value="${escapeAttr(
+            `${DAY_POOL.id} · ${DAY_POOL.name}（唯一池）`
+          )}" />
+        </div>
+        <div class="sites-field">
+          <label>渠道商</label>
+          <input type="text" readonly value="${escapeAttr(p.channelName)}" />
+        </div>
+        <div class="sites-field">
+          <label>售卖方（运营商）</label>
+          <input type="text" readonly value="${escapeAttr(p.operatorName)}" />
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-days">购买人天数</label>
+          <input id="ch-purchase-days" type="number" inputmode="numeric" min="${MIN_PURCHASE_DAYS}" max="${MAX_PURCHASE_DAYS}"
+            value="${escapeAttr(f.totalDays)}" />
+          <p class="ops-hint">${MIN_PURCHASE_DAYS}～${MAX_PURCHASE_DAYS.toLocaleString(
+      "zh-CN"
+    )} 人天/次</p>
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-valid-from">生效日期</label>
+          <input id="ch-purchase-valid-from" type="date" value="${escapeAttr(f.validFrom)}" />
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-valid-to">失效日期</label>
+          <input id="ch-purchase-valid-to" type="date" value="${escapeAttr(f.validTo)}" />
+        </div>
+        <div class="sites-field">
+          <label>批发单价（元/人天）</label>
+          <input type="text" readonly value="${escapeAttr(String(f.wholesalePrice))}" />
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-order-no">采购单号</label>
+          <input id="ch-purchase-order-no" type="text" value="${escapeAttr(f.orderNo)}" />
+          <p class="ops-hint">对公转账附言请填此单号</p>
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-pay">支付渠道</label>
+          <select id="ch-purchase-pay">
+            <option value="offline"${offline ? " selected" : ""}>线下打款</option>
+            <option value="online"${!offline ? " selected" : ""}>在线支付</option>
+          </select>
+        </div>
+        <div class="sites-field" id="ch-purchase-online-wrap" style="${offline ? "display:none" : ""}">
+          <label for="ch-purchase-online-method">在线方式</label>
+          <select id="ch-purchase-online-method">
+            <option${f.onlinePayMethod === "微信扫码" ? " selected" : ""}>微信扫码</option>
+            <option${f.onlinePayMethod === "支付宝扫码" ? " selected" : ""}>支付宝扫码</option>
+          </select>
+        </div>
+        <div id="ch-purchase-offline-wrap" style="${offline ? "" : "display:none"}">
+          <p class="ops-hint">流水号为付款回单证据；认款以<strong>金额 + 附言（采购单号）</strong>为主。不填转账日。</p>
+          <div class="sites-field">
+            <label for="ch-purchase-transfer-ref">银行流水号</label>
+            <input id="ch-purchase-transfer-ref" type="text" placeholder="付款回单流水号"
+              value="${escapeAttr(f.transferRef || "")}" />
+          </div>
+          <div class="sites-field">
+            <label for="ch-purchase-payer">付款账户（建议）</label>
+            <input id="ch-purchase-payer" type="text" placeholder="对公户名或账号后四位"
+              value="${escapeAttr(f.payerAccount || "")}" />
+          </div>
+        </div>
+        <div class="sites-field">
+          <label for="ch-purchase-remark">备注</label>
+          <textarea id="ch-purchase-remark" rows="2">${escapeHtml(f.remark || "")}</textarea>
+        </div>
+        <div class="sites-field">
+          <label>收款信息（只读）</label>
+          <p class="ops-hint" style="margin:4px 0 0">开户名：${escapeHtml(
+            p.operatorName
+          )} · 招商银行上海分行 · 对公专户（演示）</p>
+        </div>
+      </div>
+      <div class="sites-form-footer">
+        <button type="button" class="sites-footer-ghost" data-action="ch-day-purchase-back">取消</button>
+        <button type="button" class="sites-footer-primary" data-action="ch-day-purchase-submit">提交申购</button>
+      </div>`;
+  }
+
+  function renderDayPool(ch, ctx, session) {
+    if ((ch.dayPoolView || "home") === "purchaseForm") {
+      return renderDayPoolPurchaseForm(ch, session, ctx);
+    }
     const { escapeHtml, escapeAttr } = ctx;
     const tab = ch.dayTab || "pools";
     const mainTabs = DAY_POOL_TABS.map(
@@ -801,9 +1008,9 @@
             escapeHtml
           )}</div>
           <div class="channel-card-ft">
-            <button type="button" class="btn-secondary channel-card-btn" data-action="ch-mock-toast" data-msg="增购人天（Mock）">增购人天额度</button>
+            <button type="button" class="btn-primary channel-card-btn" data-action="ch-day-purchase-open">增购人天额度</button>
           </div>
-        </article>`;
+        </article>${renderPurchaseOrdersBlock(escapeHtml)}`;
       }
     } else if (tab === "consume") {
       const sub = ch.consumeSub || "rider";
@@ -1203,7 +1410,7 @@
   }
 
   function renderModuleBody(moduleId, ch, session, ctx) {
-    if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx);
+    if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx, session);
     if (moduleId === "ch.dayRiders") return renderDayRiders(ch, ctx);
     if (moduleId === "ch.dayAlloc") return renderDayAlloc(ch, ctx);
     if (moduleId === "ch.settlement") return renderSettlement(session, ctx);
@@ -1226,8 +1433,17 @@
     }
     const { escapeHtml, session: s } = ctx;
     const creditForm = mod === "ch.credit" && ch.creditView === "depositForm";
-    const backAction = creditForm ? "ch-credit-form-back" : "ch-partner-back";
-    const pageTitle = creditForm ? "提交打款凭证" : moduleTitle(mod);
+    const purchaseForm = mod === "ch.dayPool" && ch.dayPoolView === "purchaseForm";
+    const backAction = creditForm
+      ? "ch-credit-form-back"
+      : purchaseForm
+        ? "ch-day-purchase-back"
+        : "ch-partner-back";
+    const pageTitle = creditForm
+      ? "提交打款凭证"
+      : purchaseForm
+        ? "购买人天额度"
+        : moduleTitle(mod);
     return `
       <div class="sites-page ops-page">
         <div class="sites-header">
@@ -1258,6 +1474,10 @@
     isChannelLink,
     scopeHint,
     submitDepositProof,
+    submitDayPoolPurchase,
+    defaultPurchaseForm,
+    MIN_PURCHASE_DAYS,
+    MAX_PURCHASE_DAYS,
     exceptionCount,
     exceptionSummaries,
     getExceptionById,

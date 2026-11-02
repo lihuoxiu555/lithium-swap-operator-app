@@ -6360,6 +6360,19 @@
       });
     }
 
+    const chPurchasePay = document.getElementById("ch-purchase-pay");
+    if (chPurchasePay) {
+      const syncPurchasePayUi = () => {
+        const offline = chPurchasePay.value !== "online";
+        const onWrap = document.getElementById("ch-purchase-online-wrap");
+        const offWrap = document.getElementById("ch-purchase-offline-wrap");
+        if (onWrap) onWrap.style.display = offline ? "none" : "";
+        if (offWrap) offWrap.style.display = offline ? "" : "none";
+      };
+      chPurchasePay.addEventListener("change", syncPurchasePayUi);
+      syncPurchasePayUi();
+    }
+
     const offcabKw = document.querySelector(".offcab-kw");
     if (offcabKw) {
       offcabKw.addEventListener("input", () => {
@@ -6776,10 +6789,63 @@
         case "ch-partner-back":
           if (state.chPartner) {
             state.chPartner.creditView = "home";
+            state.chPartner.dayPoolView = "home";
             state.chPartner.module = null;
           }
           goTab("workbench");
           break;
+        case "ch-day-purchase-open":
+          if (state.chPartner && ChPartner) {
+            state.chPartner.dayPoolView = "purchaseForm";
+            state.chPartner.dayTab = "pools";
+            state.chPartner.dayPoolSub = "list";
+            state.chPartner.purchaseForm = ChPartner.defaultPurchaseForm(state.session);
+            render();
+          }
+          break;
+        case "ch-day-purchase-back":
+          if (state.chPartner) {
+            state.chPartner.dayPoolView = "home";
+            render();
+          }
+          break;
+        case "ch-day-purchase-submit": {
+          if (!ChPartner || !state.chPartner) break;
+          const payEl = document.getElementById("ch-purchase-pay");
+          const payload = {
+            totalDays: (document.getElementById("ch-purchase-days") || {}).value,
+            validFrom: (document.getElementById("ch-purchase-valid-from") || {}).value,
+            validTo: (document.getElementById("ch-purchase-valid-to") || {}).value,
+            orderNo: (document.getElementById("ch-purchase-order-no") || {}).value,
+            payChannel: payEl ? payEl.value : "offline",
+            onlinePayMethod: (document.getElementById("ch-purchase-online-method") || {}).value,
+            transferRef: (document.getElementById("ch-purchase-transfer-ref") || {}).value,
+            payerAccount: (document.getElementById("ch-purchase-payer") || {}).value,
+            remark: (document.getElementById("ch-purchase-remark") || {}).value,
+            wholesalePrice:
+              state.chPartner.purchaseForm && state.chPartner.purchaseForm.wholesalePrice,
+          };
+          state.chPartner.purchaseForm = Object.assign(
+            state.chPartner.purchaseForm || ChPartner.defaultPurchaseForm(state.session),
+            payload
+          );
+          const res = ChPartner.submitDayPoolPurchase(
+            state.chPartner,
+            state.session,
+            payload
+          );
+          if (res.error) {
+            toast(res.error);
+            break;
+          }
+          toast(res.message);
+          track("ch_day_pool_purchase", {
+            days: res.order && res.order.days,
+            pay: res.order && res.order.payChannel,
+          });
+          render();
+          break;
+        }
         case "ch-deposit-proof-open":
           if (state.chPartner) {
             state.chPartner.creditView = "depositForm";

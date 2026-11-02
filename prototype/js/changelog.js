@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.104",
+      date: formatLocalDateTime(),
+      title: "人天池 · 申购额度表单",
+      items: [
+        "额度池「增购人天额度」可填单：100～10000 人天、线下/在线、对公流水号",
+        "提交后待确认到账/待支付；列表展示最近申购（对齐 PC decision-114）",
+      ],
+    },
+    {
       version: "V1.103",
       date: formatLocalDateTime(),
       title: "柜外跨网电池 · 不校验归属、成单计跨网费",

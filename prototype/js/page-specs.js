@@ -71,12 +71,26 @@
       empty: "空宫格场景：「暂无可用应用」",
       roles: "管理员与员工宫格按 roles 裁。人天池渠道商：基础信息/业务管理/组织关联；推广渠道商仍为「渠道」分组",
     }),
+    "chPartner:dayPoolPurchase": S({
+      title: "渠道商 · 购买人天额度",
+      source: "PC day_pool_purchase · decision-114/115",
+      fields: [
+        { name: "池", def: "一运营商一池；入账只读展示 QP-2601" },
+        { name: "人天数", def: "100～10000/次；批发单价只读" },
+        { name: "采购单号", def: "对公附言=单号；系统必填" },
+        { name: "线下", def: "流水号必填；付款账户建议；不填转账日" },
+        { name: "在线", def: "待支付（Mock）；不走对公认款包" },
+        { name: "提交后", def: "线下→待确认到账；在线→待支付；列表「最近申购」" },
+      ],
+      error: "低于起购/超上限/缺单号/线下缺流水号 toast",
+    }),
     "chPartner:dayPool": S({
       title: "渠道商 · 人天额度池",
       source: "原型-外卖 · dayPool 子集",
       fields: [
         { name: "主 Tab", def: "额度池 / 消耗明细 / 零售价" },
         { name: "额度池子 Tab", def: "额度池列表 / 额度明细" },
+        { name: "增购", def: "增购人天额度→购买表单；非 Mock toast" },
       ],
       note: "无额度持电骑手推送待办·异常，非工作台模块",
       roles: "人天池渠道商 channelDay",
@@ -884,7 +898,11 @@
     }
     if (sc === "channelPartner") {
       const mod = (state.chPartner && state.chPartner.module) || "";
-      if (mod === "ch.dayPool") return "chPartner:dayPool";
+      if (mod === "ch.dayPool") {
+        return state.chPartner && state.chPartner.dayPoolView === "purchaseForm"
+          ? "chPartner:dayPoolPurchase"
+          : "chPartner:dayPool";
+      }
       if (mod === "ch.dayRiders") return "chPartner:dayRiders";
       if (mod === "ch.dayAlloc") return "chPartner:dayAlloc";
       if (mod === "ch.links") return "chPartner:links";
