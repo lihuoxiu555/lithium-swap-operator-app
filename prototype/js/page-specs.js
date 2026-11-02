@@ -101,10 +101,25 @@
       fields: [{ name: "子 Tab", def: "登记骑手 / 骑手团队" }],
       roles: "channelDay",
     }),
+    "chPartner:dayAllocAllocate": S({
+      title: "渠道商 · 分配人天额度",
+      source: "PC poolForm allocate",
+      fields: [
+        { name: "校验", def: "人天≤池可用；扣减池可用、增骑手分配/剩余；写变动记录" },
+      ],
+    }),
+    "chPartner:dayAllocRecover": S({
+      title: "渠道商 · 收回人天额度",
+      source: "PC poolForm recover",
+      fields: [{ name: "校验", def: "人天≤骑手剩余；回池可用" }],
+    }),
     "chPartner:dayAlloc": S({
       title: "渠道商 · 额度分配",
       source: "PC dayPool · allocations",
-      fields: [{ name: "子 Tab", def: "按骑手 / 变动记录" }],
+      fields: [
+        { name: "子 Tab", def: "按骑手 / 变动记录" },
+        { name: "按骑手", def: "卡片「分配额度」「收回额度」；池可用不足或剩余为 0 时按钮禁用" },
+      ],
       roles: "channelDay",
     }),
     "chPartner:exceptions": S({
@@ -904,7 +919,15 @@
           : "chPartner:dayPool";
       }
       if (mod === "ch.dayRiders") return "chPartner:dayRiders";
-      if (mod === "ch.dayAlloc") return "chPartner:dayAlloc";
+      if (mod === "ch.dayAlloc") {
+        if (state.chPartner && state.chPartner.allocView === "allocate") {
+          return "chPartner:dayAllocAllocate";
+        }
+        if (state.chPartner && state.chPartner.allocView === "recover") {
+          return "chPartner:dayAllocRecover";
+        }
+        return "chPartner:dayAlloc";
+      }
       if (mod === "ch.links") return "chPartner:links";
       if (mod === "ch.settlement") return "chPartner:settlement";
       if (mod === "ch.commission") return "chPartner:commission";

@@ -6790,10 +6790,52 @@
           if (state.chPartner) {
             state.chPartner.creditView = "home";
             state.chPartner.dayPoolView = "home";
+            state.chPartner.allocView = "home";
+            state.chPartner.allocRiderId = null;
             state.chPartner.module = null;
           }
           goTab("workbench");
           break;
+        case "ch-alloc-open": {
+          if (!state.chPartner) break;
+          const mode = t.dataset.mode === "recover" ? "recover" : "allocate";
+          const riderId = t.dataset.riderId;
+          if (!riderId) break;
+          state.chPartner.allocView = mode;
+          state.chPartner.allocRiderId = riderId;
+          state.chPartner.allocForm = { days: "", remark: "" };
+          render();
+          break;
+        }
+        case "ch-alloc-form-back":
+          if (state.chPartner) {
+            state.chPartner.allocView = "home";
+            state.chPartner.allocRiderId = null;
+            render();
+          }
+          break;
+        case "ch-alloc-submit": {
+          if (!ChPartner || !state.chPartner) break;
+          const mode = t.dataset.mode;
+          const riderId = state.chPartner.allocRiderId;
+          const payload = {
+            days: (document.getElementById("ch-alloc-days") || {}).value,
+            remark: (document.getElementById("ch-alloc-remark") || {}).value,
+          };
+          state.chPartner.allocForm = payload;
+          const res =
+            mode === "recover"
+              ? ChPartner.submitRecoverQuota(state.chPartner, riderId, payload)
+              : ChPartner.submitAllocateQuota(state.chPartner, riderId, payload);
+          if (res.error) {
+            toast(res.error);
+            break;
+          }
+          toast(res.message);
+          track("ch_day_alloc", { mode, rider_id: riderId, days: payload.days });
+          render();
+          break;
+        }
         case "ch-day-purchase-open":
           if (state.chPartner && ChPartner) {
             state.chPartner.dayPoolView = "purchaseForm";

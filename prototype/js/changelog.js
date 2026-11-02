@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.105",
+      date: formatLocalDateTime(),
+      title: "额度分配 · 分配/收回入口",
+      items: [
+        "按骑手卡片增加「分配额度」「收回额度」及表单确认",
+        "变动记录同步 Mock 入账；默认子 Tab 为按骑手",
+      ],
+    },
+    {
       version: "V1.104",
       date: formatLocalDateTime(),
       title: "人天池 · 申购额度表单",

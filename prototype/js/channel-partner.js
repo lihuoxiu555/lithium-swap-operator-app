@@ -123,11 +123,6 @@
     },
   ];
 
-  const DAY_ALLOC_RIDERS = [
-    { name: "王骑手", team: "默认团队", allocated: 30, remaining: 18, status: "使用中" },
-    { name: "李骑手", team: "默认团队", allocated: 30, remaining: 22, status: "使用中" },
-  ];
-
   const DAY_ALLOC_LOGS = [
     { id: "AL-001", riderName: "王骑手", type: "分配", days: 30, time: "2026-05-01 10:00" },
     { id: "AL-004", riderName: "周骑手", type: "收回", days: 18, time: "2026-06-07 16:20" },
@@ -455,7 +450,10 @@
       dayTab: "pools",
       dayPoolSub: "list",
       ridersSub: "list",
-      allocSub: "logs",
+      allocSub: "riders",
+      allocView: "home",
+      allocRiderId: null,
+      allocForm: { days: "30", remark: "" },
       consumeSub: "rider",
       linksSub: "packages",
       commissionSub: "summary",
@@ -677,6 +675,120 @@
       </div>`;
   }
 
+  function riderById(id) {
+    return DAY_RIDERS.find((r) => r.id === id) || null;
+  }
+
+  function pushAllocLog(riderName, type, days, remark) {
+    DAY_ALLOC_LOGS.unshift({
+      id: "AL-" + String(Date.now()).slice(-6),
+      riderName,
+      type,
+      days,
+      time: formatPurchaseTime(new Date()),
+      remark: remark || "",
+    });
+  }
+
+  function submitAllocateQuota(ch, riderId, raw) {
+    const rider = riderById(riderId);
+    if (!rider || rider.status !== "在职") {
+      return { error: "骑手不存在或已离职" };
+    }
+    const days = Math.floor(Number(raw.days));
+    if (!Number.isFinite(days) || days <= 0) {
+      return { error: "请输入有效人天数" };
+    }
+    if (days > DAY_POOL.availableDays) {
+      return { error: `额度池可用不足（当前 ${DAY_POOL.availableDays} 人天）` };
+    }
+    DAY_POOL.availableDays -= days;
+    DAY_POOL.frozenDays += days;
+    rider.allocatedDays = (rider.allocatedDays || 0) + days;
+    rider.remainingDays = (rider.remainingDays || 0) + days;
+    rider.quotaStatus = "使用中";
+    pushAllocLog(rider.name, "分配", days, raw.remark);
+    ch.allocView = "home";
+    ch.allocRiderId = null;
+    return { ok: true, message: `已向 ${rider.name} 分配 ${days} 人天` };
+  }
+
+  function submitRecoverQuota(ch, riderId, raw) {
+    const rider = riderById(riderId);
+    if (!rider || rider.status !== "在职") {
+      return { error: "骑手不存在或已离职" };
+    }
+    const max = rider.remainingDays || 0;
+    const days = Math.floor(Number(raw.days));
+    if (!Number.isFinite(days) || days <= 0) {
+      return { error: "请输入有效人天数" };
+    }
+    if (days > max) {
+      return { error: `不得超过剩余人天（${max}）` };
+    }
+    rider.remainingDays = max - days;
+    rider.allocatedDays = Math.max(0, (rider.allocatedDays || 0) - days);
+    if (rider.remainingDays <= 0) {
+      rider.quotaStatus = "已用尽";
+    }
+    DAY_POOL.availableDays += days;
+    DAY_POOL.frozenDays = Math.max(0, DAY_POOL.frozenDays - days);
+    pushAllocLog(rider.name, "收回", days, raw.remark);
+    ch.allocView = "home";
+    ch.allocRiderId = null;
+    return { ok: true, message: `已收回 ${rider.name} ${days} 人天` };
+  }
+
+  function renderAllocForm(ch, ctx) {
+    const { escapeHtml, escapeAttr } = ctx;
+    const mode = ch.allocView;
+    const rider = riderById(ch.allocRiderId);
+    if (!rider || (mode !== "allocate" && mode !== "recover")) {
+      return `<p class="empty-inline">未选择骑手</p>`;
+    }
+    const f = ch.allocForm || { days: "30", remark: "" };
+    const isAlloc = mode === "allocate";
+    const defaultDays = isAlloc
+      ? String(Math.min(30, DAY_POOL.availableDays))
+      : String(rider.remainingDays || 0);
+    const daysVal = f.days != null && f.days !== "" ? f.days : defaultDays;
+    const maxDays = isAlloc ? DAY_POOL.availableDays : rider.remainingDays || 0;
+    return `
+      <p class="ops-hint">${isAlloc ? "从额度池可用余额分配给骑手个人额度。" : "收回未使用人天回额度池（Mock 即时入账）。"}</p>
+      <div class="sites-form-body channel-deposit-form">
+        <div class="sites-field">
+          <label>额度池</label>
+          <input type="text" readonly value="${escapeAttr(
+            `${DAY_POOL.id} · 可用 ${DAY_POOL.availableDays} 人天`
+          )}" />
+        </div>
+        <div class="sites-field">
+          <label>骑手</label>
+          <input type="text" readonly value="${escapeAttr(
+            `${rider.name} · ${rider.team} · 剩余 ${rider.remainingDays}/${rider.allocatedDays} 人天`
+          )}" />
+        </div>
+        <div class="sites-field">
+          <label for="ch-alloc-days">${isAlloc ? "分配人天数" : "收回人天数"}</label>
+          <input id="ch-alloc-days" type="number" inputmode="numeric" min="1" max="${maxDays}"
+            value="${escapeAttr(daysVal)}" ${maxDays <= 0 ? "disabled" : ""} />
+          <p class="ops-hint">${isAlloc ? `最多 ${maxDays} 人天` : `最多收回 ${maxDays} 人天`}</p>
+        </div>
+        <div class="sites-field">
+          <label for="ch-alloc-remark">备注</label>
+          <textarea id="ch-alloc-remark" rows="2">${escapeHtml(
+            f.remark || (isAlloc ? "分配给骑手换电使用" : "手动收回未使用额度")
+          )}</textarea>
+        </div>
+      </div>
+      <div class="sites-form-footer">
+        <button type="button" class="sites-footer-ghost" data-action="ch-alloc-form-back">取消</button>
+        <button type="button" class="sites-footer-primary" data-action="ch-alloc-submit" data-mode="${escapeAttr(
+          mode
+        )}" ${maxDays <= 0 ? "disabled" : ""}>确认${isAlloc ? "分配" : "收回"}</button>
+      </div>`;
+  }
+
   function renderDayRiders(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
     const sub = ch.ridersSub || "list";
@@ -728,8 +840,14 @@
   }
 
   function renderDayAlloc(ch, ctx) {
+    if (ch.allocView === "allocate" || ch.allocView === "recover") {
+      return renderAllocForm(ch, ctx);
+    }
     const { escapeHtml, escapeAttr } = ctx;
-    const sub = ch.allocSub || "logs";
+    const sub = ch.allocSub || "riders";
+    const poolHint = `<p class="ops-hint channel-page-note">额度池 <strong>${escapeHtml(
+      DAY_POOL.id
+    )}</strong> 可用 <strong>${DAY_POOL.availableDays}</strong> 人天 · 冻结 ${DAY_POOL.frozenDays} 人天</p>`;
     const subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
       [
         ["riders", "按骑手"],
@@ -742,33 +860,55 @@
     )}</div>`;
     let body = "";
     if (sub === "riders") {
-      body = DAY_ALLOC_RIDERS.map(
-        (r) =>
-          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
+      body = DAY_RIDERS.filter((r) => r.status === "在职")
+        .map((r) => {
+          const canRecover = (r.remainingDays || 0) > 0;
+          const canAlloc = DAY_POOL.availableDays > 0;
+          return `<article class="sites-card channel-card">
+          <div class="sites-card-hd"><strong>${escapeHtml(r.name)}</strong><span class="sites-tag">${escapeHtml(
+            r.quotaStatus
+          )}</span></div>
+          <div class="channel-card-kv">${renderKv(
             [
-              ["骑手", escapeHtml(r.name)],
               ["团队", escapeHtml(r.team)],
-              ["分配/剩余", `${r.allocated}/${r.remaining} 人天`],
+              ["分配/剩余", `${r.allocatedDays}/${r.remainingDays} 人天`],
+              ["今日资格", escapeHtml(r.todayEligibility)],
               ["状态", escapeHtml(r.status)],
             ],
             escapeHtml
-          )}</div></article>`
-      ).join("");
+          )}</div>
+          <div class="channel-card-ft">
+            <div class="channel-card-ft-row">
+              <button type="button" class="btn-primary channel-card-btn" data-action="ch-alloc-open" data-mode="allocate" data-rider-id="${escapeAttr(
+                r.id
+              )}" ${canAlloc ? "" : "disabled"}>分配额度</button>
+              <button type="button" class="btn-secondary channel-card-btn" data-action="ch-alloc-open" data-mode="recover" data-rider-id="${escapeAttr(
+                r.id
+              )}" ${canRecover ? "" : "disabled"}>收回额度</button>
+            </div>
+          </div>
+        </article>`;
+        })
+        .join("");
     } else {
-      body = DAY_ALLOC_LOGS.map(
-        (l) =>
-          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
-            [
-              ["骑手", escapeHtml(l.riderName)],
-              ["类型", escapeHtml(l.type)],
-              ["人天", String(l.days)],
-              ["时间", escapeHtml(l.time)],
-            ],
-            escapeHtml
-          )}</div></article>`
-      ).join("");
+      body =
+        DAY_ALLOC_LOGS.length === 0
+          ? `<div class="empty-full"><div class="icon">📒</div>暂无变动记录</div>`
+          : DAY_ALLOC_LOGS.map(
+              (l) =>
+                `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
+                  [
+                    ["骑手", escapeHtml(l.riderName)],
+                    ["类型", escapeHtml(l.type)],
+                    ["人天", String(l.days)],
+                    ["时间", escapeHtml(l.time)],
+                    l.remark ? ["备注", escapeHtml(l.remark)] : null,
+                  ].filter(Boolean),
+                  escapeHtml
+                )}</div></article>`
+            ).join("");
     }
-    return `<p class="ops-hint channel-page-note">向骑手分配或收回人天额度（对齐 PC dayPool · 额度分配）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
+    return `${poolHint}<p class="ops-hint">向骑手分配或收回人天额度（对齐 PC dayPool · 额度分配）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
   }
 
   function renderExceptionInbox(session, ctx, itemId) {
@@ -1434,16 +1574,25 @@
     const { escapeHtml, session: s } = ctx;
     const creditForm = mod === "ch.credit" && ch.creditView === "depositForm";
     const purchaseForm = mod === "ch.dayPool" && ch.dayPoolView === "purchaseForm";
+    const allocForm =
+      mod === "ch.dayAlloc" &&
+      (ch.allocView === "allocate" || ch.allocView === "recover");
     const backAction = creditForm
       ? "ch-credit-form-back"
       : purchaseForm
         ? "ch-day-purchase-back"
-        : "ch-partner-back";
+        : allocForm
+          ? "ch-alloc-form-back"
+          : "ch-partner-back";
     const pageTitle = creditForm
       ? "提交打款凭证"
       : purchaseForm
         ? "购买人天额度"
-        : moduleTitle(mod);
+        : allocForm
+          ? ch.allocView === "allocate"
+            ? "分配人天额度"
+            : "收回人天额度"
+          : moduleTitle(mod);
     return `
       <div class="sites-page ops-page">
         <div class="sites-header">
@@ -1475,6 +1624,9 @@
     scopeHint,
     submitDepositProof,
     submitDayPoolPurchase,
+    submitAllocateQuota,
+    submitRecoverQuota,
+    riderById,
     defaultPurchaseForm,
     MIN_PURCHASE_DAYS,
     MAX_PURCHASE_DAYS,

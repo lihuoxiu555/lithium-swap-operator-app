@@ -3057,6 +3057,14 @@ button.btn-mock.offcab-btn {
   padding: 12px 0 0;
   border-top: 1px solid var(--line);
 }
+.channel-card-ft-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.channel-card-ft-row .channel-card-btn:disabled {
+  opacity: 0.45;
+}
 .channel-card-btn {
   width: 100%;
   border-radius: 10px;
