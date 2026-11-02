@@ -2852,6 +2852,12 @@ button.btn-mock.offcab-btn {
   gap: 10px;
   padding: 0 12px 16px;
 }
+.channel-section-hd {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  padding: 4px 0 0;
+}
 .channel-filter-bar {
   display: flex;
   flex-direction: column;
