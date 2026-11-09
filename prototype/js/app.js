@@ -17,6 +17,7 @@
   const Alerts = window.OperatorAppAlerts;
   const Batteries = window.OperatorAppBatteries;
   const OffCab = window.OperatorAppOffCabinet;
+  const Swallow = window.OperatorAppBatterySwallowed;
   const Channels = window.OperatorAppChannels;
   const ChPartner = window.OperatorAppChannelPartner;
 
@@ -174,6 +175,7 @@
       online: "全部在线状态",
       listScroll: 0,
     },
+    batterySwallow: Swallow ? Swallow.defaultState() : { kw: "", tab: "pending", view: "list", incidentId: null },
   };
 
   const els = {};
@@ -511,6 +513,15 @@
       state.screen = "batteryManage";
       setHash(mod.route);
       track("battery_manage_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "ops.batterySwallowed") {
+      state.placeholderModule = mod;
+      if (Swallow) state.batterySwallow = Swallow.defaultState();
+      state.screen = "batterySwallowed";
+      setHash(mod.route);
+      track("battery_swallowed_open", {});
       render();
       return;
     }
@@ -5144,6 +5155,11 @@
     return OffCab.render(state, offCabCtx());
   }
 
+  function renderBatterySwallowed() {
+    if (!Swallow) return `<div class="empty-full">模块未加载</div>`;
+    return Swallow.render(state, { escapeHtml, escapeAttr });
+  }
+
   function channelCtx() {
     return { escapeHtml, escapeAttr, session: state.session };
   }
@@ -6107,6 +6123,7 @@
       state.screen === "bizStats" ||
       state.screen === "siteBusy" ||
       state.screen === "offCabinet" ||
+      state.screen === "batterySwallowed" ||
       state.screen === "channels" ||
       state.screen === "channelPartner" ||
       state.screen === "cabinets" ||
@@ -6204,6 +6221,9 @@
         break;
       case "offCabinet":
         html = renderOffCabinet();
+        break;
+      case "batterySwallowed":
+        html = renderBatterySwallowed();
         break;
       case "channels":
         html = renderChannels();
@@ -6360,19 +6380,6 @@
       });
     }
 
-    const chPurchasePay = document.getElementById("ch-purchase-pay");
-    if (chPurchasePay) {
-      const syncPurchasePayUi = () => {
-        const offline = chPurchasePay.value !== "online";
-        const onWrap = document.getElementById("ch-purchase-online-wrap");
-        const offWrap = document.getElementById("ch-purchase-offline-wrap");
-        if (onWrap) onWrap.style.display = offline ? "none" : "";
-        if (offWrap) offWrap.style.display = offline ? "" : "none";
-      };
-      chPurchasePay.addEventListener("change", syncPurchasePayUi);
-      syncPurchasePayUi();
-    }
-
     const offcabKw = document.querySelector(".offcab-kw");
     if (offcabKw) {
       offcabKw.addEventListener("input", () => {
@@ -6403,6 +6410,20 @@
         if (e.key === "Enter") {
           e.preventDefault();
           track("sites_search", { keyword: state.sites.keyword });
+          render();
+        }
+      });
+    }
+
+    const swallowKw = $("swallow-kw");
+    if (swallowKw) {
+      swallowKw.addEventListener("input", () => {
+        state.batterySwallow.kw = swallowKw.value;
+      });
+      swallowKw.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          track("swallow_search", { keyword: state.batterySwallow.kw });
           render();
         }
       });
@@ -6789,105 +6810,10 @@
         case "ch-partner-back":
           if (state.chPartner) {
             state.chPartner.creditView = "home";
-            state.chPartner.dayPoolView = "home";
-            state.chPartner.allocView = "home";
-            state.chPartner.allocRiderId = null;
             state.chPartner.module = null;
           }
           goTab("workbench");
           break;
-        case "ch-alloc-open": {
-          if (!state.chPartner) break;
-          const mode = t.dataset.mode === "recover" ? "recover" : "allocate";
-          const riderId = t.dataset.riderId;
-          if (!riderId) break;
-          state.chPartner.allocView = mode;
-          state.chPartner.allocRiderId = riderId;
-          state.chPartner.allocForm = { days: "", remark: "" };
-          render();
-          break;
-        }
-        case "ch-alloc-form-back":
-          if (state.chPartner) {
-            state.chPartner.allocView = "home";
-            state.chPartner.allocRiderId = null;
-            render();
-          }
-          break;
-        case "ch-alloc-submit": {
-          if (!ChPartner || !state.chPartner) break;
-          const mode = t.dataset.mode;
-          const riderId = state.chPartner.allocRiderId;
-          const payload = {
-            days: (document.getElementById("ch-alloc-days") || {}).value,
-            remark: (document.getElementById("ch-alloc-remark") || {}).value,
-          };
-          state.chPartner.allocForm = payload;
-          const res =
-            mode === "recover"
-              ? ChPartner.submitRecoverQuota(state.chPartner, riderId, payload)
-              : ChPartner.submitAllocateQuota(state.chPartner, riderId, payload);
-          if (res.error) {
-            toast(res.error);
-            break;
-          }
-          toast(res.message);
-          track("ch_day_alloc", { mode, rider_id: riderId, days: payload.days });
-          render();
-          break;
-        }
-        case "ch-day-purchase-open":
-          if (state.chPartner && ChPartner) {
-            state.chPartner.dayPoolView = "purchaseForm";
-            state.chPartner.dayTab = "pools";
-            state.chPartner.dayPoolSub = "list";
-            state.chPartner.purchaseForm = ChPartner.defaultPurchaseForm(state.session);
-            render();
-          }
-          break;
-        case "ch-day-purchase-back":
-          if (state.chPartner) {
-            state.chPartner.dayPoolView = "home";
-            render();
-          }
-          break;
-        case "ch-day-purchase-submit": {
-          if (!ChPartner || !state.chPartner) break;
-          const payEl = document.getElementById("ch-purchase-pay");
-          const payload = {
-            totalDays: (document.getElementById("ch-purchase-days") || {}).value,
-            validFrom: (document.getElementById("ch-purchase-valid-from") || {}).value,
-            validTo: (document.getElementById("ch-purchase-valid-to") || {}).value,
-            orderNo: (document.getElementById("ch-purchase-order-no") || {}).value,
-            payChannel: payEl ? payEl.value : "offline",
-            onlinePayMethod: (document.getElementById("ch-purchase-online-method") || {}).value,
-            transferRef: (document.getElementById("ch-purchase-transfer-ref") || {}).value,
-            payerAccount: (document.getElementById("ch-purchase-payer") || {}).value,
-            remark: (document.getElementById("ch-purchase-remark") || {}).value,
-            wholesalePrice:
-              state.chPartner.purchaseForm && state.chPartner.purchaseForm.wholesalePrice,
-          };
-          state.chPartner.purchaseForm = Object.assign(
-            state.chPartner.purchaseForm || ChPartner.defaultPurchaseForm(state.session),
-            payload
-          );
-          const res = ChPartner.submitDayPoolPurchase(
-            state.chPartner,
-            state.session,
-            payload
-          );
-          if (res.error) {
-            toast(res.error);
-            break;
-          }
-          toast(res.message);
-          track("ch_day_pool_purchase", {
-            days: res.order && res.order.days,
-            pay: res.order && res.order.payChannel,
-          });
-          render();
-          break;
-        }
         case "ch-deposit-proof-open":
           if (state.chPartner) {
             state.chPartner.creditView = "depositForm";
@@ -7783,6 +7709,45 @@
           state.channel.assetsSub = "dayPool";
           state.channel.poolId = null;
           state.channel.poolForm = {};
+          render();
+          break;
+        }
+        case "swallow-search": {
+          const el = $("swallow-kw");
+          if (el) state.batterySwallow.kw = el.value;
+          track("swallow_search", { keyword: state.batterySwallow.kw });
+          render();
+          toast(state.batterySwallow.kw.trim() ? "已筛选" : "已刷新列表");
+          break;
+        }
+        case "swallow-tab":
+          state.batterySwallow.tab = t.dataset.tab || "pending";
+          render();
+          break;
+        case "swallow-detail":
+          state.batterySwallow.view = "detail";
+          state.batterySwallow.incidentId = t.dataset.id;
+          render();
+          break;
+        case "swallow-back-list":
+          state.batterySwallow.view = "list";
+          state.batterySwallow.incidentId = null;
+          render();
+          break;
+        case "swallow-open-door": {
+          if (!Swallow) break;
+          const res = Swallow.openDoor(t.dataset.id);
+          track("swallow_open_door", { id: t.dataset.id, ok: res && res.ok });
+          toast((res && res.msg) || "操作失败");
+          render();
+          break;
+        }
+        case "swallow-mark-done": {
+          if (!Swallow) break;
+          const res = Swallow.markResolved(t.dataset.id);
+          track("swallow_resolved", { id: t.dataset.id, ok: res && res.ok });
+          toast((res && res.msg) || "操作失败");
+          state.batterySwallow.view = "list";
           render();
           break;
         }

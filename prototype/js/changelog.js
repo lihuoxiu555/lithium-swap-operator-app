@@ -17,26 +17,18 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
-      version: "V1.105",
-      date: formatLocalDateTime(),
-      title: "额度分配 · 分配/收回入口",
-      items: [
-        "按骑手卡片增加「分配额度」「收回额度」及表单确认",
-        "变动记录同步 Mock 入账；默认子 Tab 为按骑手",
-      ],
-    },
-    {
       version: "V1.104",
       date: formatLocalDateTime(),
-      title: "人天池 · 申购额度表单",
+      title: "运维入口重排 + 电池被吞",
       items: [
-        "额度池「增购人天额度」可填单：100～10000 人天、线下/在线、对公流水号",
-        "提交后待确认到账/待支付；列表展示最近申购（对齐 PC decision-114）",
+        "柜外电池作业更名为「非标换电」",
+        "新增「电池被吞」：待处理/已取回、开仓取电 Mock",
+        "运维顺序：非标换电 → 电池被吞 → 电柜 → 电池 → 站点",
       ],
     },
     {
       version: "V1.103",
-      date: formatLocalDateTime(),
+      date: "2026-11-05 16:30",
       title: "柜外跨网电池 · 不校验归属、成单计跨网费",
       items: [
         "柜外领/换/退：他网 SN 可回收/绑定，不因 deviceOwner 拦截",

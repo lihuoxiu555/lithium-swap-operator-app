@@ -1,5 +1,5 @@
 /**
- * 柜外电池作业 · Mock + 流程（柜外换电/退电/领电、远程出电）
+ * 非标换电（原柜外电池作业）· Mock + 流程
  * 决策 decision-067 · 跨网作业 decision-071
  */
 (function (global) {
@@ -987,7 +987,7 @@
       <div class="sites-page ops-page">
         <div class="sites-header">
           <button type="button" class="sites-back" data-action="back-workbench" aria-label="返回">‹</button>
-          <h1>柜外电池作业</h1>
+          <h1>非标换电</h1>
           <div class="sites-header-spacer"></div>
         </div>
         <p class="ops-hint">远程出电 Mock：<strong>赵骑手</strong>场景一（改发他格口）、<strong>李骑手</strong>场景二（取还入电赴他站）。</p>

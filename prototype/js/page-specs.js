@@ -71,26 +71,12 @@
       empty: "空宫格场景：「暂无可用应用」",
       roles: "管理员与员工宫格按 roles 裁。人天池渠道商：基础信息/业务管理/组织关联；推广渠道商仍为「渠道」分组",
     }),
-    "chPartner:dayPoolPurchase": S({
-      title: "渠道商 · 购买人天额度",
-      source: "PC day_pool_purchase · decision-114/115",
-      fields: [
-        { name: "池", def: "一运营商一池；入账只读展示 QP-2601" },
-        { name: "人天数", def: "100～10000/次；批发单价只读" },
-        { name: "采购单号", def: "对公附言=单号；系统必填" },
-        { name: "线下", def: "流水号必填；付款账户建议；不填转账日" },
-        { name: "在线", def: "待支付（Mock）；不走对公认款包" },
-        { name: "提交后", def: "线下→待确认到账；在线→待支付；列表「最近申购」" },
-      ],
-      error: "低于起购/超上限/缺单号/线下缺流水号 toast",
-    }),
     "chPartner:dayPool": S({
       title: "渠道商 · 人天额度池",
       source: "原型-外卖 · dayPool 子集",
       fields: [
         { name: "主 Tab", def: "额度池 / 消耗明细 / 零售价" },
         { name: "额度池子 Tab", def: "额度池列表 / 额度明细" },
-        { name: "增购", def: "增购人天额度→购买表单；非 Mock toast" },
       ],
       note: "无额度持电骑手推送待办·异常，非工作台模块",
       roles: "人天池渠道商 channelDay",
@@ -101,25 +87,10 @@
       fields: [{ name: "子 Tab", def: "登记骑手 / 骑手团队" }],
       roles: "channelDay",
     }),
-    "chPartner:dayAllocAllocate": S({
-      title: "渠道商 · 分配人天额度",
-      source: "PC poolForm allocate",
-      fields: [
-        { name: "校验", def: "人天≤池可用；扣减池可用、增骑手分配/剩余；写变动记录" },
-      ],
-    }),
-    "chPartner:dayAllocRecover": S({
-      title: "渠道商 · 收回人天额度",
-      source: "PC poolForm recover",
-      fields: [{ name: "校验", def: "人天≤骑手剩余；回池可用" }],
-    }),
     "chPartner:dayAlloc": S({
       title: "渠道商 · 额度分配",
       source: "PC dayPool · allocations",
-      fields: [
-        { name: "子 Tab", def: "按骑手 / 变动记录" },
-        { name: "按骑手", def: "卡片「分配额度」「收回额度」；池可用不足或剩余为 0 时按钮禁用" },
-      ],
+      fields: [{ name: "子 Tab", def: "按骑手 / 变动记录" }],
       roles: "channelDay",
     }),
     "chPartner:exceptions": S({
@@ -614,8 +585,25 @@
       ],
       note: "新增不可选设备租赁/激活码；编辑时结算模式锁定",
     }),
+    batterySwallowed: S({
+      title: "电池被吞",
+      source: "柜机换电异常 · 还电成功出电未取/弹仓失败",
+      fields: [
+        { name: "Tab", def: "待处理（含处理中）/ 已取回" },
+        { name: "搜索", def: "站点 / 柜机 SN / 电池 SN / 换电单号" },
+        { name: "列表", def: "站点、柜机格口、电池 SN、原因、上报时间、状态" },
+        { name: "详情", def: "工单、关联换电单、用户；开仓取电 / 标记已取回（Mock）" },
+      ],
+      empty: "暂无被吞记录",
+      roles: "管理员 / 员工",
+    }),
+    "batterySwallowed:detail": S({
+      title: "电池被吞 · 详情",
+      source: "ops.batterySwallowed",
+      fields: [{ name: "操作", def: "开仓取电（状态→处理中）；标记已取回（→已取回）" }],
+    }),
     offCabinet: S({
-      title: "柜外电池作业 · 搜索",
+      title: "非标换电 · 搜索",
       source: "decision-067 · 10-28 纪要",
       fields: [
         { name: "搜索", def: "Mock：赵骑手(远程场景一)/李骑手(场景二)/史建国/王骑手/陈晓" },
@@ -913,21 +901,9 @@
     }
     if (sc === "channelPartner") {
       const mod = (state.chPartner && state.chPartner.module) || "";
-      if (mod === "ch.dayPool") {
-        return state.chPartner && state.chPartner.dayPoolView === "purchaseForm"
-          ? "chPartner:dayPoolPurchase"
-          : "chPartner:dayPool";
-      }
+      if (mod === "ch.dayPool") return "chPartner:dayPool";
       if (mod === "ch.dayRiders") return "chPartner:dayRiders";
-      if (mod === "ch.dayAlloc") {
-        if (state.chPartner && state.chPartner.allocView === "allocate") {
-          return "chPartner:dayAllocAllocate";
-        }
-        if (state.chPartner && state.chPartner.allocView === "recover") {
-          return "chPartner:dayAllocRecover";
-        }
-        return "chPartner:dayAlloc";
-      }
+      if (mod === "ch.dayAlloc") return "chPartner:dayAlloc";
       if (mod === "ch.links") return "chPartner:links";
       if (mod === "ch.settlement") return "chPartner:settlement";
       if (mod === "ch.commission") return "chPartner:commission";
@@ -969,6 +945,10 @@
         return "channels:contracts";
       }
       return "channels";
+    }
+    if (sc === "batterySwallowed") {
+      const v = (state.batterySwallow && state.batterySwallow.view) || "list";
+      return v === "detail" ? "batterySwallowed:detail" : "batterySwallowed";
     }
     if (sc === "offCabinet") {
       const oc = state.offCab || {};
