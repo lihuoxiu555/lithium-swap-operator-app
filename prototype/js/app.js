@@ -3233,7 +3233,112 @@
     if (view === "detail") return renderSiteDetail();
     if (view === "form") return renderSiteForm();
     if (view === "bindCabinet") return renderSiteBindCabinet();
+    if (view === "cabinetList") return renderSiteCabinetList();
     return renderSitesList();
+  }
+
+  function openSiteCabinetList(siteId) {
+    const site = Sites.getSiteById(siteId);
+    if (!site) {
+      toast("站点不存在");
+      return;
+    }
+    if (Sites.refreshSiteCabinetCounts) Sites.refreshSiteCabinetCounts();
+    state.sites.siteId = siteId;
+    state.sites.view = "cabinetList";
+    state.screen = "sites";
+    track("sites_cab_list_open", { siteId });
+    render();
+  }
+
+  function openCabinetFromSiteList(cabId, siteId) {
+    const c = Cabinets.getById(cabId);
+    if (!c) {
+      toast("电柜不存在");
+      return;
+    }
+    state.sites.siteId = siteId;
+    state.sites.view = "cabinetList";
+    const root = els.screenRoot;
+    if (root) state.sites.cabListScroll = root.scrollTop;
+    state.ops.cabId = cabId;
+    state.ops.cabView = "detail";
+    state.ops.cabReturn = "siteCabList";
+    state.ops.cabPortOpen = 1;
+    state.ops.cabDetailTab = "cabinet";
+    state.screen = "cabinets";
+    track("sites_cab_open", { siteId, sn: c.sn });
+    render();
+  }
+
+  function renderSiteCabinetList() {
+    const site = Sites.getSiteById(state.sites.siteId);
+    if (!site || !Cabinets) {
+      return `<div class="sites-page"><div class="empty-full">站点不存在</div></div>`;
+    }
+    const list = Cabinets.cabinetsAtSite(site.name);
+    const canBind = canBindSiteCabinet();
+    const cards =
+      list.length === 0
+        ? `<div class="empty-full"><div class="icon">🔲</div>该站点暂无绑定电柜${
+            canBind
+              ? `<button type="button" class="btn-primary" data-action="sites-bind-cab" data-id="${escapeAttr(
+                  site.id
+                )}">去绑定电柜</button>`
+              : ""
+          }</div>`
+        : list
+            .map((c) => {
+              const online = !!c.online;
+              const powered = c.powerStatus === "已通电";
+              const enabled = (c.deviceStatus || "启用") === "启用";
+              const occ = Cabinets.occupiedCount(c);
+              const onlineCls = online ? "ok" : "bad";
+              const powerCls = powered ? "ok" : "bad";
+              return `<article class="sites-card cab-list-card">
+          <button type="button" class="cab-list-main" data-action="sites-cab-open" data-id="${escapeAttr(
+            c.id
+          )}" data-site-id="${escapeAttr(site.id)}">
+            <div class="sites-card-hd">
+              <div>
+                <strong>${escapeHtml(c.name || c.sn)}</strong>
+                <div class="cab-list-tags">
+                  <span class="cab-tag${enabled ? "" : " off"}">${escapeHtml(
+                c.deviceStatus || "启用"
+              )}</span>
+                  <span class="cab-tag ${powerCls}">${escapeHtml(c.powerStatus || "未通电")}</span>
+                  <span class="sites-status ${onlineCls}">${online ? "在线" : "离线"}</span>
+                </div>
+              </div>
+            </div>
+            <div class="sites-card-rows">
+              <div><span>电柜 SN</span><em>${escapeHtml(c.sn)}</em></div>
+              <div><span>仓口</span><em>${c.slots}</em></div>
+              <div><span>在柜电池</span><em>${occ}</em></div>
+              <div><span>上次换电</span><em>${escapeHtml(c.lastSwap || "—")}</em></div>
+            </div>
+          </button>
+        </article>`;
+            })
+            .join("");
+    return `
+      <div class="sites-page">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="sites-cab-list-back" aria-label="返回">‹</button>
+          <h1>电柜列表</h1>
+          ${
+            canBind
+              ? `<button type="button" class="sites-header-btn" data-action="sites-bind-cab" data-id="${escapeAttr(
+                  site.id
+                )}">绑定电柜</button>`
+              : `<span class="sites-header-spacer"></span>`
+          }
+        </div>
+        <p class="sites-hint sites-cab-list-hd">${escapeHtml(site.name)} · ${escapeHtml(
+      site.id
+    )} · 共 ${list.length} 台</p>
+        <div class="sites-list">${cards}</div>
+      </div>`;
   }
 
   function openSiteBindCabinet(siteId) {
@@ -3319,6 +3424,9 @@
                     cover.url
                   )}" alt=""><span>${photoN} 张</span></div>`
                 : `<div class="sites-cover empty">未上传</div>`;
+              const cabListBtn = `<button type="button" class="sites-cab-list-link" data-action="sites-cab-list" data-id="${escapeAttr(
+                site.id
+              )}">电柜列表</button>`;
               const bindBtn = canBind
                 ? `<button type="button" class="sites-bind-cab" data-action="sites-bind-cab" data-id="${escapeAttr(
                     site.id
@@ -3348,7 +3456,7 @@
           ${photoCell}
           <div class="sites-card-addr">${escapeHtml(site.address)}</div>
           </div>
-          <div class="sites-card-actions">${bindBtn}</div>
+          <div class="sites-card-actions sites-card-actions-split">${cabListBtn}${bindBtn}</div>
         </article>`;
             })
             .join("");
@@ -6345,6 +6453,18 @@
   }
 
   function openCabinetList() {
+    if (state.ops.cabReturn === "siteCabList" && state.sites.siteId) {
+      state.sites.view = "cabinetList";
+      state.screen = "sites";
+      state.ops.cabView = "list";
+      state.ops.cabId = null;
+      state.ops.cabReturn = "list";
+      render();
+      requestAnimationFrame(() => {
+        if (els.screenRoot) els.screenRoot.scrollTop = state.sites.cabListScroll || 0;
+      });
+      return;
+    }
     state.ops.cabView = "list";
     state.ops.cabId = null;
     state.screen = "cabinets";
@@ -7578,6 +7698,15 @@
           break;
         case "sites-open":
           openSiteDetail(t.dataset.id);
+          break;
+        case "sites-cab-list":
+          openSiteCabinetList(t.dataset.id);
+          break;
+        case "sites-cab-list-back":
+          openSitesList();
+          break;
+        case "sites-cab-open":
+          openCabinetFromSiteList(t.dataset.id, t.dataset.siteId || state.sites.siteId);
           break;
         case "sites-bind-cab":
           openSiteBindCabinet(t.dataset.id);

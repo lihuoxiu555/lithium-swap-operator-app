@@ -506,6 +506,7 @@
 | 绑柜输入 | 扫一扫（Mock）/ 手动 SN |
 | 校验 | 归属当前运营商 · 未绑他站 · 平台已注册 |
 | 演示 SN | `CAB-IMP-01` 可绑；`CAB-FOREIGN-01` 他网；`CAB-22021` 已占用；`CAB-NOREG-01` 未注册 |
+| 电柜列表 | 列表卡 **电柜列表** → 本站已绑柜；点柜进详情，返回回站点列表（V1.108） |
 
 依据：**decision-074** · `cabinets.validateSiteBinding`
 

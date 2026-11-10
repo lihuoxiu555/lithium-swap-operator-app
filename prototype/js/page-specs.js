@@ -394,10 +394,22 @@
         { name: "搜索", def: "名称 / 编号 / 地址" },
         { name: "卡片", def: "城市、类型、开放范围、柜/电、封面图或「未上传」" },
         { name: "绑定电柜", def: "每卡快捷按钮 → 扫码/输入 SN 绑定流程" },
+        { name: "电柜列表", def: "查看本站点已绑电柜；可进电柜详情" },
       ],
       enums: ["类型：配送站 / 写字楼 / 渠道专属", "状态：在营 / 建设中 / 已停用"],
       empty: "无匹配站点",
       roles: "员工无新增/编辑；管理员+员工可绑柜",
+    }),
+    "sites:cabinetList": S({
+      title: "站点 · 电柜列表",
+      source: "decision-074",
+      fields: [
+        { name: "范围", def: "仅当前站点已绑定电柜（cabinetsAtSite）" },
+        { name: "卡片", def: "SN、在线、通电、仓口、在柜电池、上次换电" },
+        { name: "点击", def: "进电柜详情；返回回到站点列表" },
+      ],
+      empty: "空态可「去绑定电柜」",
+      roles: "管理员 + 员工",
     }),
     "sites:bindCabinet": S({
       title: "站点 · 绑定电柜",
@@ -947,6 +959,7 @@
       const v = (state.sites && state.sites.view) || "list";
       if (v === "list") return "sites";
       if (v === "bindCabinet") return "sites:bindCabinet";
+      if (v === "cabinetList") return "sites:cabinetList";
       return "sites:" + v;
     }
     if (sc === "cabinets") {

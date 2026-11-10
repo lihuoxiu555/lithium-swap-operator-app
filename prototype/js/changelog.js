@@ -17,6 +17,12 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.108",
+      date: "2026-11-10 11:27",
+      title: "站点列表 · 电柜列表入口",
+      items: ["每站「电柜列表」→ 本站点已绑电柜；可进详情与绑定电柜"],
+    },
+    {
       version: "V1.107",
       date: "2026-11-10 10:53",
       title: "站点 · 绑柜快捷与停用删除",

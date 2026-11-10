@@ -2216,6 +2216,21 @@ button.btn-mock.offcab-btn {
   display: flex;
   justify-content: flex-end;
 }
+.sites-card-actions-split {
+  justify-content: space-between;
+  align-items: center;
+}
+.sites-cab-list-link {
+  border: 0;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: transparent;
+}
+.sites-cab-list-hd {
+  margin: 0 14px 8px;
+}
 .sites-bind-cab {
   border: 0;
   padding: 8px 14px;
