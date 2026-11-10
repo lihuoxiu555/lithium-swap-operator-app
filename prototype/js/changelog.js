@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.111",
+      date: "2026-11-10 15:27",
+      title: "新增站点 · 保存后绑柜引导",
+      items: [
+        "保存成功弹窗：绑定电柜 / 返回站点列表",
+        "decision-077 · AC-183",
+      ],
+    },
+    {
       version: "V1.110.2",
       date: "2026-11-10 15:19",
       title: "绑柜成功 · 进站点电柜列表",

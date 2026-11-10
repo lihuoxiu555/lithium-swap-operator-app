@@ -89,6 +89,7 @@
       form: {},
       bindSn: "",
       bindCabinetName: "",
+      afterCreateDialog: null,
       listScroll: 0,
       mapQuery: "",
       mapZoom: 2,
@@ -3099,6 +3100,7 @@
     state.sites.mapZoom = 2;
     state.sites.previewIdx = 0;
     state.sites.locating = false;
+    state.sites.afterCreateDialog = null;
     state.screen = "sites";
     render();
   }
@@ -3227,17 +3229,53 @@
       site_id: result.site.id,
       created: !!result.created,
     });
-    toast(result.created ? "站点已新增（原型示意）" : "站点已保存（原型示意）");
+    if (result.created) {
+      if (Sites.refreshSiteCabinetCounts) Sites.refreshSiteCabinetCounts();
+      state.sites.afterCreateDialog = { siteId: result.site.id };
+      state.sites.view = "list";
+      state.sites.formId = null;
+      state.sites.siteId = null;
+      state.sites.form = {};
+      track("sites_create_done_dialog", { site_id: result.site.id });
+      render();
+      return;
+    }
+    toast("站点已保存（原型示意）");
     openSiteDetail(result.site.id);
+  }
+
+  function renderSiteAfterCreateDialog() {
+    const dlg = state.sites.afterCreateDialog;
+    if (!dlg || !dlg.siteId) return "";
+    const site = Sites.getSiteById(dlg.siteId);
+    const label = site ? site.name : dlg.siteId;
+    const sub = site ? `（${site.id}）` : "";
+    return `
+      <div class="lease-dialog-mask" data-action="sites-after-create-mask">
+        <div class="lease-dialog" role="dialog" aria-modal="true">
+          <h3>保存完成</h3>
+          <p>站点 <strong>${escapeHtml(label)}</strong>${escapeHtml(sub)} 已新增，可继续绑定电柜或返回列表。</p>
+          <div class="lease-dialog-actions sites-create-done-actions">
+            <button type="button" class="sites-footer-primary" data-action="sites-after-create-bind">绑定电柜</button>
+            <button type="button" class="sites-footer-ghost" data-action="sites-after-create-list">返回站点列表</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function dismissSiteAfterCreateDialog() {
+    state.sites.afterCreateDialog = null;
   }
 
   function renderSites() {
     const view = state.sites.view || "list";
-    if (view === "detail") return renderSiteDetail();
-    if (view === "form") return renderSiteForm();
-    if (view === "bindCabinet") return renderSiteBindCabinet();
-    if (view === "cabinetList") return renderSiteCabinetList();
-    return renderSitesList();
+    let html = "";
+    if (view === "detail") html = renderSiteDetail();
+    else if (view === "form") html = renderSiteForm();
+    else if (view === "bindCabinet") html = renderSiteBindCabinet();
+    else if (view === "cabinetList") html = renderSiteCabinetList();
+    else html = renderSitesList();
+    return html + renderSiteAfterCreateDialog();
   }
 
   function openSiteCabinetList(siteId) {
@@ -7772,6 +7810,22 @@
           break;
         case "sites-save":
           submitSiteForm();
+          break;
+        case "sites-after-create-bind": {
+          const bindSiteId =
+            state.sites.afterCreateDialog && state.sites.afterCreateDialog.siteId;
+          dismissSiteAfterCreateDialog();
+          if (bindSiteId) openSiteBindCabinet(bindSiteId);
+          else openSitesList();
+          break;
+        }
+        case "sites-after-create-list":
+          dismissSiteAfterCreateDialog();
+          openSitesList();
+          break;
+        case "sites-after-create-mask":
+          dismissSiteAfterCreateDialog();
+          render();
           break;
         case "sites-map-search":
           submitSiteMapSearch();

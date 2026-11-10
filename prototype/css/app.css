@@ -1818,6 +1818,14 @@ button.btn-mock.offcab-btn {
   gap: 8px;
   margin-top: 14px;
 }
+.sites-create-done-actions {
+  flex-direction: column;
+}
+.sites-create-done-actions .sites-footer-primary,
+.sites-create-done-actions .sites-footer-ghost {
+  width: 100%;
+  justify-content: center;
+}
 .lease-dialog textarea {
   width: 100%;
   border: 1px solid var(--line);
