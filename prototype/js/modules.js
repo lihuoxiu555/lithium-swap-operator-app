@@ -150,6 +150,15 @@
       route: "#/module/users.list",
     },
     {
+      id: "org.employees",
+      name: "员工管理",
+      group: "其他",
+      icon: "👥",
+      status: "ready",
+      roles: ["admin"],
+      route: "#/module/org.employees",
+    },
+    {
       id: "users.sms",
       name: "短信验证码",
       group: "其他",

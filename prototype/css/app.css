@@ -5225,3 +5225,88 @@ button.btn-mock.offcab-btn {
 .mini-fab-rider.hidden {
   display: none;
 }
+
+.emp-add-top {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 10px;
+}
+.emp-city-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.emp-city-filter select {
+  flex: 1;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  padding: 0 10px;
+}
+.emp-card .emp-edit-btn {
+  margin: 10px 14px 6px;
+  width: calc(100% - 28px);
+}
+.emp-fieldset {
+  border: 0;
+  margin: 12px 0;
+  padding: 0;
+}
+.emp-fieldset legend {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.emp-fieldset .req {
+  color: var(--danger);
+  margin-left: 2px;
+}
+.emp-scope-row {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 10px;
+  font-size: 13px;
+}
+.emp-scope-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.emp-city-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.emp-city-pick.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.emp-city-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  background: #fff;
+}
+.emp-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.emp-perm-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.emp-form-page .sites-form {
+  padding: 12px 14px 88px;
+}

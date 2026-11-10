@@ -19,6 +19,7 @@
   const OffCab = window.OperatorAppOffCabinet;
   const Swallow = window.OperatorAppBatterySwallowed;
   const RiderMini = window.OperatorAppRiderMini;
+  const Employees = window.OperatorAppEmployees;
   const Channels = window.OperatorAppChannels;
   const ChPartner = window.OperatorAppChannelPartner;
 
@@ -135,6 +136,7 @@
       payKw: "",
       payTab: "success",
     },
+    employees: Employees ? Employees.defaultState() : { view: "list", kw: "", cityFilter: "全部", editId: null },
     packageOrders: {
       tab: "all",
       kw: "",
@@ -602,6 +604,15 @@
       state.screen = "userList";
       setHash(mod.route);
       track("users_open", {});
+      render();
+      return;
+    }
+    if (mod.status === "ready" && mod.id === "org.employees") {
+      state.placeholderModule = mod;
+      if (Employees) state.employees = Object.assign(Employees.defaultState(), state.employees || {}, { view: "list" });
+      state.screen = "employees";
+      setHash(mod.route);
+      track("employees_open", {});
       render();
       return;
     }
@@ -4687,6 +4698,15 @@
       </div>`;
   }
 
+  function renderEmployees() {
+    if (!Employees) return `<div class="empty-full">员工模块未加载</div>`;
+    return Employees.render(state, {
+      escapeHtml,
+      escapeAttr,
+      opsHeader,
+    });
+  }
+
   function renderUserList() {
     const list = AppUsers.filterUsers(state.users.kw);
     const cards =
@@ -6244,6 +6264,7 @@
       state.screen === "userList" ||
       state.screen === "userSms" ||
       state.screen === "userPay" ||
+      state.screen === "employees" ||
       state.screen === "financeAccount" ||
       state.screen === "packageOrders" ||
       state.screen === "batteryManage" ||
@@ -6355,6 +6376,9 @@
         break;
       case "userList":
         html = renderUserList();
+        break;
+      case "employees":
+        html = renderEmployees();
         break;
       case "userSms":
         html = renderUserSms();
@@ -6700,6 +6724,35 @@
         }
       });
     }
+
+    const empKw = $("emp-kw");
+    if (empKw) {
+      empKw.addEventListener("input", () => {
+        if (!state.employees) return;
+        state.employees.kw = empKw.value;
+      });
+      empKw.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          track("emp_search", { kw: state.employees.kw });
+          render();
+        }
+      });
+    }
+    const empCityFilter = document.getElementById("emp-city-filter");
+    if (empCityFilter) {
+      empCityFilter.addEventListener("change", () => {
+        if (!state.employees) return;
+        state.employees.cityFilter = empCityFilter.value;
+        track("emp_city_filter", { city: state.employees.cityFilter });
+        render();
+      });
+    }
+    document.querySelectorAll('input[name="emp-region-scope"]').forEach((el) => {
+      el.addEventListener("change", () => {
+        if (Employees) Employees.syncScopeUi();
+      });
+    });
 
     const payKw = $("pay-kw");
     if (payKw) {
@@ -8737,6 +8790,57 @@
             state.alerts.itemId = null;
             render();
           }
+          break;
+        }
+        case "emp-search":
+          track("emp_search", { kw: state.employees && state.employees.kw });
+          render();
+          toast(state.employees && state.employees.kw.trim() ? "已筛选" : "已刷新列表");
+          break;
+        case "employee-add":
+          if (!Employees) break;
+          state.employees.view = "form";
+          state.employees.editId = null;
+          track("employee_add", {});
+          render();
+          break;
+        case "employee-edit": {
+          if (!Employees) break;
+          const empId = t.dataset.id;
+          if (!Employees.getById(empId)) {
+            toast("员工不存在");
+            break;
+          }
+          state.employees.view = "form";
+          state.employees.editId = empId;
+          track("employee_edit", { id: empId });
+          render();
+          break;
+        }
+        case "employee-back":
+          if (!state.employees) break;
+          state.employees.view = "list";
+          state.employees.editId = null;
+          render();
+          break;
+        case "emp-scope-sync":
+          if (Employees) Employees.syncScopeUi();
+          break;
+        case "employee-save": {
+          if (!Employees) break;
+          const editId = (t.dataset.id || "").trim() || null;
+          const payload = Employees.readFormFromDom(editId);
+          if (!editId) payload.id = "";
+          const err = Employees.saveRow(payload);
+          if (err) {
+            toast(err);
+            break;
+          }
+          track("employee_save", { id: payload.id });
+          toast("已保存（演示）");
+          state.employees.view = "list";
+          state.employees.editId = null;
+          render();
           break;
         }
         case "user-search":

@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.106",
+      date: "2026-11-10 10:28",
+      title: "其他 · 员工管理（区域=业务城市）",
+      items: [
+        "工作台「其他」新增员工管理（仅管理员）",
+        "对齐原型-外卖运营商员工 + 区域（全网/指定城市）",
+        "decision-073 · PRD §28 · AC-171～175",
+      ],
+    },
+    {
       version: "V1.105",
       date: "2026-11-10 09:44",
       title: "小程序端 · 骑手/商户双场景",

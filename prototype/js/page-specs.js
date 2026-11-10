@@ -779,6 +779,34 @@
       source: "二期",
       fields: [{ name: "快照", def: "演示浏览，不接真实遥测" }],
     }),
+    employees: S({
+      title: "员工管理",
+      source: "原型-外卖 · 运营商员工 + decision-073",
+      fields: [
+        { name: "列表", def: "姓名、手机、岗位、区域、权限摘要、状态、最近登录" },
+        { name: "区域", def: "全网 或 指定业务城市（多选）；枚举取自运营商已开通城市" },
+        { name: "筛选", def: "关键词 + 区域筛选（全部 / 全网 / 单城）" },
+      ],
+      empty: "暂无员工",
+      error: "重复手机号、未选城市、未选权限",
+      roles: "仅管理员可见宫格；员工无入口",
+      note: "正式与 PC 员工管理同表；APP 侧重查询与现场改区域/权限",
+    }),
+    "employees:form": S({
+      title: "员工管理 · 表单",
+      source: "原型-外卖 employees 扩展区域",
+      fields: [
+        { name: "姓名", def: "必填" },
+        { name: "手机号", def: "11 位，登录账号，唯一" },
+        { name: "岗位", def: "如站点运维、城市运营" },
+        { name: "区域", def: "全网 | 指定城市（上海/杭州/溧阳/苏州 Mock）" },
+        { name: "状态", def: "启用 / 停用" },
+        { name: "功能权限", def: "勾选 PC 同源 permission id（子集演示）" },
+      ],
+      enums: ["启用", "停用", "全网", "指定城市"],
+      error: "校验失败 toast",
+      roles: "仅管理员可保存",
+    }),
     userList: S({
       title: "用户管理",
       source: "PC 一期用户",
@@ -984,6 +1012,9 @@
       return "offCabinet";
     }
     if (sc === "userList") return "userList";
+    if (sc === "employees") {
+      return state.employees && state.employees.view === "form" ? "employees:form" : "employees";
+    }
     if (sc === "todos") {
       if (state.todos && state.todos.view === "detail" && state.todos.type) {
         return "todos:" + state.todos.type;
