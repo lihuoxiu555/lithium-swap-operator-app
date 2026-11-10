@@ -312,6 +312,9 @@ input:focus-visible,
   flex: 1; min-height: 0; overflow: auto; position: relative;
   -webkit-overflow-scrolling: touch;
 }
+.screen-root.is-rider-mini {
+  overflow: hidden;
+}
 
 .tab-bar {
   display: flex; background: #fff; border-top: 1px solid var(--line);
@@ -4971,4 +4974,250 @@ button.btn-mock.offcab-btn {
 .swallow-actions .btn-primary,
 .swallow-actions .btn-secondary {
   width: 100%;
+}
+
+/* —— 换电小程序 · 骑手端（C 端 Mock）—— */
+.rider-page {
+  min-height: 100%;
+  padding-bottom: 88px;
+  background: linear-gradient(180deg, #dce8ff 0%, #eef1f6 28%, #f3f4f6 100%);
+}
+.rider-mine-hd,
+.rider-home-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 4px;
+  min-height: 36px;
+}
+.rider-merchant-entry {
+  border: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(47, 107, 255, 0.12);
+}
+.rider-settings {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 18px;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.7);
+}
+.rider-home-hd span {
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  margin-right: 32px;
+}
+.rider-profile {
+  display: flex;
+  gap: 12px;
+  padding: 8px 16px 14px;
+  align-items: center;
+}
+.rider-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #7eb0ff, #3d6fe0);
+  box-shadow: 0 4px 12px rgba(47, 107, 255, 0.25);
+}
+.rider-profile-txt strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.rider-profile-txt p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.rider-verify {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px !important;
+}
+.tag-muted {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+.link-like {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--brand);
+}
+.rider-svc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 12px 12px;
+  padding: 16px 14px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #5b7cff 0%, #7c5ce8 100%);
+  box-shadow: 0 8px 24px rgba(80, 102, 255, 0.28);
+}
+.rider-svc-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.rider-svc-card p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.rider-svc-buy {
+  flex-shrink: 0;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b4e12;
+  background: linear-gradient(180deg, #f5e6c8, #e8c98a);
+}
+.rider-panel {
+  margin: 0 12px 10px;
+  padding: 12px 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(20, 30, 55, 0.05);
+}
+.rider-panel h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.rider-grid3,
+.rider-grid4 {
+  display: grid;
+  gap: 8px;
+}
+.rider-grid3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.rider-grid4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.rider-grid3 button,
+.rider-grid4 button {
+  border: 0;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 11px;
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.rider-grid3 button span,
+.rider-grid4 button span {
+  font-size: 22px;
+  line-height: 1;
+}
+.rider-map-placeholder {
+  margin: 12px;
+  padding: 48px 16px;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.rider-tab-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 6px 8px 10px;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  z-index: 4;
+}
+.rider-tab {
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 4px 0 2px;
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rider-tab .ico {
+  font-size: 18px;
+}
+.rider-tab.active {
+  color: var(--brand);
+  font-weight: 700;
+}
+.rider-tab-scan {
+  position: relative;
+  top: -14px;
+  width: 58px;
+  height: 58px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 24px;
+  background: linear-gradient(160deg, #4e82ff, var(--brand-dark));
+  box-shadow: 0 6px 18px rgba(47, 107, 255, 0.42);
+  display: grid;
+  place-items: center;
+}
+.login-hero-merchant {
+  position: relative;
+  text-align: left;
+  padding: 44px 20px 18px;
+}
+.login-hero-merchant h2,
+.login-hero-merchant p {
+  text-align: center;
+}
+.login-merchant-back {
+  position: absolute;
+  left: 10px;
+  top: 38px;
+  border: none;
+  background: transparent;
+}
+.mini-fab-rider {
+  position: absolute;
+  right: 12px;
+  bottom: 68px;
+  z-index: 30;
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(145deg, #3d7bff, #2b5ce6);
+  box-shadow: 0 6px 16px rgba(47, 107, 255, 0.45);
+}
+.mini-fab-rider.hidden {
+  display: none;
 }

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="锂电快换 · 运营商 APP 可插拔工作台框架原型">
   <title>锂电快换 · 运营商工作台原型</title>
-  <meta name="prototype-build" content="1.101">
-  <link rel="stylesheet" href="css/app.css?v=1.101">
+  <meta name="prototype-build" content="1.105">
+  <link rel="stylesheet" href="css/app.css?v=1.105">
 </head>
-<body data-prototype-build="1.101">
+<body data-prototype-build="1.105">
   <a class="skip-link" href="#screen-root">跳到手机页面</a>
 
   <header class="prototype-header">
@@ -16,7 +16,7 @@
       <span class="brand-mark" aria-hidden="true">锂</span>
       <div>
         <h1>锂电快换</h1>
-        <p>运营商工作台 · 原型 <strong>V1.104</strong>（电池被吞 · 运维重排）</p>
+        <p>运营商工作台 · 原型 <strong>V1.105</strong>（小程序商户端）</p>
       </div>
     </div>
     <nav class="doc-links" aria-label="交付文档">
@@ -36,10 +36,22 @@
           </div>
           <button class="text-button" type="button" data-action="reset-demo">重置</button>
         </div>
-        <p class="panel-hint">框架期主路径为登录→工作台。运维：<strong>非标换电 / 电池被吞 / 电柜 / 电池 / 站点</strong>。顶栏版本与 Cmd+Shift+R 强刷。</p>
+        <p class="panel-hint"><strong>独立端</strong>：登录→工作台。<strong>小程序端</strong>：骑手我的→商户→登录→工作台，右下「骑手端」返回。运维顺序见 V1.104。强刷 Cmd+Shift+R。</p>
 
         <div class="scenario-group">
-          <h3>角色与主路径</h3>
+          <h3>端形态</h3>
+          <button class="scenario-button active" type="button" data-shell="standalone">
+            <span class="scenario-icon">独</span>
+            <span><strong>独立端</strong><small>原生/H5 工作台壳（原默认）</small></span>
+          </button>
+          <button class="scenario-button" type="button" data-shell="miniprogram">
+            <span class="scenario-icon">微</span>
+            <span><strong>小程序端</strong><small>骑手「我的」→ 商户 → 锂电快换工作台</small></span>
+          </button>
+        </div>
+
+        <div class="scenario-group">
+          <h3>角色与主路径（独立端 / 商户登录后）</h3>
           <button class="scenario-button active" type="button" data-scenario="admin">
             <span class="scenario-icon">管</span>
             <span><strong>管理员已登录</strong><small>见经营/财务类占位槽</small></span>
@@ -99,7 +111,7 @@
     <section class="phone-stage" aria-label="运营商 APP 原型">
       <div class="preview-caption">
         <span class="live-dot" aria-hidden="true"></span>
-        锂电快换 · 运营商端
+        <span id="preview-shell-label">锂电快换 · 运营商端</span>
         <span class="mock-badge">Mock</span>
       </div>
 
@@ -193,7 +205,7 @@
     </aside>
   </main>
 
-  <script>window.__OP_APP_BUILD__ = "1.96";</script>
+  <script>window.__OP_APP_BUILD__ = "1.105";</script>
   <script src="js/modules.js?v=1.104"></script>
   <script src="js/mock.js?v=1.101"></script>
   <script src="js/lease-orders.js?v=1.101"></script>
@@ -202,6 +214,7 @@
   <script src="js/ops-stats.js?v=1.101"></script>
   <script src="js/cabinets.js?v=1.101"></script>
   <script src="js/battery-swallowed.js?v=1.104"></script>
+  <script src="js/rider-mini.js?v=1.105"></script>
   <script src="js/off-cabinet.js?v=1.104"></script>
   <script src="js/channels.js?v=1.101"></script>
   <script src="js/channel-partner.js?v=1.101"></script>
@@ -211,8 +224,8 @@
   <script src="js/users.js?v=1.101"></script>
   <script src="js/finance-account.js?v=1.101"></script>
   <script src="js/batteries.js?v=1.102"></script>
-  <script src="js/page-specs.js?v=1.104"></script>
-  <script src="js/changelog.js?v=1.104"></script>
-  <script src="js/app.js?v=1.104"></script>
+  <script src="js/page-specs.js?v=1.105"></script>
+  <script src="js/changelog.js?v=1.105"></script>
+  <script src="js/app.js?v=1.105"></script>
 </body>
 </html>

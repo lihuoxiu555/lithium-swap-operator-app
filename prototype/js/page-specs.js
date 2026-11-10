@@ -33,6 +33,32 @@
       error: "非 11 位、错密、未勾选协议",
       roles: "登录后按账号出身份",
     }),
+    riderMini: S({
+      title: "换电小程序 · 骑手端",
+      source: "C 端 Mock · decision-072",
+      fields: [
+        { name: "商户入口", def: "首页/我的页左上「商户」→ 商户登录" },
+        { name: "底栏", def: "首页 · 扫一扫 · 我的（Mock toast）" },
+        { name: "服务卡", def: "暂未开通服务 + 服务购买（演示）" },
+      ],
+      empty: "—",
+      error: "—",
+      roles: "C 端用户；与 B 端工作台会话互斥（切骑手端清 B 会话）",
+      note: "场景台选「小程序端」默认进本页",
+    }),
+    merchantLogin: S({
+      title: "换电小程序 · 商户登录",
+      source: "框架 · 内嵌 B 端",
+      fields: [
+        { name: "返回", def: "‹ 返回骑手端（清未登录态）" },
+        { name: "凭证", def: "与独立端相同演示号" },
+        { name: "登录后", def: "默认进工作台 Tab；底栏为运营商四 Tab" },
+      ],
+      empty: "—",
+      error: "同 login",
+      roles: "运营商员工；登录后见锂电快换工作台",
+      note: "登录成功右下角隐藏；工作台显示「骑手端」悬浮钮",
+    }),
     pickRole: S({
       title: "选择身份",
       source: "框架",

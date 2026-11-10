@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.105",
+      date: "2026-11-10 09:44",
+      title: "小程序端 · 骑手/商户双场景",
+      items: [
+        "场景台：独立端（原默认）/ 小程序端",
+        "骑手「我的」左上商户 → 商户登录 → 锂电快换工作台",
+        "商户登录后右下「骑手端」回到 C 端；decision-072 · AC-165",
+      ],
+    },
+    {
       version: "V1.104",
       date: formatLocalDateTime(),
       title: "运维入口重排 + 电池被吞",

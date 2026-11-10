@@ -18,6 +18,7 @@
   const Batteries = window.OperatorAppBatteries;
   const OffCab = window.OperatorAppOffCabinet;
   const Swallow = window.OperatorAppBatterySwallowed;
+  const RiderMini = window.OperatorAppRiderMini;
   const Channels = window.OperatorAppChannels;
   const ChPartner = window.OperatorAppChannelPartner;
 
@@ -38,6 +39,7 @@
     dataStats: {
       subTab: "biz", // biz | asset
     },
+    clientShell: "standalone",
     activeScenario: "admin",
     forceEmptyGrid: false,
     loadError: false,
@@ -176,6 +178,7 @@
       listScroll: 0,
     },
     batterySwallow: Swallow ? Swallow.defaultState() : { kw: "", tab: "pending", view: "list", incidentId: null },
+    riderMini: RiderMini ? RiderMini.defaultState() : { tab: "mine" },
   };
 
   const els = {};
@@ -272,6 +275,8 @@
     const moduleMatch = h.match(/^#\/module\/(.+)$/);
     if (moduleMatch) return { type: "module", id: moduleMatch[1] };
     if (h === "#/login") return { type: "login" };
+    if (h === "#/mini/rider") return { type: "riderMini" };
+    if (h === "#/merchant/login") return { type: "merchantLogin" };
     if (h === "#/pick-role") return { type: "pickRole" };
     if (h === "#/messages" || h === "#/todos") return { type: "tab", tab: "todos" };
     if (h === "#/mine") return { type: "tab", tab: "mine" };
@@ -295,7 +300,15 @@
   function applyRoute() {
     const route = parseRoute();
 
-    if (!state.session && route.type !== "login" && route.type !== "pickRole") {
+    const miniPublic =
+      route.type === "riderMini" || route.type === "merchantLogin" || route.type === "login";
+    if (!state.session && route.type !== "pickRole" && !miniPublic) {
+      if (state.clientShell === "miniprogram") {
+        state.screen = "riderMini";
+        setHash("#/mini/rider");
+        render();
+        return;
+      }
       state.screen = "login";
       setHash("#/login");
       render();
@@ -308,7 +321,25 @@
       return;
     }
 
+    if (route.type === "riderMini") {
+      state.screen = "riderMini";
+      render();
+      return;
+    }
+
+    if (route.type === "merchantLogin") {
+      state.screen = "merchantLogin";
+      render();
+      return;
+    }
+
     if (route.type === "unknown") {
+      if (state.clientShell === "miniprogram" && !state.session) {
+        state.screen = "riderMini";
+        setHash("#/mini/rider");
+        render();
+        return;
+      }
       state.tab = "dataStats";
       state.screen = "dataStats";
       setHash("#/dataStats");
@@ -696,17 +727,54 @@
     if (ChPartner) state.chPartner = ChPartner.defaultState();
     state.dataStats.subTab = "biz";
     track("role_selected", { role: identity.role });
-    goTab("dataStats");
+    if (state.clientShell === "miniprogram") {
+      goTab("workbench");
+    } else {
+      goTab("dataStats");
+    }
   }
 
   function logout() {
     track("logout", { role: state.session && state.session.role });
     state.session = null;
     state.pendingAccount = null;
-    state.screen = "login";
-    state.tab = "dataStats";
     state.dataStats.subTab = "biz";
     if (ChPartner) state.chPartner = ChPartner.defaultState();
+    if (state.clientShell === "miniprogram") {
+      state.riderMini = RiderMini ? RiderMini.defaultState() : { tab: "mine" };
+      state.screen = "riderMini";
+      state.tab = "dataStats";
+      setHash("#/mini/rider");
+    } else {
+      state.screen = "login";
+      state.tab = "dataStats";
+      setHash("#/login");
+    }
+    render();
+  }
+
+  function applyClientShell(shell) {
+    state.clientShell = shell === "miniprogram" ? "miniprogram" : "standalone";
+    document.querySelectorAll("[data-shell]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.shell === state.clientShell);
+    });
+    const cap = document.getElementById("preview-shell-label");
+    if (cap) {
+      cap.textContent =
+        state.clientShell === "miniprogram" ? "换电小程序 · 骑手/商户" : "锂电快换 · 运营商端";
+    }
+    track("client_shell", { shell: state.clientShell });
+    if (state.clientShell === "miniprogram") {
+      state.session = null;
+      state.pendingAccount = null;
+      state.riderMini = RiderMini ? RiderMini.defaultState() : { tab: "mine" };
+      state.screen = "riderMini";
+      setHash("#/mini/rider");
+      render();
+      return;
+    }
+    state.screen = "login";
+    state.loginError = "";
     setHash("#/login");
     render();
   }
@@ -720,9 +788,14 @@
     if (key === "loginFail") {
       state.session = null;
       state.pendingAccount = null;
-      state.screen = "login";
       state.loginError = "";
-      setHash("#/login");
+      if (state.clientShell === "miniprogram") {
+        state.screen = "merchantLogin";
+        setHash("#/merchant/login");
+      } else {
+        state.screen = "login";
+        setHash("#/login");
+      }
       document.querySelectorAll(".scenario-button").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.scenario === key);
       });
@@ -755,7 +828,13 @@
     state.finance.applyAmount = "";
     state.finance.settleForm = null;
     state.finance.settleReturn = "home";
-    setHash("#/dataStats");
+    if (state.clientShell === "miniprogram") {
+      state.tab = "workbench";
+      state.screen = "workbench";
+      setHash("#/workbench");
+    } else {
+      setHash("#/dataStats");
+    }
 
     document.querySelectorAll(".scenario-button").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.scenario === key);
@@ -764,6 +843,38 @@
   }
 
   /* ——— render ——— */
+
+  function renderMerchantLogin() {
+    return `
+      <div class="login-hero login-hero-merchant">
+        <button type="button" class="icon-back login-merchant-back" data-action="mini-to-rider" aria-label="返回骑手端">‹</button>
+        <div class="login-logo">锂</div>
+        <h2>商户登录</h2>
+        <p>运营商员工工作台 · 小程序内嵌</p>
+      </div>
+      <div class="form-error ${state.loginError ? "show" : ""}" role="alert">${escapeHtml(
+        state.loginError
+      )}</div>
+      <div class="form-block">
+        <div class="form-row">
+          <label for="login-phone">手机号</label>
+          <input id="login-phone" type="tel" inputmode="numeric" maxlength="11"
+            value="${escapeAttr(state.loginPhone)}" placeholder="11 位手机号" />
+        </div>
+        <div class="form-row">
+          <label for="login-password">密码</label>
+          <input id="login-password" type="password"
+            value="${escapeAttr(state.loginPassword)}" placeholder="默认 123456" />
+        </div>
+      </div>
+      <label class="agree-row">
+        <input type="checkbox" id="login-agree" ${state.agree ? "checked" : ""} />
+        <span>我已阅读并同意《服务协议》与《隐私政策》（演示）</span>
+      </label>
+      <button type="button" class="btn-primary" data-action="login">登录</button>
+      <div class="demo-hint">演示与独立端相同：<code>13800000005</code> / <code>123456</code></div>
+    `;
+  }
 
   function renderLogin() {
     return `
@@ -6113,6 +6224,8 @@
     const hide =
       !state.session ||
       state.screen === "login" ||
+      state.screen === "merchantLogin" ||
+      state.screen === "riderMini" ||
       state.screen === "pickRole" ||
       state.screen === "placeholder" ||
       state.screen === "leaseOrders" ||
@@ -6164,6 +6277,12 @@
     switch (state.screen) {
       case "login":
         html = renderLogin();
+        break;
+      case "merchantLogin":
+        html = renderMerchantLogin();
+        break;
+      case "riderMini":
+        html = RiderMini ? RiderMini.render(state, { escapeHtml, escapeAttr }) : "";
         break;
       case "pickRole":
         html = renderPickRole();
@@ -6265,6 +6384,7 @@
         html = renderLogin();
     }
     els.screenRoot.innerHTML = html;
+    els.screenRoot.classList.toggle("is-rider-mini", state.screen === "riderMini");
     bindScreenInputs();
   }
 
@@ -6752,9 +6872,27 @@
       .join("");
   }
 
+  function renderMiniProgramFab() {
+    const bezel = document.querySelector(".phone-bezel");
+    if (!bezel) return;
+    let fab = bezel.querySelector(".mini-fab-rider");
+    if (!fab) {
+      fab = document.createElement("button");
+      fab.type = "button";
+      fab.className = "mini-fab-rider hidden";
+      fab.dataset.action = "mini-to-rider";
+      fab.textContent = "骑手端";
+      bezel.appendChild(fab);
+    }
+    const show =
+      state.clientShell === "miniprogram" && !!state.session && state.screen !== "riderMini";
+    fab.classList.toggle("hidden", !show);
+  }
+
   function render() {
     renderScreen();
     showTabBar();
+    renderMiniProgramFab();
     renderInspector();
     const timeEl = $("status-time");
     if (timeEl) {
@@ -6785,6 +6923,40 @@
       switch (action) {
         case "login":
           loginSubmit();
+          break;
+        case "open-merchant-login":
+          state.screen = "merchantLogin";
+          state.loginError = "";
+          setHash("#/merchant/login");
+          track("mini_merchant_open", {});
+          render();
+          break;
+        case "mini-to-rider":
+          state.session = null;
+          state.pendingAccount = null;
+          state.riderMini = RiderMini ? RiderMini.defaultState() : { tab: "mine" };
+          state.screen = "riderMini";
+          setHash("#/mini/rider");
+          track("mini_to_rider", {});
+          render();
+          break;
+        case "rider-tab":
+          if (!state.riderMini) state.riderMini = RiderMini ? RiderMini.defaultState() : { tab: "mine" };
+          state.riderMini.tab = t.dataset.tab || "mine";
+          render();
+          break;
+        case "rider-scan":
+          toast("扫码换电（骑手端 Mock）");
+          break;
+        case "rider-settings":
+        case "rider-verify":
+        case "rider-buy":
+        case "rider-hotline":
+        case "rider-orders-swap":
+        case "rider-orders-svc":
+        case "rider-deposit":
+        case "rider-overdue":
+          toast("骑手端功能（演示未展开）");
           break;
         case "pick-role": {
           const role = t.dataset.role;
@@ -8727,6 +8899,12 @@
 
     document.querySelectorAll("[data-scenario]").forEach((btn) => {
       btn.addEventListener("click", () => applyScenario(btn.dataset.scenario));
+    });
+    document.querySelectorAll("[data-shell]").forEach((btn) => {
+      btn.addEventListener("click", () => applyClientShell(btn.dataset.shell));
+    });
+    document.querySelectorAll("[data-shell]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.shell === state.clientShell);
     });
 
     resetMessages(false);
