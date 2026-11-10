@@ -82,7 +82,8 @@
     sites: {
       status: "all",
       keyword: "",
-      view: "list", // list | detail | form | bindCabinet
+      view: "list", // list | detail | form | bindCabinet | cabinetList
+      bindReturn: "list", // 绑柜页返回：list | cabinetList
       siteId: null,
       formId: null, // null | id | "new"
       form: {},
@@ -3350,6 +3351,7 @@
       return;
     }
     state.sites.siteId = siteId;
+    state.sites.bindReturn = state.sites.view === "cabinetList" ? "cabinetList" : "list";
     state.sites.view = "bindCabinet";
     state.sites.bindSn = "";
     state.sites.bindCabinetName =
@@ -3373,7 +3375,7 @@
     Sites.refreshSiteCabinetCounts();
     track("sites_bind_cab_ok", { siteId: site.id, sn: r.cabinet.sn, name: r.cabinet.name });
     toast(`已绑定「${r.cabinet.name}」（${r.cabinet.sn}）→ ${site.name}`);
-    openSiteDetail(site.id);
+    openSiteCabinetList(site.id);
   }
 
   function confirmDeleteSite(siteId) {
@@ -7734,7 +7736,11 @@
           openSiteBindCabinet(t.dataset.id);
           break;
         case "sites-bind-back":
-          openSitesList();
+          if (state.sites.bindReturn === "cabinetList" && state.sites.siteId) {
+            openSiteCabinetList(state.sites.siteId);
+          } else {
+            openSitesList();
+          }
           break;
         case "sites-cab-scan":
           state.sites.bindSn = "CAB-IMP-01";
