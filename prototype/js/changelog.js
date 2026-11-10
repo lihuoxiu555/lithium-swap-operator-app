@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.109",
+      date: "2026-11-10 11:38",
+      title: "非标换电 · 绑定校验套餐电池型号",
+      items: [
+        "绑定时校验 modelSpec = packageBatteryModel",
+        "Mock 035211MODEL30 拦截 · decision-075",
+      ],
+    },
+    {
       version: "V1.108",
       date: "2026-11-10 11:27",
       title: "站点列表 · 电柜列表入口",

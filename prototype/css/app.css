@@ -3644,6 +3644,18 @@ button.btn-mock.offcab-btn {
   background: var(--brand-soft);
   border-color: var(--brand);
 }
+.offcab-model-hint {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+  background: #f4f7fc;
+  border: 1px solid #e2e8f0;
+}
+.offcab-model-hint strong {
+  color: var(--brand);
+}
 .offcab-sec {
   margin-left: 12px;
   margin-right: 12px;

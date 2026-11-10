@@ -5,6 +5,7 @@
 (function (global) {
   const SESSION_OPERATOR = { id: "op-lh", name: "锂电快换" };
   const L1_BATTERY_FEE = 2.0;
+  const DEFAULT_BATTERY_MODEL = "48V/20Ah";
 
   const ORDER_TYPES = {
     off_swap: { id: "off_swap", label: "柜外换电" },
@@ -33,6 +34,14 @@
       sn: "035211888777",
       deviceOwnerId: "op-jd",
       deviceOwnerName: "京东换电",
+      modelSpec: DEFAULT_BATTERY_MODEL,
+    },
+    /** 型号与套餐不一致样例（王骑手绑定应被拦截） */
+    "035211MODEL30": {
+      sn: "035211MODEL30",
+      modelSpec: "48V/30Ah",
+      deviceOwnerId: SESSION_OPERATOR.id,
+      deviceOwnerName: SESSION_OPERATOR.name,
     },
     "035211210001": { sn: "035211210001", boundUserPhone: "13800138001" },
     "492391002233": {
@@ -105,6 +114,10 @@
     },
   };
 
+  Object.keys(BATTERIES).forEach((k) => {
+    if (!BATTERIES[k].modelSpec) BATTERIES[k].modelSpec = DEFAULT_BATTERY_MODEL;
+  });
+
   /** @type {Array<object>} */
   let USERS = [
     {
@@ -112,6 +125,7 @@
       name: "史建国",
       phone: "18915821617",
       packageLabel: "包月30天 · 生效中",
+      packageBatteryModel: DEFAULT_BATTERY_MODEL,
       packageOk: true,
       heldSn: "035211127474",
       waitPickup: false,
@@ -121,6 +135,7 @@
       name: "王骑手",
       phone: "13800138001",
       packageLabel: "包月30天 · 生效中",
+      packageBatteryModel: DEFAULT_BATTERY_MODEL,
       packageOk: true,
       heldSn: null,
       waitPickup: true,
@@ -130,6 +145,7 @@
       name: "陈晓",
       phone: "13900001111",
       packageLabel: "包月30天 · 生效中",
+      packageBatteryModel: DEFAULT_BATTERY_MODEL,
       packageOk: true,
       heldSn: null,
       waitPickup: false,
@@ -146,6 +162,7 @@
       name: "赵骑手",
       phone: "13600003333",
       packageLabel: "包月30天 · 生效中",
+      packageBatteryModel: DEFAULT_BATTERY_MODEL,
       packageOk: true,
       heldSn: "492399990004",
       waitPickup: false,
@@ -163,6 +180,7 @@
       name: "李骑手",
       phone: "13700002222",
       packageLabel: "包月30天 · 生效中",
+      packageBatteryModel: DEFAULT_BATTERY_MODEL,
       packageOk: true,
       heldSn: "492399990002",
       waitPickup: false,
@@ -389,6 +407,29 @@
     };
   }
 
+  function normalizeModel(spec) {
+    return String(spec || "")
+      .replace(/\s+/g, "")
+      .toUpperCase();
+  }
+
+  function userPackageBatteryModel(user) {
+    if (!user) return "";
+    return user.packageBatteryModel || DEFAULT_BATTERY_MODEL;
+  }
+
+  function batteryModelSpec(sn) {
+    const b = BATTERIES[sn];
+    return (b && b.modelSpec) || DEFAULT_BATTERY_MODEL;
+  }
+
+  function renderBindModelHint(user, escapeHtml) {
+    const pkg = userPackageBatteryModel(user);
+    return `<p class="offcab-model-hint">套餐电池型号：<strong>${escapeHtml(
+      pkg
+    )}</strong> · 绑定须与套餐一致</p>`;
+  }
+
   function validateRecycle(sn, user) {
     const b = BATTERIES[sn];
     if (!b) return { ok: false, msg: "电池编码不存在（体系外不可回收）" };
@@ -406,6 +447,18 @@
   function validateBind(sn, user) {
     const b = BATTERIES[sn];
     if (!b) return { ok: false, msg: "电池编码不存在" };
+    if (!user.packageOk) return { ok: false, msg: "用户套餐未生效，无法绑定电池" };
+    const pkgM = normalizeModel(userPackageBatteryModel(user));
+    const batM = normalizeModel(batteryModelSpec(sn));
+    if (pkgM && batM && pkgM !== batM) {
+      return {
+        ok: false,
+        msg: `电池型号（${b.modelSpec || batM}）与用户套餐型号（${userPackageBatteryModel(
+          user
+        )}）不一致`,
+        code: "model_mismatch",
+      };
+    }
     if (b.boundUserPhone && b.boundUserPhone !== user.phone)
       return { ok: false, msg: "电池已绑定其他用户" };
     if (b.inCabinet) return { ok: false, msg: "电池仍在柜内，请走远程出电或柜机流程" };
@@ -1050,6 +1103,7 @@
     } else if (oc.flowType === "off_pickup") {
       body = `<section class="devstat-sec offcab-sec">
         <div class="devstat-hd"><strong>A · 绑定电池</strong></div>
+        ${renderBindModelHint(user, escapeHtml)}
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind">确认绑定</button>
         <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
@@ -1062,6 +1116,7 @@
       </section>
       <section class="devstat-sec offcab-sec">
         <div class="devstat-hd"><strong>B · 绑定新电池</strong></div>
+        ${renderBindModelHint(user, escapeHtml)}
         ${renderSnInput("bind", oc, escapeAttr)}
         <button type="button" class="btn-primary offcab-btn" data-action="offcab-bind" ${user.waitPickup && !oc.recycledThisSession ? " disabled" : ""}>确认绑定新电</button>
         <button type="button" class="btn-mock offcab-btn" data-action="offcab-user-confirm" data-step="bind">模拟用户扫码确认</button>
@@ -1075,7 +1130,9 @@
           <h1>${escapeHtml(type.label)}</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">${escapeHtml(user.name)} · ${escapeHtml(user.packageLabel)} · ${
+        <p class="ops-hint">${escapeHtml(user.name)} · ${escapeHtml(user.packageLabel)} · 套餐型号 ${escapeHtml(
+          userPackageBatteryModel(user)
+        )} · ${
           user.heldSn ? "持电 " + escapeHtml(user.heldSn) : "待领取/无持电"
         }</p>
         ${body}
@@ -1284,6 +1341,9 @@
     searchUsers,
     userById,
     batteryInfo,
+    DEFAULT_BATTERY_MODEL,
+    userPackageBatteryModel,
+    batteryModelSpec,
     validateRecycle,
     validateBind,
     doRecycle,
