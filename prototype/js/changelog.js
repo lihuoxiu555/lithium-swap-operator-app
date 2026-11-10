@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.107",
+      date: "2026-11-10 10:53",
+      title: "站点 · 绑柜快捷与停用删除",
+      items: [
+        "列表「绑定电柜」：扫码 Mock + SN 校验归属/占站/平台注册",
+        "已停用且无在绑柜的站点可删除",
+        "decision-074 · PRD §15.3 · AC-176～180",
+      ],
+    },
+    {
       version: "V1.106",
       date: "2026-11-10 10:28",
       title: "其他 · 员工管理（区域=业务城市）",

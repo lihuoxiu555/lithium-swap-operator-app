@@ -82,10 +82,11 @@
     sites: {
       status: "all",
       keyword: "",
-      view: "list", // list | detail | form
+      view: "list", // list | detail | form | bindCabinet
       siteId: null,
       formId: null, // null | id | "new"
       form: {},
+      bindSn: "",
       listScroll: 0,
       mapQuery: "",
       mapZoom: 2,
@@ -3010,6 +3011,10 @@
     return !!(state.session && state.session.role === "admin");
   }
 
+  function canBindSiteCabinet() {
+    return !!state.session;
+  }
+
   function statusClass(status) {
     if (status === "在营") return "ok";
     if (status === "建设中") return "warn";
@@ -3017,10 +3022,12 @@
   }
 
   function openSitesList() {
+    if (Sites.refreshSiteCabinetCounts) Sites.refreshSiteCabinetCounts();
     state.sites.view = "list";
     state.sites.siteId = null;
     state.sites.formId = null;
     state.sites.form = {};
+    state.sites.bindSn = "";
     state.screen = "sites";
     render();
     requestAnimationFrame(() => {
@@ -3225,7 +3232,62 @@
     const view = state.sites.view || "list";
     if (view === "detail") return renderSiteDetail();
     if (view === "form") return renderSiteForm();
+    if (view === "bindCabinet") return renderSiteBindCabinet();
     return renderSitesList();
+  }
+
+  function openSiteBindCabinet(siteId) {
+    const site = Sites.getSiteById(siteId);
+    if (!site) {
+      toast("站点不存在");
+      return;
+    }
+    state.sites.siteId = siteId;
+    state.sites.view = "bindCabinet";
+    state.sites.bindSn = "";
+    state.screen = "sites";
+    track("sites_bind_cab_open", { siteId });
+    render();
+  }
+
+  function submitSiteCabinetBind() {
+    const site = Sites.getSiteById(state.sites.siteId);
+    if (!site || !Cabinets) return;
+    const sn = (state.sites.bindSn || $("sites-cab-sn")?.value || "").trim();
+    const r = Cabinets.bindCabinetToSite(sn, site);
+    if (!r.ok) {
+      toast(r.error || "无法绑定");
+      track("sites_bind_cab_fail", { siteId: site.id, code: r.code });
+      return;
+    }
+    Sites.refreshSiteCabinetCounts();
+    track("sites_bind_cab_ok", { siteId: site.id, sn: r.cabinet.sn });
+    toast(`已绑定 ${r.cabinet.sn} → ${site.name}`);
+    openSiteDetail(site.id);
+  }
+
+  function confirmDeleteSite(siteId) {
+    const site = Sites.getSiteById(siteId);
+    if (!site) {
+      toast("站点不存在");
+      return;
+    }
+    if (
+      !window.confirm(
+        `确认删除站点「${site.name}」？\n仅演示：已停用且无在绑电柜的站点可删。`
+      )
+    ) {
+      return;
+    }
+    const r = Sites.deleteSite(siteId);
+    if (r.error) {
+      toast(r.error);
+      track("sites_delete_fail", { siteId });
+      return;
+    }
+    track("sites_delete_ok", { siteId });
+    toast("站点已删除（演示）");
+    openSitesList();
   }
 
   function renderSitesList() {
@@ -3233,6 +3295,7 @@
     const counts = Sites.statusCounts();
     const list = Sites.filterSites({ status: S.status, keyword: S.keyword });
     const editable = canEditSites();
+    const canBind = canBindSiteCabinet();
 
     const tabsHtml = Sites.SITE_STATUS.map((t) => {
       const active = S.status === t.id ? " active" : "";
@@ -3256,9 +3319,13 @@
                     cover.url
                   )}" alt=""><span>${photoN} 张</span></div>`
                 : `<div class="sites-cover empty">未上传</div>`;
-              return `<article class="sites-card" data-action="sites-open" data-id="${escapeAttr(
-                site.id
-              )}">
+              const bindBtn = canBind
+                ? `<button type="button" class="sites-bind-cab" data-action="sites-bind-cab" data-id="${escapeAttr(
+                    site.id
+                  )}">绑定电柜</button>`
+                : "";
+              return `<article class="sites-card">
+          <div class="sites-card-hit" data-action="sites-open" data-id="${escapeAttr(site.id)}">
           <div class="sites-card-hd">
             <div>
               <strong>${escapeHtml(site.name)}</strong>
@@ -3280,6 +3347,8 @@
           </div>
           ${photoCell}
           <div class="sites-card-addr">${escapeHtml(site.address)}</div>
+          </div>
+          <div class="sites-card-actions">${bindBtn}</div>
         </article>`;
             })
             .join("");
@@ -3471,6 +3540,51 @@
             tapAction: "sites-photo-hero-detail",
           })}
           <div class="sites-kv-block">${rows}</div>
+          ${
+            editable && site.status === "已停用" && !site.channelDedicated
+              ? `<button type="button" class="btn-secondary sites-delete-btn" data-action="sites-delete" data-id="${escapeAttr(
+                  site.id
+                )}">删除站点</button>`
+              : ""
+          }
+        </div>
+      </div>`;
+  }
+
+  function renderSiteBindCabinet() {
+    const site = Sites.getSiteById(state.sites.siteId);
+    if (!site) {
+      return `<div class="sites-page"><div class="empty-full">站点不存在<button type="button" class="btn-secondary" data-action="sites-back-list">返回列表</button></div></div>`;
+    }
+    const sn = state.sites.bindSn || "";
+    return `
+      <div class="sites-page sites-page-form">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="sites-bind-back" aria-label="返回">‹</button>
+          <h1>绑定电柜</h1>
+          <span class="sites-header-spacer"></span>
+        </div>
+        <div class="sites-bind-body">
+          <p class="sites-hint">目标站点：<strong>${escapeHtml(site.name)}</strong>（${escapeHtml(
+      site.id
+    )}）</p>
+          <label class="sites-field">电柜编号
+            <input id="sites-cab-sn" type="text" inputmode="latin" value="${escapeAttr(
+              sn
+            )}" placeholder="扫描或输入 SN，如 CAB-IMP-01" />
+          </label>
+          <button type="button" class="btn-secondary sites-scan-btn" data-action="sites-cab-scan">扫一扫（Mock）</button>
+          <ul class="sites-bind-checklist">
+            <li>归属当前运营商（${escapeHtml(
+              (Cabinets && Cabinets.SESSION_OPERATOR && Cabinets.SESSION_OPERATOR.name) || "绿色出行"
+            )}）</li>
+            <li>未绑定其他站点</li>
+            <li>已在平台完成设备注册</li>
+          </ul>
+          <p class="sites-hint">演示 SN：<code>CAB-IMP-01</code> 可绑 · <code>CAB-FOREIGN-01</code> 他网 · <code>CAB-22021</code> 已占用 · <code>CAB-NOREG-01</code> 未注册</p>
+        </div>
+        <div class="sites-footer-bar">
+          <button type="button" class="btn-primary" data-action="sites-cab-bind">确认绑定</button>
         </div>
       </div>`;
   }
@@ -6545,6 +6659,13 @@
       });
     });
 
+    const sitesCabSn = $("sites-cab-sn");
+    if (sitesCabSn) {
+      sitesCabSn.addEventListener("input", () => {
+        state.sites.bindSn = sitesCabSn.value;
+      });
+    }
+
     const sitesKw = $("sites-keyword");
     if (sitesKw) {
       sitesKw.addEventListener("input", () => {
@@ -7457,6 +7578,24 @@
           break;
         case "sites-open":
           openSiteDetail(t.dataset.id);
+          break;
+        case "sites-bind-cab":
+          openSiteBindCabinet(t.dataset.id);
+          break;
+        case "sites-bind-back":
+          openSitesList();
+          break;
+        case "sites-cab-scan":
+          state.sites.bindSn = "CAB-IMP-01";
+          track("sites_bind_cab_scan", { mock: "CAB-IMP-01" });
+          toast("已扫描（Mock：CAB-IMP-01）");
+          render();
+          break;
+        case "sites-cab-bind":
+          submitSiteCabinetBind();
+          break;
+        case "sites-delete":
+          confirmDeleteSite(t.dataset.id);
           break;
         case "sites-add":
           openSiteForm("new");

@@ -525,6 +525,37 @@
     return { site, created: false };
   }
 
+  function refreshSiteCabinetCounts() {
+    const Cabinets = global.OperatorAppCabinets;
+    if (!Cabinets || !Cabinets.cabinetsAtSite) return;
+    SITES.forEach((site) => {
+      const bound = Cabinets.cabinetsAtSite(site.name);
+      site.cabinets = bound.length;
+      site.batteries = bound.reduce((n, c) => n + (c.bats ? c.bats.length : 0), 0);
+    });
+  }
+
+  function deleteSite(siteId) {
+    const site = getSiteById(siteId);
+    if (!site) return { error: "站点不存在" };
+    if (site.status !== "已停用") {
+      return { error: "仅「已停用」状态的站点可删除" };
+    }
+    if (site.channelDedicated) {
+      return { error: "渠道专属站请通过渠道合同处理，不可直接删除" };
+    }
+    refreshSiteCabinetCounts();
+    if (site.cabinets > 0) {
+      return { error: `该站点仍有 ${site.cabinets} 台电柜，请先解绑或移柜` };
+    }
+    const idx = SITES.findIndex((s) => s.id === siteId);
+    if (idx < 0) return { error: "站点不存在" };
+    SITES.splice(idx, 1);
+    return { ok: true };
+  }
+
+  refreshSiteCabinetCounts();
+
   global.OperatorAppSites = {
     SITE_STATUS,
     SITE_TYPES,
@@ -545,6 +576,8 @@
     filterSites,
     statusCounts,
     saveSite,
+    deleteSite,
+    refreshSiteCabinetCounts,
     CITY_CENTERS,
     DEMO_DEVICE,
     MAP_SCALE,

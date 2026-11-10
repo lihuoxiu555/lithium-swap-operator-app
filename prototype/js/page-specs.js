@@ -393,10 +393,22 @@
       fields: [
         { name: "搜索", def: "名称 / 编号 / 地址" },
         { name: "卡片", def: "城市、类型、开放范围、柜/电、封面图或「未上传」" },
+        { name: "绑定电柜", def: "每卡快捷按钮 → 扫码/输入 SN 绑定流程" },
       ],
       enums: ["类型：配送站 / 写字楼 / 渠道专属", "状态：在营 / 建设中 / 已停用"],
       empty: "无匹配站点",
-      roles: "员工无新增/编辑",
+      roles: "员工无新增/编辑；管理员+员工可绑柜",
+    }),
+    "sites:bindCabinet": S({
+      title: "站点 · 绑定电柜",
+      source: "decision-074",
+      fields: [
+        { name: "输入", def: "电柜 SN 或扫一扫（Mock CAB-IMP-01）" },
+        { name: "校验", def: "归属当前运营商 · 未绑他站 · 平台已注册" },
+        { name: "成功", def: "更新电柜站点；刷新站点柜/电计数" },
+      ],
+      error: "他网 / 已占用 / 未注册 → toast",
+      roles: "管理员 + 员工",
     }),
     "sites:detail": S({
       title: "站点详情",
@@ -404,6 +416,7 @@
       fields: [
         { name: "基础", def: "编号、地址、坐标、柜/电、开放范围" },
         { name: "实景", def: "最多 9 张；无图用系统默认背景" },
+        { name: "删除", def: "仅「已停用」且无机柜在绑；渠道专属不可删" },
         { name: "二期能力", def: "详情不展示场费电费 / 站点合伙人 / 站点支出" },
       ],
       empty: "无图=默认背景",
@@ -932,7 +945,9 @@
     if (sc === "daypoolSub" || sc === "daypoolOrders") return "leaseOrders";
     if (sc === "sites") {
       const v = (state.sites && state.sites.view) || "list";
-      return v === "list" ? "sites" : "sites:" + v;
+      if (v === "list") return "sites";
+      if (v === "bindCabinet") return "sites:bindCabinet";
+      return "sites:" + v;
     }
     if (sc === "cabinets") {
       const v = (state.ops && state.ops.cabView) || "list";

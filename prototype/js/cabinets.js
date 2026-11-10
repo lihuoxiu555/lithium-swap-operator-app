@@ -4,6 +4,8 @@
  * 告警 / 组成 / 远程运维 / 端口（后三项标二期，原型可浏览）
  */
 (function (global) {
+  const SESSION_OPERATOR = { id: "OP-SX", name: "绿色出行" };
+
   const CAB_TABS = [
     { id: "all", label: "全部" },
     { id: "online", label: "在线" },
@@ -232,6 +234,57 @@
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "—" }],
       bats: [],
     },
+    {
+      id: "CAB-FOREIGN",
+      sn: "CAB-FOREIGN-01",
+      deviceId: "1782954999999000001",
+      commBoardId: "2401C09999",
+      name: "他网待绑柜",
+      site: "未分配站点",
+      city: "上海",
+      address: "",
+      slots: 12,
+      online: false,
+      powerStatus: "未通电",
+      deviceStatus: "启用",
+      serviceStatus: "启用",
+      swapMode: "正常换电",
+      lastSwap: "—",
+      ownership: "自有",
+      deviceOwnerId: "OP-JD",
+      deviceOwnerName: "京东换电",
+      platformRegistered: true,
+      iccid: "",
+      usedPowerKwh: 0,
+      slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "v3.0" }],
+      bats: [],
+    },
+    {
+      id: "CAB-NOREG",
+      sn: "CAB-NOREG-01",
+      deviceId: "",
+      commBoardId: "",
+      name: "未注册柜",
+      site: "未分配站点",
+      city: "上海",
+      address: "",
+      slots: 12,
+      online: false,
+      powerStatus: "未通电",
+      deviceStatus: "停用",
+      serviceStatus: "停用",
+      swapMode: "正常换电",
+      lastSwap: "—",
+      ownership: "自有",
+      deviceOwnerId: "OP-SX",
+      deviceOwnerName: SESSION_OPERATOR.name,
+      platformRegistered: false,
+      iccid: "",
+      qrBound: false,
+      usedPowerKwh: 0,
+      slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "—" }],
+      bats: [],
+    },
   ];
 
   CABINETS.forEach((c) => {
@@ -240,6 +293,11 @@
       if (c[k] == null) c[k] = d[k];
     });
     if (!c.ports) c.ports = null;
+    if (c.deviceOwnerId == null) c.deviceOwnerId = SESSION_OPERATOR.id;
+    if (c.deviceOwnerName == null) c.deviceOwnerName = SESSION_OPERATOR.name;
+    if (c.platformRegistered == null) {
+      c.platformRegistered = !!(c.deviceId && String(c.deviceId).length > 10 && c.commBoardId);
+    }
   });
 
   const OPS_LOGS = [
@@ -347,6 +405,70 @@
       else counts.offline += 1;
     });
     return counts;
+  }
+
+  function normalizeSn(sn) {
+    return String(sn || "")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "");
+  }
+
+  function getBySn(sn) {
+    const key = normalizeSn(sn);
+    if (!key) return null;
+    return CABINETS.find((c) => normalizeSn(c.sn) === key || normalizeSn(c.id) === key) || null;
+  }
+
+  function cabinetsAtSite(siteName) {
+    const label = String(siteName || "").trim();
+    if (!label) return [];
+    return CABINETS.filter((c) => !isUnassigned(c) && c.site === label);
+  }
+
+  /**
+   * @param {string} sn
+   * @param {{ id: string, name: string, address?: string, city?: string }} site
+   */
+  function validateSiteBinding(sn, site) {
+    const key = normalizeSn(sn);
+    if (!key) return { ok: false, error: "请输入或扫描电柜编号" };
+    const cab = getBySn(key);
+    if (!cab) {
+      return {
+        ok: false,
+        error: "未找到该设备，请确认已在平台注册（演示：CAB-22018 / CAB-IMP-01）",
+        code: "not_registered",
+      };
+    }
+    if (!cab.platformRegistered) {
+      return { ok: false, error: "该电柜未通过平台设备注册，无法绑定", code: "platform_unregistered" };
+    }
+    if (cab.deviceOwnerId !== SESSION_OPERATOR.id) {
+      return {
+        ok: false,
+        error: `该电柜归属「${cab.deviceOwnerName || cab.deviceOwnerId}」，不属于当前运营商`,
+        code: "wrong_operator",
+      };
+    }
+    if (!isUnassigned(cab) && cab.site !== site.name) {
+      return { ok: false, error: `该电柜已绑定「${cab.site}」`, code: "bound_elsewhere" };
+    }
+    return { ok: true, cabinet: cab };
+  }
+
+  function bindCabinetToSite(sn, site) {
+    const v = validateSiteBinding(sn, site);
+    if (!v.ok) return v;
+    const cab = v.cabinet;
+    const wasUnassigned = isUnassigned(cab);
+    cab.site = site.name;
+    cab.city = site.city || cab.city;
+    cab.address = site.address || cab.address;
+    if (!cab.name || cab.name.indexOf("待投放") >= 0) {
+      cab.name = `${site.name}-${cab.sn.slice(-2)}号柜`;
+    }
+    return { ok: true, cabinet: cab, newlyBound: wasUnassigned };
   }
 
   function getById(id) {
@@ -724,6 +846,7 @@
   }
 
   global.OperatorAppCabinets = {
+    SESSION_OPERATOR,
     CAB_TABS,
     MOVE_SITES,
     SWAP_MODES,
@@ -738,6 +861,11 @@
     tabOf,
     tabCounts,
     getById,
+    getBySn,
+    normalizeSn,
+    cabinetsAtSite,
+    validateSiteBinding,
+    bindCabinetToSite,
     siteFilterOptions,
     siteCabinetCount,
     filterCabinets,
