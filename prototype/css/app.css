@@ -5204,19 +5204,23 @@ button.btn-mock.offcab-btn {
   border: none;
   background: transparent;
 }
+.phone-bezel.has-mini-fab .screen-root {
+  padding-bottom: 72px;
+}
 .mini-fab-rider {
   position: absolute;
-  right: 12px;
-  bottom: 68px;
+  right: 10px;
+  bottom: 54px;
   z-index: 30;
   border: 0;
-  padding: 10px 14px;
+  padding: 7px 11px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
   background: linear-gradient(145deg, #3d7bff, #2b5ce6);
-  box-shadow: 0 6px 16px rgba(47, 107, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(47, 107, 255, 0.38);
+  pointer-events: auto;
 }
 .mini-fab-rider.hidden {
   display: none;

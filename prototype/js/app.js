@@ -6887,6 +6887,7 @@
     const show =
       state.clientShell === "miniprogram" && !!state.session && state.screen !== "riderMini";
     fab.classList.toggle("hidden", !show);
+    bezel.classList.toggle("has-mini-fab", show);
   }
 
   function render() {
