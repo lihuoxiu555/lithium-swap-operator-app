@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.110",
+      date: "2026-11-10 14:49",
+      title: "站点绑柜 · 电柜名称",
+      items: [
+        "绑柜页增加电柜名称，默认「站点名-两位序号」按本站已绑自增",
+        "确认绑定写入柜 name；可手动修改",
+      ],
+    },
+    {
       version: "V1.109",
       date: "2026-11-10 11:38",
       title: "非标换电 · 绑定校验套餐电池型号",

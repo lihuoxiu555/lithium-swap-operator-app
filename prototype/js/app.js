@@ -87,6 +87,7 @@
       formId: null, // null | id | "new"
       form: {},
       bindSn: "",
+      bindCabinetName: "",
       listScroll: 0,
       mapQuery: "",
       mapZoom: 2,
@@ -3028,6 +3029,7 @@
     state.sites.formId = null;
     state.sites.form = {};
     state.sites.bindSn = "";
+    state.sites.bindCabinetName = "";
     state.screen = "sites";
     render();
     requestAnimationFrame(() => {
@@ -3350,6 +3352,8 @@
     state.sites.siteId = siteId;
     state.sites.view = "bindCabinet";
     state.sites.bindSn = "";
+    state.sites.bindCabinetName =
+      (Cabinets && Cabinets.suggestCabinetDisplayName && Cabinets.suggestCabinetDisplayName(site)) || "";
     state.screen = "sites";
     track("sites_bind_cab_open", { siteId });
     render();
@@ -3359,15 +3363,16 @@
     const site = Sites.getSiteById(state.sites.siteId);
     if (!site || !Cabinets) return;
     const sn = (state.sites.bindSn || $("sites-cab-sn")?.value || "").trim();
-    const r = Cabinets.bindCabinetToSite(sn, site);
+    const cabName = (state.sites.bindCabinetName || $("sites-cab-name")?.value || "").trim();
+    const r = Cabinets.bindCabinetToSite(sn, site, cabName);
     if (!r.ok) {
       toast(r.error || "无法绑定");
       track("sites_bind_cab_fail", { siteId: site.id, code: r.code });
       return;
     }
     Sites.refreshSiteCabinetCounts();
-    track("sites_bind_cab_ok", { siteId: site.id, sn: r.cabinet.sn });
-    toast(`已绑定 ${r.cabinet.sn} → ${site.name}`);
+    track("sites_bind_cab_ok", { siteId: site.id, sn: r.cabinet.sn, name: r.cabinet.name });
+    toast(`已绑定「${r.cabinet.name}」（${r.cabinet.sn}）→ ${site.name}`);
     openSiteDetail(site.id);
   }
 
@@ -3665,6 +3670,10 @@
       return `<div class="sites-page"><div class="empty-full">站点不存在<button type="button" class="btn-secondary" data-action="sites-back-list">返回列表</button></div></div>`;
     }
     const sn = state.sites.bindSn || "";
+    const cabName =
+      state.sites.bindCabinetName ||
+      (Cabinets && Cabinets.suggestCabinetDisplayName && Cabinets.suggestCabinetDisplayName(site)) ||
+      "";
     return `
       <div class="sites-page sites-page-form">
         <div class="sites-header">
@@ -3681,6 +3690,12 @@
               sn
             )}" placeholder="扫描或输入 SN，如 CAB-IMP-01" />
           </label>
+          <label class="sites-field">电柜名称
+            <input id="sites-cab-name" type="text" value="${escapeAttr(
+              cabName
+            )}" placeholder="站点名称-01，可修改" />
+          </label>
+          <p class="sites-hint">默认按本站已绑数量自增：「${escapeHtml(site.name)}」-<em>01</em>、<em>02</em>…</p>
           <button type="button" class="btn-secondary sites-scan-btn" data-action="sites-cab-scan">扫一扫（Mock）</button>
           <ul class="sites-bind-checklist">
             <li>归属当前运营商（${escapeHtml(
@@ -6783,6 +6798,13 @@
     if (sitesCabSn) {
       sitesCabSn.addEventListener("input", () => {
         state.sites.bindSn = sitesCabSn.value;
+      });
+    }
+
+    const sitesCabName = $("sites-cab-name");
+    if (sitesCabName) {
+      sitesCabName.addEventListener("input", () => {
+        state.sites.bindCabinetName = sitesCabName.value;
       });
     }
 

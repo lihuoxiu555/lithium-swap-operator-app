@@ -426,6 +426,14 @@
     return CABINETS.filter((c) => !isUnassigned(c) && c.site === label);
   }
 
+  /** 站点绑柜默认展示名：站点名称-两位序号，如 饿了么换电站-01 */
+  function suggestCabinetDisplayName(site) {
+    const siteName = String((site && site.name) || "").trim();
+    if (!siteName) return "";
+    const n = cabinetsAtSite(siteName).length + 1;
+    return `${siteName}-${String(n).padStart(2, "0")}`;
+  }
+
   /**
    * @param {string} sn
    * @param {{ id: string, name: string, address?: string, city?: string }} site
@@ -457,7 +465,7 @@
     return { ok: true, cabinet: cab };
   }
 
-  function bindCabinetToSite(sn, site) {
+  function bindCabinetToSite(sn, site, displayName) {
     const v = validateSiteBinding(sn, site);
     if (!v.ok) return v;
     const cab = v.cabinet;
@@ -465,9 +473,8 @@
     cab.site = site.name;
     cab.city = site.city || cab.city;
     cab.address = site.address || cab.address;
-    if (!cab.name || cab.name.indexOf("待投放") >= 0) {
-      cab.name = `${site.name}-${cab.sn.slice(-2)}号柜`;
-    }
+    const name = String(displayName || "").trim();
+    cab.name = name || suggestCabinetDisplayName(site);
     return { ok: true, cabinet: cab, newlyBound: wasUnassigned };
   }
 
@@ -865,6 +872,7 @@
     normalizeSn,
     cabinetsAtSite,
     validateSiteBinding,
+    suggestCabinetDisplayName,
     bindCabinetToSite,
     siteFilterOptions,
     siteCabinetCount,
