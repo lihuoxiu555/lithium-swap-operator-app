@@ -17,6 +17,12 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.110.2",
+      date: "2026-11-10 15:19",
+      title: "绑柜成功 · 进站点电柜列表",
+      items: ["确认绑定后打开该站电柜列表；从列表进绑柜时返回仍回列表"],
+    },
+    {
       version: "V1.110.1",
       date: "2026-11-10 15:17",
       title: "修复 CAB-IMP-01 演示绑柜",
