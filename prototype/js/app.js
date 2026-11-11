@@ -728,12 +728,17 @@
   }
 
   function enterWithIdentity(account, identity) {
+    let dataScopeLabel = identity.dataScopeLabel;
+    if (identity.role === "admin" && identity.dataScope === "all") {
+      const Scope = global.OperatorAppOperatorScope;
+      if (Scope && Scope.adminDataScopeLabel) dataScopeLabel = Scope.adminDataScopeLabel();
+    }
     state.session = {
       account,
       role: identity.role,
       roleLabel: identity.roleLabel,
       dataScope: identity.dataScope,
-      dataScopeLabel: identity.dataScopeLabel,
+      dataScopeLabel,
       siteIds: identity.siteIds || null,
       channelId: identity.channelId || null,
       channelName: identity.channelName || null,
@@ -3229,6 +3234,10 @@
       site_id: result.site.id,
       created: !!result.created,
     });
+    if (result.bizCityAdded) {
+      toast(`已开通业务城市「${result.bizCityAdded}」，运营商数据权限已纳入该城市`);
+      track("operator_biz_city_open", { city: result.bizCityAdded });
+    }
     if (result.created) {
       if (Sites.refreshSiteCabinetCounts) Sites.refreshSiteCabinetCounts();
       state.sites.afterCreateDialog = { siteId: result.site.id };
@@ -3242,6 +3251,7 @@
     }
     toast("站点已保存（原型示意）");
     openSiteDetail(result.site.id);
+    return;
   }
 
   function renderSiteAfterCreateDialog() {

@@ -12,7 +12,11 @@
   ];
 
   const SITE_TYPES = ["配送站", "写字楼", "渠道专属"];
-  const SITE_CITIES = ["上海", "杭州"];
+  function siteCityOptions() {
+    const Scope = global.OperatorAppOperatorScope;
+    if (Scope && Scope.listBizCities) return Scope.listBizCities();
+    return ["上海", "杭州"];
+  }
   const PHOTO_MAX = 9;
   const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
   const PHOTO_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
@@ -496,7 +500,8 @@
         photos: clonePhotos(form.photos).slice(0, PHOTO_MAX),
       };
       SITES.unshift(row);
-      return { site: row, created: true };
+      const bizCityAdded = registerBizCityFromSite(row.city);
+      return { site: row, created: true, bizCityAdded };
     }
 
     const site = getSiteById(siteId);
@@ -522,7 +527,15 @@
       }
       site.photos = clonePhotos(form.photos).slice(0, PHOTO_MAX);
     }
-    return { site, created: false };
+    const bizCityAdded = registerBizCityFromSite(site.city);
+    return { site, created: false, bizCityAdded };
+  }
+
+  function registerBizCityFromSite(city) {
+    const Scope = global.OperatorAppOperatorScope;
+    if (!Scope || !Scope.registerBizCity) return null;
+    const reg = Scope.registerBizCity(city);
+    return reg.added ? reg.city : null;
   }
 
   function refreshSiteCabinetCounts() {
@@ -559,7 +572,10 @@
   global.OperatorAppSites = {
     SITE_STATUS,
     SITE_TYPES,
-    SITE_CITIES,
+    siteCityOptions,
+    get SITE_CITIES() {
+      return siteCityOptions();
+    },
     PHOTO_MAX,
     PHOTO_MAX_BYTES,
     PHOTO_ACCEPT,

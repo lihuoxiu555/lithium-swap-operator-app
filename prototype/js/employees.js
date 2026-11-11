@@ -2,8 +2,11 @@
  * 其他 · 员工管理（对齐 原型-外卖 · 运营商员工 + 区域=业务城市）
  */
 (function (global) {
-  /** 当前运营商已开通业务城市（与 PC / 外卖运营商主体一致口径） */
-  const BIZ_CITIES = ["上海", "杭州", "溧阳", "苏州"];
+  function bizCities() {
+    const Scope = global.OperatorAppOperatorScope;
+    if (Scope && Scope.listBizCities) return Scope.listBizCities();
+    return ["上海", "杭州", "溧阳", "苏州"];
+  }
 
   const PERMISSIONS = [
     { id: "orders.view", label: "订单查看" },
@@ -153,7 +156,7 @@
   function renderList(state, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
     const list = filterList(state.employees.kw, state.employees.cityFilter);
-  const cityOpts = BIZ_CITIES.map(
+  const cityOpts = bizCities().map(
       (c) =>
         `<option value="${escapeAttr(c)}" ${
           state.employees.cityFilter === c ? "selected" : ""
@@ -241,7 +244,7 @@
           <span>${escapeHtml(p.label)}</span>
         </label>`
     ).join("");
-    const cityChecks = BIZ_CITIES.map(
+    const cityChecks = bizCities().map(
       (c) => `<label class="emp-city-chip">
           <input type="checkbox" name="emp-city" value="${escapeAttr(c)}" ${
         (row.regionCities || []).includes(c) ? "checked" : ""
@@ -346,7 +349,7 @@
   }
 
   global.OperatorAppEmployees = {
-    BIZ_CITIES,
+    bizCities,
     PERMISSIONS,
     STORE,
     defaultState,
