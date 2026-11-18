@@ -5938,6 +5938,15 @@
                 p.occupied ? batterySnButton(p.batSn) : "—"
               }</p>
               <p>服务 ${escapeHtml(p.portServiceStatus)} · ${escapeHtml(p.serviceType)}</p>
+              ${
+                !empty
+                  ? `<div class="cab-door-charge">
+              <p>充电电流/电压 <strong>电流 ${p.current} A / 电压 ${p.voltage} V</strong></p>
+              <p>入仓时间 ${escapeHtml(p.inCabinetAt)} · 入仓电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"}</p>
+              <p>本次充电用时 ${escapeHtml(p.chargeDurationLabel)}<span class="cab-door-charge-hint">涓流不计</span></p>
+            </div>`
+                  : ""
+              }
               ${p.locked && p.lockReason ? `<p class="cab-lock-why">锁因：${escapeHtml(p.lockReason)}</p>` : ""}
             </div>
           </div>
@@ -5960,8 +5969,8 @@
             ${cabKvHtml([
               ["端口状态", p.portStatus],
               ["服务类型", p.serviceType],
-              ["端口电流/电压", `电流 ${p.current} / 电压 ${p.voltage}`],
               ["端口服务状态", p.portServiceStatus],
+              ["入仓", `时间 ${p.inCabinetAt} · 电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"} · 有效充电 ${p.chargeDurationLabel}`],
               ["已充电量/时长", `${p.chargedKwh} kWh / ${p.chargeMinutes} 分钟`],
               ["充电器开关", p.chargerOn ? "开" : "关"],
               ["充电器控制", `电流 ${p.chargerCurrent} / 电压 ${p.chargerVoltage}`],

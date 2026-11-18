@@ -4307,6 +4307,10 @@ button.btn-mock.offcab-btn {
 .cab-door-hd { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .cab-door-hd strong { margin-right: 4px; }
 .cab-door-meta p { margin: 4px 0 0; font-size: 12px; color: var(--ink-2); }
+.cab-door-charge { margin-top: 6px; padding: 8px 0 4px; border-top: 1px dashed var(--line, #e8e8e8); }
+.cab-door-charge p { margin: 3px 0 0; }
+.cab-door-charge strong { color: var(--ink-1, #1a1a1a); font-weight: 600; }
+.cab-door-charge-hint { margin-left: 6px; font-size: 10px; color: var(--ink-3, #999); }
 .cab-lock-why { color: var(--warning) !important; }
 .cab-door-ops {
   display: flex;

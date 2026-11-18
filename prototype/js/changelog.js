@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.115",
+      date: "2026-11-18 13:45",
+      title: "格口信息 · 充电摘要外露",
+      items: [
+        "有电仓默认展示充电电流/电压、入仓时间、入仓电量、本次充电用时（涓流不计）",
+        "AC-187",
+      ],
+    },
+    {
       version: "V1.114",
       date: "2026-11-18 13:14",
       title: "人天池 · 额度绑定电池型号",

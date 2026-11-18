@@ -113,9 +113,36 @@
         { id: "M2", type: "充电模块×2", slots: 6, fw: "v2.0.8" },
       ],
       bats: [
-        { port: 1, sn: "BAT-SH-1001", voltage: "60V", soc: 92, health: "正常" },
-        { port: 4, sn: "BAT-SH-1011", voltage: "60V", soc: 67, health: "正常" },
-        { port: 7, sn: "BAT-SH-1018", voltage: "72V", soc: 41, health: "预警" },
+        {
+          port: 1,
+          sn: "BAT-SH-1001",
+          voltage: "60V",
+          soc: 92,
+          health: "正常",
+          inCabinetAt: "今天 10:52",
+          inCabinetSoc: 58,
+          chargeActiveMinutes: 143,
+        },
+        {
+          port: 4,
+          sn: "BAT-SH-1011",
+          voltage: "60V",
+          soc: 67,
+          health: "正常",
+          inCabinetAt: "今天 11:36",
+          inCabinetSoc: 41,
+          chargeActiveMinutes: 96,
+        },
+        {
+          port: 7,
+          sn: "BAT-SH-1018",
+          voltage: "72V",
+          soc: 41,
+          health: "预警",
+          inCabinetAt: "今天 12:18",
+          inCabinetSoc: 28,
+          chargeActiveMinutes: 38,
+        },
       ],
       lastBatteryByVoltage: { "60V": 2, "72V": 1 },
       batteryEverInCabinet: true,
@@ -601,6 +628,15 @@
     return c.ownership || "自有";
   }
 
+  /** 本次充电用时展示（涓流阶段不计入，后端口径由 BMS/桩上报 activeChargeMinutes） */
+  function formatChargeDurationActive(minutes) {
+    if (minutes == null || minutes <= 0) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0) return h + "时" + m + "分";
+    return m + "分钟";
+  }
+
   function portRows(c) {
     if (c.ports && c.ports.length) return c.ports;
     const slots = c.slots || 12;
@@ -608,12 +644,28 @@
     const rows = Array.from({ length: slots }, (_, i) => {
       const bat = bats.find((b) => b.port === i + 1) || null;
       const charging = !!(bat && bat.soc < 95);
+      const inCabinetSoc =
+        bat && bat.inCabinetSoc != null
+          ? bat.inCabinetSoc
+          : bat
+            ? Math.max(12, (bat.soc || 0) - Math.min(48, Math.round((95 - (bat.soc || 0)) * 1.1 + 18)))
+            : null;
+      const chargeActiveMinutes =
+        bat && bat.chargeActiveMinutes != null
+          ? bat.chargeActiveMinutes
+          : bat
+            ? Math.max(0, Math.round(((bat.soc - inCabinetSoc) / 55) * 143))
+            : 0;
+      const inCabinetAt = bat ? bat.inCabinetAt || "今天 10:52" : "—";
       return {
         portNo: i + 1,
         portStatus: bat ? `已插入 · ${bat.sn}` : "没有插上电池",
         serviceType: bat ? "换电" : "—",
-        current: bat ? "2.35" : "0.00",
+        current: bat ? (charging ? "2.35" : bat.soc >= 95 ? "0.00" : "0.35") : "0.00",
         voltage: bat ? "54.20" : "0.00",
+        inCabinetAt,
+        inCabinetSoc,
+        chargeDurationLabel: bat ? (charging || bat.soc < 100 ? formatChargeDurationActive(chargeActiveMinutes) : "—") : "—",
         portServiceStatus: "启用",
         chargedKwh: bat ? ((bat.soc / 100) * 0.96).toFixed(2) : "0.00",
         chargeMinutes: bat ? Math.max(0, Math.round((100 - bat.soc) * 1.2)) : 0,
