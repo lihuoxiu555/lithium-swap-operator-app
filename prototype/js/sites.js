@@ -89,6 +89,8 @@
       publicOpen: false,
       visibilityMode: "whitelist_only",
       photos: [{ id: "ph-jd-01", url: "assets/site-photos/entrance.svg", name: "专属站入口.jpg" }],
+      lastBatteryByVoltage: { "72V": 4 },
+      batteryEverAtSite: true,
     },
     {
       id: "ST-SH-05",
@@ -104,6 +106,7 @@
       channelDedicated: false,
       publicOpen: true,
       photos: [],
+      batteryEverAtSite: false,
     },
     {
       id: "ST-SH-LG",

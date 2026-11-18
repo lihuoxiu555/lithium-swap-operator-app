@@ -17,6 +17,24 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.113",
+      date: "2026-11-18 12:02",
+      title: "站点/电柜列表 · 电池型号汇总",
+      items: [
+        "按电压展示在柜数量；空态最近记录 60V/0；从未 0/0",
+        "decision-079 · AC-185",
+      ],
+    },
+    {
+      version: "V1.112",
+      date: "2026-11-11 18:09",
+      title: "新城市开站 · 纳入运营商数据权限",
+      items: [
+        "保存站点开通新业务城市；员工/站点城市下拉同源",
+        "decision-078 · AC-184",
+      ],
+    },
+    {
       version: "V1.111",
       date: "2026-11-10 15:27",
       title: "新增站点 · 保存后绑柜引导",

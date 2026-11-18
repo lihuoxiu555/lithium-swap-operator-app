@@ -3344,6 +3344,7 @@
               const powered = c.powerStatus === "已通电";
               const enabled = (c.deviceStatus || "启用") === "启用";
               const occ = Cabinets.occupiedCount(c);
+              const batModels = Cabinets.cabinetBatteryModelSummary(c);
               const onlineCls = online ? "ok" : "bad";
               const powerCls = powered ? "ok" : "bad";
               return `<article class="sites-card cab-list-card">
@@ -3366,6 +3367,7 @@
               <div><span>电柜 SN</span><em>${escapeHtml(c.sn)}</em></div>
               <div><span>仓口</span><em>${c.slots}</em></div>
               <div><span>在柜电池</span><em>${occ}</em></div>
+              <div class="sites-card-row-wide"><span>电池型号</span>${renderBatModelSummary(batModels)}</div>
               <div><span>上次换电</span><em>${escapeHtml(c.lastSwap || "—")}</em></div>
             </div>
           </button>
@@ -3450,6 +3452,13 @@
     openSitesList();
   }
 
+  function renderBatModelSummary(summary) {
+    const s = summary || { text: "0/0", mode: "never" };
+    const cls =
+      s.mode === "current" ? "bat-model-sum" : s.mode === "last" ? "bat-model-sum last" : "bat-model-sum never";
+    return `<em class="${cls}">${escapeHtml(s.text)}</em>`;
+  }
+
   function renderSitesList() {
     const S = state.sites;
     const counts = Sites.statusCounts();
@@ -3487,6 +3496,10 @@
                     site.id
                   )}">绑定电柜</button>`
                 : "";
+              const batModels =
+                Cabinets && Cabinets.siteBatteryModelSummary
+                  ? Cabinets.siteBatteryModelSummary(site.name, site)
+                  : { text: "0/0", mode: "never" };
               return `<article class="sites-card">
           <div class="sites-card-hit" data-action="sites-open" data-id="${escapeAttr(site.id)}">
           <div class="sites-card-hd">
@@ -3507,6 +3520,7 @@
               site.channelDedicated ? "brand" : ""
             }">${escapeHtml(range.short)}</em></div>
             <div><span>柜/电</span><em>${site.cabinets} / ${site.batteries}</em></div>
+            <div class="sites-card-row-wide"><span>电池型号</span>${renderBatModelSummary(batModels)}</div>
           </div>
           ${photoCell}
           <div class="sites-card-addr">${escapeHtml(site.address)}</div>
@@ -5688,6 +5702,7 @@
               const powered = c.powerStatus === "已通电";
               const enabled = (c.deviceStatus || "启用") === "启用";
               const occ = Cabinets.occupiedCount(c);
+              const batModels = Cabinets.cabinetBatteryModelSummary(c);
               const onlineCls = online ? "ok" : "bad";
               const powerCls = powered ? "ok" : "bad";
               return `<article class="sites-card cab-list-card">
@@ -5720,6 +5735,7 @@
               <div><span>站点</span><em>${escapeHtml(c.site)}</em></div>
               <div><span>仓口</span><em>${c.slots}</em></div>
               <div><span>在柜电池</span><em>${occ}</em></div>
+              <div class="sites-card-row-wide"><span>电池型号</span>${renderBatModelSummary(batModels)}</div>
               <div><span>通电</span><em class="cab-state ${powerCls}">${escapeHtml(
                 c.powerStatus
               )}</em></div>

@@ -19,6 +19,7 @@
     { id: "世博换电服务点", label: "世博换电服务点" },
     { id: "京东物流专属站", label: "京东物流专属站" },
     { id: "临港偏远站", label: "临港偏远站" },
+    { id: "萧山旧仓站", label: "萧山旧仓站" },
   ];
 
   const SWAP_MODES = ["正常换电", "MQTT离线换电", "蓝牙换电"];
@@ -112,10 +113,12 @@
         { id: "M2", type: "充电模块×2", slots: 6, fw: "v2.0.8" },
       ],
       bats: [
-        { port: 1, sn: "BAT-SH-1001", soc: 92, health: "正常" },
-        { port: 4, sn: "BAT-SH-1011", soc: 67, health: "正常" },
-        { port: 7, sn: "BAT-SH-1018", soc: 41, health: "预警" },
+        { port: 1, sn: "BAT-SH-1001", voltage: "60V", soc: 92, health: "正常" },
+        { port: 4, sn: "BAT-SH-1011", voltage: "60V", soc: 67, health: "正常" },
+        { port: 7, sn: "BAT-SH-1018", voltage: "72V", soc: 41, health: "预警" },
       ],
+      lastBatteryByVoltage: { "60V": 2, "72V": 1 },
+      batteryEverInCabinet: true,
     },
     {
       id: "CAB-22019",
@@ -137,7 +140,9 @@
       iccid: "8986007777888899001",
       usedPowerKwh: 0.74,
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "v3.1.0" }],
-      bats: [{ port: 2, sn: "BAT-SH-1022", soc: 55, health: "正常" }],
+      bats: [{ port: 2, sn: "BAT-SH-1022", voltage: "60V", soc: 55, health: "正常" }],
+      lastBatteryByVoltage: { "60V": 1 },
+      batteryEverInCabinet: true,
     },
     {
       id: "CAB-22050",
@@ -161,7 +166,9 @@
       usedPowerKwh: 0.8,
       exchangeableSpecs: "",
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "v3.2.1" }],
-      bats: [{ port: 5, sn: "BAT-SH-1050", soc: 90, health: "正常" }],
+      bats: [{ port: 5, sn: "BAT-SH-1050", voltage: "72V", soc: 90, health: "正常" }],
+      lastBatteryByVoltage: { "72V": 1 },
+      batteryEverInCabinet: true,
     },
     {
       id: "CAB-22021",
@@ -184,9 +191,35 @@
       usedPowerKwh: 0.62,
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "v3.2.1" }],
       bats: [
-        { port: 3, sn: "BAT-SH-1005", soc: 85, health: "正常" },
-        { port: 8, sn: "BAT-SH-1008", soc: 80, health: "正常" },
+        { port: 3, sn: "BAT-SH-1005", voltage: "60V", soc: 85, health: "正常" },
+        { port: 8, sn: "BAT-SH-1008", voltage: "60V", soc: 80, health: "正常" },
       ],
+      lastBatteryByVoltage: { "60V": 2 },
+      batteryEverInCabinet: true,
+    },
+    {
+      id: "CAB-HZ-OLD01",
+      sn: "CAB-HZ-OLD01",
+      deviceId: "1782954111222333444",
+      commBoardId: "2401C07701",
+      name: "萧山旧仓-1号柜",
+      site: "萧山旧仓站",
+      city: "杭州",
+      address: "杭州市萧山区通惠南路88号",
+      slots: 12,
+      online: false,
+      powerStatus: "未通电",
+      deviceStatus: "停用",
+      serviceStatus: "停用",
+      swapMode: "正常换电",
+      lastSwap: "2026-05-20 14:00",
+      ownership: "自有",
+      iccid: "",
+      usedPowerKwh: 0,
+      slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "v3.0" }],
+      bats: [],
+      lastBatteryByVoltage: { "60V": 2, "72V": 1 },
+      batteryEverInCabinet: true,
     },
     {
       id: "CAB-IMP-01",
@@ -211,6 +244,7 @@
       usedPowerKwh: 0,
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "—" }],
       bats: [],
+      batteryEverInCabinet: false,
     },
     {
       id: "CAB-IMP-02",
@@ -234,6 +268,8 @@
       usedPowerKwh: 0,
       slotModules: [{ id: "M1", type: "主控", slots: 12, fw: "—" }],
       bats: [],
+      lastBatteryByVoltage: { "60V": 1 },
+      batteryEverInCabinet: true,
     },
     {
       id: "CAB-FOREIGN",
@@ -638,6 +674,96 @@
     return (c.bats || []).length;
   }
 
+  function batVoltage(b) {
+    if (b && b.voltage) return String(b.voltage);
+    if (b && b.modelVoltage) return String(b.modelVoltage);
+    return "60V";
+  }
+
+  function sortVoltageKeys(keys) {
+    return [...keys].sort((a, b) => {
+      const na = parseInt(String(a).replace(/\D/g, ""), 10) || 0;
+      const nb = parseInt(String(b).replace(/\D/g, ""), 10) || 0;
+      return na - nb || a.localeCompare(b, "zh-CN");
+    });
+  }
+
+  function countBatsByVoltage(bats) {
+    const m = {};
+    (bats || []).forEach((b) => {
+      const v = batVoltage(b);
+      m[v] = (m[v] || 0) + 1;
+    });
+    return m;
+  }
+
+  function mergeVoltageMaps(into, add) {
+    Object.keys(add || {}).forEach((v) => {
+      into[v] = (into[v] || 0) + add[v];
+    });
+    return into;
+  }
+
+  /** @param {Record<string, number>} counts @param {boolean} forceZero */
+  function formatVoltageCountText(counts, forceZero) {
+    const keys = sortVoltageKeys(Object.keys(counts || {}));
+    if (!keys.length) return null;
+    return keys.map((k) => `${k}/${forceZero ? 0 : counts[k]}个`).join("、");
+  }
+
+  /**
+   * @returns {{ text: string, mode: 'current'|'last'|'never' }}
+   */
+  function cabinetBatteryModelSummary(c) {
+    if (!c) return { text: "0/0", mode: "never" };
+    const cur = countBatsByVoltage(c.bats);
+    if (Object.keys(cur).length) {
+      return { text: formatVoltageCountText(cur, false), mode: "current" };
+    }
+    if (c.batteryEverInCabinet === false) return { text: "0/0", mode: "never" };
+    const last = c.lastBatteryByVoltage;
+    if (last && Object.keys(last).length) {
+      return { text: formatVoltageCountText(last, true), mode: "last" };
+    }
+    return { text: "0/0", mode: "never" };
+  }
+
+  /**
+   * @param {string} siteName
+   * @param {{ lastBatteryByVoltage?: object, batteryEverAtSite?: boolean }|null} siteRow
+   */
+  function siteBatteryModelSummary(siteName, siteRow) {
+    const cabs = cabinetsAtSite(siteName);
+    const cur = {};
+    let anyEverInCab = false;
+    cabs.forEach((c) => {
+      mergeVoltageMaps(cur, countBatsByVoltage(c.bats));
+      if (c.batteryEverInCabinet !== false) anyEverInCab = true;
+    });
+    if (Object.keys(cur).length) {
+      return { text: formatVoltageCountText(cur, false), mode: "current" };
+    }
+    const last = {};
+    cabs.forEach((c) => {
+      if (c.batteryEverInCabinet === false) return;
+      anyEverInCab = true;
+      Object.keys(c.lastBatteryByVoltage || {}).forEach((v) => {
+        last[v] = 0;
+      });
+    });
+    if (Object.keys(last).length) {
+      return { text: formatVoltageCountText(last, true), mode: "last" };
+    }
+    const row = siteRow || {};
+    if (row.batteryEverAtSite === false) return { text: "0/0", mode: "never" };
+    if (row.lastBatteryByVoltage && Object.keys(row.lastBatteryByVoltage).length) {
+      return { text: formatVoltageCountText(row.lastBatteryByVoltage, true), mode: "last" };
+    }
+    if (!cabs.length && !anyEverInCab) return { text: "0/0", mode: "never" };
+    if (anyEverInCab) return { text: "0/0", mode: "never" };
+    return { text: "0/0", mode: "never" };
+  }
+
   function opsLogs(sn) {
     return OPS_LOGS.filter((r) => !sn || r.sn === sn);
   }
@@ -880,6 +1006,8 @@
     filterCabinets,
     ownershipLabel,
     occupiedCount,
+    cabinetBatteryModelSummary,
+    siteBatteryModelSummary,
     portRows,
     slotSnapshot,
     opsLogs,

@@ -2337,6 +2337,22 @@ button.btn-mock.offcab-btn {
   font-weight: 550;
 }
 .sites-card-rows em.brand { color: var(--brand); }
+.sites-card-row-wide {
+  grid-column: 1 / -1;
+}
+.bat-model-sum {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+.bat-model-sum.last {
+  color: var(--muted, #6b7280);
+  font-weight: 500;
+}
+.bat-model-sum.never {
+  color: var(--muted, #9ca3af);
+  font-weight: 500;
+}
 .sites-cover {
   display: flex;
   align-items: center;
