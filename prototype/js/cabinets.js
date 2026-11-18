@@ -127,7 +127,7 @@
           port: 4,
           sn: "BAT-SH-1011",
           voltage: "60V",
-          soc: 67,
+          soc: 97,
           health: "正常",
           inCabinetAt: "今天 11:36",
           inCabinetSoc: 41,
@@ -628,6 +628,9 @@
     return c.ownership || "自有";
   }
 
+  /** SOC 达到该值即进入涓流；本次充电用时仅统计低于该值的恒流阶段（后端对齐 activeChargeMinutes） */
+  const TRICKLE_SOC_MIN = 95;
+
   /** 本次充电用时展示（涓流阶段不计入，后端口径由 BMS/桩上报 activeChargeMinutes） */
   function formatChargeDurationActive(minutes) {
     if (minutes == null || minutes <= 0) return "—";
@@ -638,40 +641,47 @@
   }
 
   function portRows(c) {
-    if (c.ports && c.ports.length) return c.ports;
+    if (c.ports && c.ports.length && c.ports[0] && "chargePhase" in c.ports[0]) return c.ports;
     const slots = c.slots || 12;
     const bats = c.bats || [];
     const rows = Array.from({ length: slots }, (_, i) => {
       const bat = bats.find((b) => b.port === i + 1) || null;
-      const charging = !!(bat && bat.soc < 95);
+      const soc = bat ? bat.soc : null;
+      const constantCharge = !!(bat && soc < TRICKLE_SOC_MIN);
+      const trickle = !!(bat && soc >= TRICKLE_SOC_MIN && soc < 100);
+      const chargePhase = !bat ? "idle" : soc >= 100 ? "full" : trickle ? "trickle" : constantCharge ? "constant" : "idle";
       const inCabinetSoc =
         bat && bat.inCabinetSoc != null
           ? bat.inCabinetSoc
           : bat
-            ? Math.max(12, (bat.soc || 0) - Math.min(48, Math.round((95 - (bat.soc || 0)) * 1.1 + 18)))
+            ? Math.max(12, (bat.soc || 0) - Math.min(48, Math.round((TRICKLE_SOC_MIN - (bat.soc || 0)) * 1.1 + 18)))
             : null;
+      const spanToTrickle = inCabinetSoc != null ? Math.max(1, TRICKLE_SOC_MIN - inCabinetSoc) : 1;
+      const deltaConstant =
+        bat && inCabinetSoc != null ? Math.max(0, Math.min(TRICKLE_SOC_MIN, soc) - inCabinetSoc) : 0;
       const chargeActiveMinutes =
         bat && bat.chargeActiveMinutes != null
           ? bat.chargeActiveMinutes
           : bat
-            ? Math.max(0, Math.round(((bat.soc - inCabinetSoc) / 55) * 143))
+            ? Math.max(0, Math.round((deltaConstant / spanToTrickle) * 143))
             : 0;
       const inCabinetAt = bat ? bat.inCabinetAt || "今天 10:52" : "—";
       return {
         portNo: i + 1,
         portStatus: bat ? `已插入 · ${bat.sn}` : "没有插上电池",
         serviceType: bat ? "换电" : "—",
-        current: bat ? (charging ? "2.35" : bat.soc >= 95 ? "0.00" : "0.35") : "0.00",
+        chargePhase,
+        current: bat ? (constantCharge ? "2.35" : trickle ? "0.35" : "0.00") : "0.00",
         voltage: bat ? "54.20" : "0.00",
         inCabinetAt,
         inCabinetSoc,
-        chargeDurationLabel: bat ? (charging || bat.soc < 100 ? formatChargeDurationActive(chargeActiveMinutes) : "—") : "—",
+        chargeDurationLabel: bat ? formatChargeDurationActive(chargeActiveMinutes) : "—",
         portServiceStatus: "启用",
         chargedKwh: bat ? ((bat.soc / 100) * 0.96).toFixed(2) : "0.00",
         chargeMinutes: bat ? Math.max(0, Math.round((100 - bat.soc) * 1.2)) : 0,
-        chargerOn: charging,
-        chargerCurrent: charging ? "5.00" : "0.00",
-        chargerVoltage: charging ? "54.00" : "0.00",
+        chargerOn: !!(bat && soc < 100),
+        chargerCurrent: constantCharge ? "5.00" : trickle ? "0.50" : "0.00",
+        chargerVoltage: bat && (constantCharge || trickle) ? "54.00" : "0.00",
         batCurrent: bat ? "0.00" : "0.00",
         batVoltage: bat ? "54.20" : "0.00",
         batVoltageDiff: bat ? "0.02" : "0.00",
@@ -1061,6 +1071,7 @@
     cabinetBatteryModelSummary,
     siteBatteryModelSummary,
     portRows,
+    TRICKLE_SOC_MIN,
     slotSnapshot,
     opsLogs,
     refreshCabinet,

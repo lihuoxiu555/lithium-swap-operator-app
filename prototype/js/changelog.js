@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.116",
+      date: "2026-11-18 15:30",
+      title: "格口充电 · 涓流 SOC≥95%",
+      items: [
+        "SOC 达 95% 视为涓流；用时仅计恒流段；4 仓演示涓流态",
+        "decision-081 · AC-188",
+      ],
+    },
+    {
       version: "V1.115",
       date: "2026-11-18 13:45",
       title: "格口信息 · 充电摘要外露",

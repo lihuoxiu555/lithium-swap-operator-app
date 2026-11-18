@@ -4311,6 +4311,7 @@ button.btn-mock.offcab-btn {
 .cab-door-charge p { margin: 3px 0 0; }
 .cab-door-charge strong { color: var(--ink-1, #1a1a1a); font-weight: 600; }
 .cab-door-charge-hint { margin-left: 6px; font-size: 10px; color: var(--ink-3, #999); }
+.cab-bat-visual.trickle i { background: linear-gradient(180deg, #ffb347 0%, #ff8c00 100%); }
 .cab-lock-why { color: var(--warning) !important; }
 .cab-door-ops {
   display: flex;

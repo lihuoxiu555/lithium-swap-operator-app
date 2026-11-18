@@ -5912,7 +5912,15 @@
         const soc = p.batSoc;
         const fill = soc == null ? 0 : Math.max(6, Math.min(100, soc));
         const empty = !p.occupied;
-        const chargeTag = empty ? "空仓" : p.chargerOn ? "充电" : soc >= 95 ? "满电" : "在柜";
+        const chargeTag = empty
+          ? "空仓"
+          : p.chargePhase === "constant"
+            ? "充电"
+            : p.chargePhase === "trickle"
+              ? "涓流"
+              : p.chargePhase === "full"
+                ? "满电"
+                : "在柜";
         const extraCmds = Cabinets.PORT_CMDS.filter((cmd) => cmd.extra)
           .map(
             (cmd) =>
@@ -5923,7 +5931,7 @@
           .join("");
         return `<article class="cab-door" id="cab-port-${p.portNo}">
           <div class="cab-door-top">
-            <div class="cab-bat-visual ${empty ? "empty" : soc >= 95 ? "full" : p.chargerOn ? "chg" : ""}">
+            <div class="cab-bat-visual ${empty ? "empty" : p.chargePhase === "full" ? "full" : p.chargePhase === "trickle" ? "trickle" : p.chargePhase === "constant" ? "chg" : ""}">
               <em>${empty ? "空" : soc + "%"}</em>
               <i style="height:${empty ? 8 : fill}%"></i>
             </div>
@@ -5943,7 +5951,7 @@
                   ? `<div class="cab-door-charge">
               <p>充电电流/电压 <strong>电流 ${p.current} A / 电压 ${p.voltage} V</strong></p>
               <p>入仓时间 ${escapeHtml(p.inCabinetAt)} · 入仓电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"}</p>
-              <p>本次充电用时 ${escapeHtml(p.chargeDurationLabel)}<span class="cab-door-charge-hint">涓流不计</span></p>
+              <p>本次充电用时 ${escapeHtml(p.chargeDurationLabel)}<span class="cab-door-charge-hint">SOC≥${Cabinets.TRICKLE_SOC_MIN}% 涓流，不计用时</span></p>
             </div>`
                   : ""
               }
