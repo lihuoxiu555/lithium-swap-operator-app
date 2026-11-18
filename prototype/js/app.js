@@ -730,7 +730,7 @@
   function enterWithIdentity(account, identity) {
     let dataScopeLabel = identity.dataScopeLabel;
     if (identity.role === "admin" && identity.dataScope === "all") {
-      const Scope = global.OperatorAppOperatorScope;
+      const Scope = window.OperatorAppOperatorScope;
       if (Scope && Scope.adminDataScopeLabel) dataScopeLabel = Scope.adminDataScopeLabel();
     }
     state.session = {

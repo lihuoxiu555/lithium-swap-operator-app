@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.118",
+      date: "2026-11-18 15:38",
+      title: "修复双身份选管理员无响应",
+      items: [
+        "enterWithIdentity 浏览器端改用 window.OperatorAppOperatorScope",
+        "AC-04",
+      ],
+    },
+    {
       version: "V1.117",
       date: "2026-11-18 15:35",
       title: "格口信息 · 入格口与充至95%用时",
