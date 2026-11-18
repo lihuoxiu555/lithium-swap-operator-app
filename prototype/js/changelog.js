@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.114",
+      date: "2026-11-18 13:14",
+      title: "人天池 · 额度绑定电池型号",
+      items: [
+        "对齐 decision-151：多型号池、批发价×型号、渠道端登记分配",
+        "decision-080 · AC-186",
+      ],
+    },
+    {
       version: "V1.113",
       date: "2026-11-18 12:02",
       title: "站点/电柜列表 · 电池型号汇总",

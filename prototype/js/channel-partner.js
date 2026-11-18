@@ -27,33 +27,53 @@
     },
   };
 
-  const DAY_POOL = {
-    id: "QP-2601",
-    name: "顺丰浦东人天池",
-    sellerName: OPERATOR_NAME,
-    totalDays: 10000,
-    giftedDays: 0,
-    availableDays: 55,
-    frozenDays: 12,
-    consumedDays: 9933,
-    wholesalePrice: 8.5,
-    validFrom: "2026-01-01",
-    validTo: "2026-12-31",
-    status: "余额不足",
-    warnSms: true,
-    balancePct: 0.55,
-  };
+  /** decision-151：渠道×运营商×电池型号 各一池 */
+  const DAY_POOLS = [
+    {
+      id: "QP-2601",
+      batteryModel: "48V30Ah",
+      name: "顺丰·48V30Ah人天池",
+      sellerName: OPERATOR_NAME,
+      totalDays: 10000,
+      giftedDays: 0,
+      availableDays: 55,
+      frozenDays: 12,
+      consumedDays: 9933,
+      wholesalePrice: 8.5,
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+      status: "余额不足",
+      warnSms: true,
+      balancePct: 0.55,
+    },
+    {
+      id: "QP-2601B",
+      batteryModel: "60V30Ah",
+      name: "顺丰·60V30Ah人天池",
+      sellerName: OPERATOR_NAME,
+      totalDays: 2000,
+      giftedDays: 0,
+      availableDays: 1800,
+      frozenDays: 0,
+      consumedDays: 200,
+      wholesalePrice: 9.5,
+      validFrom: "2026-06-01",
+      validTo: "2026-12-31",
+      status: "使用中",
+      warnSms: false,
+      balancePct: 90,
+    },
+  ];
 
-  const MIN_PURCHASE_DAYS = 100;
-  const MAX_PURCHASE_DAYS = 10000;
-
-  /** @type {Array<object>} 渠道申购单（待运营商确认到账后入账额度明细） */
-  let CHANNEL_PURCHASE_ORDERS = [];
+  function dayPoolWarn() {
+    return DAY_POOLS.find((p) => p.status === "余额不足" || p.warnSms) || DAY_POOLS[0];
+  }
 
   const DAY_POOL_LEDGER = [
-    { id: "PL-001", type: "增购入账", days: 5000, time: "2026-01-02 11:00", remark: "PO-202601-088" },
-    { id: "PL-002", type: "消耗扣减", days: -2, time: "2026-06-09 23:59", remark: "日终确认" },
-    { id: "PL-003", type: "分配冻结", days: -30, time: "2026-05-01 10:00", remark: "王骑手" },
+    { id: "PL-001", poolId: "QP-2601", batteryModel: "48V30Ah", type: "增购入账", days: 5000, time: "2026-01-02 11:00", remark: "PO-202601-088" },
+    { id: "PL-002", poolId: "QP-2601", batteryModel: "48V30Ah", type: "消耗扣减", days: -2, time: "2026-06-09 23:59", remark: "日终确认" },
+    { id: "PL-003", poolId: "QP-2601", batteryModel: "48V30Ah", type: "分配冻结", days: -30, time: "2026-05-01 10:00", remark: "王骑手" },
+    { id: "PL-004", poolId: "QP-2601B", batteryModel: "60V30Ah", type: "增购入账", days: 2000, time: "2026-06-02 10:00", remark: "PO-202606-060" },
   ];
 
   const DAY_TEAMS = [
@@ -64,7 +84,9 @@
       status: "启用",
       isDefault: true,
       createdAt: "2026-01-01",
-      remark: "渠道开户自动创建",
+      remark: "绑定 48V 池 QP-2601",
+      poolId: "QP-2601",
+      batteryModel: "48V30Ah",
     },
     {
       id: "TEAM-WB",
@@ -73,7 +95,9 @@
       status: "启用",
       isDefault: false,
       createdAt: "2026-06-01",
-      remark: "共享主池",
+      remark: "主力 60V 池",
+      poolId: "QP-2601B",
+      batteryModel: "60V30Ah",
     },
     {
       id: "TEAM-NIGHT",
@@ -92,6 +116,8 @@
       name: "王骑手",
       phone: "138****2101",
       team: "默认团队",
+      poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       allocatedDays: 30,
       remainingDays: 18,
       todayEligibility: "已确认消耗",
@@ -103,6 +129,8 @@
       name: "李骑手",
       phone: "139****2102",
       team: "默认团队",
+      poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       allocatedDays: 30,
       remainingDays: 22,
       todayEligibility: "今日可用",
@@ -110,10 +138,27 @@
       status: "在职",
     },
     {
+      id: "U2113",
+      name: "郑骑手",
+      phone: "133****2113",
+      team: "默认团队",
+      poolId: "QP-2601",
+      batteryModel: "48V30Ah",
+      allocatedDays: 20,
+      remainingDays: 18,
+      todayEligibility: "型号不匹配",
+      quotaStatus: "使用中",
+      status: "在职",
+      heldBatteryModel: "60V30Ah",
+      gateNote: "持有 60V 与额度型号不一致，须还电后换型号",
+    },
+    {
       id: "U2112",
       name: "吴骑手",
       phone: "134****2112",
       team: "默认团队",
+      poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       allocatedDays: 30,
       remainingDays: 0,
       todayEligibility: "待还电",
@@ -121,11 +166,31 @@
       status: "在职",
       holdingBattery: true,
     },
+    {
+      id: "U2110",
+      name: "孙骑手",
+      phone: "136****2110",
+      team: "世博车队",
+      poolId: "QP-2601B",
+      batteryModel: "60V30Ah",
+      allocatedDays: 15,
+      remainingDays: 13,
+      todayEligibility: "今日可用",
+      quotaStatus: "使用中",
+      status: "在职",
+    },
+  ];
+
+  const DAY_ALLOC_RIDERS = [
+    { name: "王骑手", team: "默认团队", poolId: "QP-2601", batteryModel: "48V30Ah", allocated: 30, remaining: 18, status: "使用中" },
+    { name: "李骑手", team: "默认团队", poolId: "QP-2601", batteryModel: "48V30Ah", allocated: 30, remaining: 22, status: "使用中" },
+    { name: "孙骑手", team: "世博车队", poolId: "QP-2601B", batteryModel: "60V30Ah", allocated: 15, remaining: 13, status: "使用中" },
   ];
 
   const DAY_ALLOC_LOGS = [
-    { id: "AL-001", riderName: "王骑手", type: "分配", days: 30, time: "2026-05-01 10:00" },
-    { id: "AL-004", riderName: "周骑手", type: "收回", days: 18, time: "2026-06-07 16:20" },
+    { id: "AL-001", riderName: "王骑手", type: "分配", batteryModel: "48V30Ah", poolId: "QP-2601", days: 30, time: "2026-05-01 10:00" },
+    { id: "AL-004", riderName: "周骑手", type: "收回", batteryModel: "48V30Ah", poolId: "QP-2601", days: 18, time: "2026-06-07 16:20" },
+    { id: "AL-005", riderName: "孙骑手", type: "分配", batteryModel: "60V30Ah", poolId: "QP-2601B", days: 15, time: "2026-06-08 09:00" },
   ];
 
   const DAY_CONSUME_RIDER = [
@@ -450,10 +515,7 @@
       dayTab: "pools",
       dayPoolSub: "list",
       ridersSub: "list",
-      allocSub: "riders",
-      allocView: "home",
-      allocRiderId: null,
-      allocForm: { days: "30", remark: "" },
+      allocSub: "logs",
       consumeSub: "rider",
       linksSub: "packages",
       commissionSub: "summary",
@@ -461,91 +523,8 @@
       creditView: "home",
       depositProofs: null,
       depositForm: { amount: "10000", transferRef: "", transferDate: "" },
-      dayPoolView: "home",
-      purchaseForm: null,
       view: "hub",
     };
-  }
-
-  function defaultPurchaseForm(session) {
-    const p = profile(session);
-    const now = new Date();
-    const y = now.getFullYear();
-    const orderSuffix = String(now.getTime()).slice(-4);
-    return {
-      totalDays: "1000",
-      validFrom: DAY_POOL.validFrom || `${y}-01-01`,
-      validTo: DAY_POOL.validTo || `${y}-12-31`,
-      orderNo: `PO-${y}${String(now.getMonth() + 1).padStart(2, "0")}-${orderSuffix}`,
-      payChannel: "offline",
-      onlinePayMethod: "微信扫码",
-      transferRef: "",
-      payerAccount: "",
-      remark: "向签约运营商增购人天",
-      wholesalePrice: p.wholesalePrice || DAY_POOL.wholesalePrice,
-    };
-  }
-
-  function formatPurchaseTime(d) {
-    const dt = d instanceof Date ? d : new Date();
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(
-      dt.getHours()
-    )}:${pad(dt.getMinutes())}`;
-  }
-
-  function submitDayPoolPurchase(ch, session, raw) {
-    const days = Math.floor(Number(raw.totalDays));
-    if (!Number.isFinite(days) || days < MIN_PURCHASE_DAYS) {
-      return { error: `购买人天数至少 ${MIN_PURCHASE_DAYS} 人天` };
-    }
-    if (days > MAX_PURCHASE_DAYS) {
-      return { error: `单次最多 ${MAX_PURCHASE_DAYS.toLocaleString("zh-CN")} 人天` };
-    }
-    const orderNo = String(raw.orderNo || "").trim();
-    if (!orderNo) {
-      return { error: "请填写采购单号" };
-    }
-    const payChannel = raw.payChannel === "online" ? "online" : "offline";
-    const transferRef = String(raw.transferRef || "").trim();
-    if (payChannel === "offline" && !transferRef) {
-      return { error: "线下打款请填写银行流水号（付款回单）" };
-    }
-    const p = profile(session);
-    const unitPrice = Number(raw.wholesalePrice) || p.wholesalePrice || DAY_POOL.wholesalePrice;
-    const amount = Math.round(days * unitPrice * 100) / 100;
-    const now = new Date();
-    const row = {
-      id: orderNo,
-      poolId: DAY_POOL.id,
-      poolName: DAY_POOL.name,
-      channelName: p.channelName,
-      operatorName: p.operatorName,
-      days,
-      unitPrice,
-      amount,
-      payChannel,
-      payMethod:
-        payChannel === "online"
-          ? raw.onlinePayMethod || "微信扫码"
-          : "对公转账",
-      orderStatus: payChannel === "online" ? "待支付" : "待确认到账",
-      payStatus: payChannel === "online" ? "待支付" : "待付款",
-      transferRef: payChannel === "offline" ? transferRef : "",
-      payerAccount: payChannel === "offline" ? String(raw.payerAccount || "").trim() || "—" : "—",
-      validFrom: String(raw.validFrom || "").trim() || DAY_POOL.validFrom,
-      validTo: String(raw.validTo || "").trim() || DAY_POOL.validTo,
-      remark: String(raw.remark || "").trim(),
-      createdAt: formatPurchaseTime(now),
-    };
-    CHANNEL_PURCHASE_ORDERS.unshift(row);
-    ch.dayPoolView = "home";
-    ch.purchaseForm = defaultPurchaseForm(session);
-    const msg =
-      payChannel === "online"
-        ? "已创建在线支付单（Mock），请完成支付"
-        : "增购申请已提交，请等待运营商确认到账";
-    return { ok: true, message: msg, order: row };
   }
 
   function getDepositProofs(ch) {
@@ -645,15 +624,16 @@
     let warn = "";
     let cards = "";
     if (isChannelDay(session)) {
+      const warnPool = dayPoolWarn();
       warn = `<div class="channel-warn-banner"><strong>人天额度池余额不足</strong>：${escapeHtml(
-        DAY_POOL.name
-      )} 可用 <strong>${DAY_POOL.availableDays}</strong> 人天（已短信预警）。<button type="button" class="link-btn" data-action="open-module" data-id="ch.dayPool">进入额度池</button></div>`;
+        warnPool.name
+      )}（${escapeHtml(warnPool.batteryModel)}）可用 <strong>${warnPool.availableDays}</strong> 人天。预警按单型号池计算（decision-151）。<button type="button" class="link-btn" data-action="open-module" data-id="ch.dayPool">进入额度池</button></div>`;
       cards = `
         <div class="channel-kpi-grid">
-          <div class="channel-kpi warn"><span>人天池可用</span><strong>${DAY_POOL.availableDays} 人天</strong></div>
+          <div class="channel-kpi warn"><span>48V 池可用</span><strong>${DAY_POOLS[0].availableDays} 人天</strong></div>
+          <div class="channel-kpi"><span>60V 池可用</span><strong>${DAY_POOLS[1].availableDays} 人天</strong></div>
           <div class="channel-kpi"><span>在职骑手</span><strong>${DAY_RIDERS.filter((r) => r.status === "在职").length}</strong></div>
           <div class="channel-kpi"><span>签约运营商</span><strong>${escapeHtml(p.operatorName)}</strong></div>
-          <div class="channel-kpi warn"><span>额度池预警</span><strong>${escapeHtml(DAY_POOL.id)}</strong></div>
         </div>`;
     } else {
       cards = `
@@ -672,120 +652,6 @@
         ${cards}
         <div class="channel-card-list" style="margin-top:12px">${contractPanel(session, escapeHtml)}</div>
         <p class="ops-hint channel-page-note">对应 PC「总览」；明细见工作台各模块（与 CHANNEL_NAV 一致）。</p>
-      </div>`;
-  }
-
-  function riderById(id) {
-    return DAY_RIDERS.find((r) => r.id === id) || null;
-  }
-
-  function pushAllocLog(riderName, type, days, remark) {
-    DAY_ALLOC_LOGS.unshift({
-      id: "AL-" + String(Date.now()).slice(-6),
-      riderName,
-      type,
-      days,
-      time: formatPurchaseTime(new Date()),
-      remark: remark || "",
-    });
-  }
-
-  function submitAllocateQuota(ch, riderId, raw) {
-    const rider = riderById(riderId);
-    if (!rider || rider.status !== "在职") {
-      return { error: "骑手不存在或已离职" };
-    }
-    const days = Math.floor(Number(raw.days));
-    if (!Number.isFinite(days) || days <= 0) {
-      return { error: "请输入有效人天数" };
-    }
-    if (days > DAY_POOL.availableDays) {
-      return { error: `额度池可用不足（当前 ${DAY_POOL.availableDays} 人天）` };
-    }
-    DAY_POOL.availableDays -= days;
-    DAY_POOL.frozenDays += days;
-    rider.allocatedDays = (rider.allocatedDays || 0) + days;
-    rider.remainingDays = (rider.remainingDays || 0) + days;
-    rider.quotaStatus = "使用中";
-    pushAllocLog(rider.name, "分配", days, raw.remark);
-    ch.allocView = "home";
-    ch.allocRiderId = null;
-    return { ok: true, message: `已向 ${rider.name} 分配 ${days} 人天` };
-  }
-
-  function submitRecoverQuota(ch, riderId, raw) {
-    const rider = riderById(riderId);
-    if (!rider || rider.status !== "在职") {
-      return { error: "骑手不存在或已离职" };
-    }
-    const max = rider.remainingDays || 0;
-    const days = Math.floor(Number(raw.days));
-    if (!Number.isFinite(days) || days <= 0) {
-      return { error: "请输入有效人天数" };
-    }
-    if (days > max) {
-      return { error: `不得超过剩余人天（${max}）` };
-    }
-    rider.remainingDays = max - days;
-    rider.allocatedDays = Math.max(0, (rider.allocatedDays || 0) - days);
-    if (rider.remainingDays <= 0) {
-      rider.quotaStatus = "已用尽";
-    }
-    DAY_POOL.availableDays += days;
-    DAY_POOL.frozenDays = Math.max(0, DAY_POOL.frozenDays - days);
-    pushAllocLog(rider.name, "收回", days, raw.remark);
-    ch.allocView = "home";
-    ch.allocRiderId = null;
-    return { ok: true, message: `已收回 ${rider.name} ${days} 人天` };
-  }
-
-  function renderAllocForm(ch, ctx) {
-    const { escapeHtml, escapeAttr } = ctx;
-    const mode = ch.allocView;
-    const rider = riderById(ch.allocRiderId);
-    if (!rider || (mode !== "allocate" && mode !== "recover")) {
-      return `<p class="empty-inline">未选择骑手</p>`;
-    }
-    const f = ch.allocForm || { days: "30", remark: "" };
-    const isAlloc = mode === "allocate";
-    const defaultDays = isAlloc
-      ? String(Math.min(30, DAY_POOL.availableDays))
-      : String(rider.remainingDays || 0);
-    const daysVal = f.days != null && f.days !== "" ? f.days : defaultDays;
-    const maxDays = isAlloc ? DAY_POOL.availableDays : rider.remainingDays || 0;
-    return `
-      <p class="ops-hint">${isAlloc ? "从额度池可用余额分配给骑手个人额度。" : "收回未使用人天回额度池（Mock 即时入账）。"}</p>
-      <div class="sites-form-body channel-deposit-form">
-        <div class="sites-field">
-          <label>额度池</label>
-          <input type="text" readonly value="${escapeAttr(
-            `${DAY_POOL.id} · 可用 ${DAY_POOL.availableDays} 人天`
-          )}" />
-        </div>
-        <div class="sites-field">
-          <label>骑手</label>
-          <input type="text" readonly value="${escapeAttr(
-            `${rider.name} · ${rider.team} · 剩余 ${rider.remainingDays}/${rider.allocatedDays} 人天`
-          )}" />
-        </div>
-        <div class="sites-field">
-          <label for="ch-alloc-days">${isAlloc ? "分配人天数" : "收回人天数"}</label>
-          <input id="ch-alloc-days" type="number" inputmode="numeric" min="1" max="${maxDays}"
-            value="${escapeAttr(daysVal)}" ${maxDays <= 0 ? "disabled" : ""} />
-          <p class="ops-hint">${isAlloc ? `最多 ${maxDays} 人天` : `最多收回 ${maxDays} 人天`}</p>
-        </div>
-        <div class="sites-field">
-          <label for="ch-alloc-remark">备注</label>
-          <textarea id="ch-alloc-remark" rows="2">${escapeHtml(
-            f.remark || (isAlloc ? "分配给骑手换电使用" : "手动收回未使用额度")
-          )}</textarea>
-        </div>
-      </div>
-      <div class="sites-form-footer">
-        <button type="button" class="sites-footer-ghost" data-action="ch-alloc-form-back">取消</button>
-        <button type="button" class="sites-footer-primary" data-action="ch-alloc-submit" data-mode="${escapeAttr(
-          mode
-        )}" ${maxDays <= 0 ? "disabled" : ""}>确认${isAlloc ? "分配" : "收回"}</button>
       </div>`;
   }
 
@@ -811,6 +677,7 @@
           )}</strong><span class="sites-tag">${escapeHtml(t.status)}</span></div>
           <div class="channel-card-kv">${renderKv(
             [
+              ["绑定池", `${escapeHtml(t.batteryModel || "—")} · ${escapeHtml(t.poolId || "—")}`],
               ["在职", `${t.riderCount} 人`],
               ["默认团队", t.isDefault ? "是" : "否"],
               ["创建", escapeHtml(t.createdAt)],
@@ -829,25 +696,21 @@
             [
               ["手机", escapeHtml(r.phone)],
               ["团队", escapeHtml(r.team)],
+              ["额度型号", `${escapeHtml(r.batteryModel)} · ${escapeHtml(r.poolId)}`],
               ["剩余/分配", `${r.remainingDays}/${r.allocatedDays} 人天`],
               ["今日资格", escapeHtml(r.todayEligibility)],
+              ...(r.gateNote ? [["提示", escapeHtml(r.gateNote)]] : []),
             ],
             escapeHtml
           )}</div></article>`
       ).join("");
     }
-    return `<p class="ops-hint channel-page-note">登记骑手与团队管理；扣减统一走渠道唯一额度池。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
+    return `<p class="ops-hint channel-page-note">登记骑手与团队；消耗从骑手绑定的<strong>型号池</strong>扣减。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
   }
 
   function renderDayAlloc(ch, ctx) {
-    if (ch.allocView === "allocate" || ch.allocView === "recover") {
-      return renderAllocForm(ch, ctx);
-    }
     const { escapeHtml, escapeAttr } = ctx;
-    const sub = ch.allocSub || "riders";
-    const poolHint = `<p class="ops-hint channel-page-note">额度池 <strong>${escapeHtml(
-      DAY_POOL.id
-    )}</strong> 可用 <strong>${DAY_POOL.availableDays}</strong> 人天 · 冻结 ${DAY_POOL.frozenDays} 人天</p>`;
+    const sub = ch.allocSub || "logs";
     const subTabs = `<div class="sites-tabs channel-subtabs">${renderSubTabs(
       [
         ["riders", "按骑手"],
@@ -860,55 +723,35 @@
     )}</div>`;
     let body = "";
     if (sub === "riders") {
-      body = DAY_RIDERS.filter((r) => r.status === "在职")
-        .map((r) => {
-          const canRecover = (r.remainingDays || 0) > 0;
-          const canAlloc = DAY_POOL.availableDays > 0;
-          return `<article class="sites-card channel-card">
-          <div class="sites-card-hd"><strong>${escapeHtml(r.name)}</strong><span class="sites-tag">${escapeHtml(
-            r.quotaStatus
-          )}</span></div>
-          <div class="channel-card-kv">${renderKv(
+      body = DAY_ALLOC_RIDERS.map(
+        (r) =>
+          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
             [
+              ["骑手", escapeHtml(r.name)],
               ["团队", escapeHtml(r.team)],
-              ["分配/剩余", `${r.allocatedDays}/${r.remainingDays} 人天`],
-              ["今日资格", escapeHtml(r.todayEligibility)],
+              ["型号/池", `${escapeHtml(r.batteryModel)} · ${escapeHtml(r.poolId)}`],
+              ["分配/剩余", `${r.allocated}/${r.remaining} 人天`],
               ["状态", escapeHtml(r.status)],
             ],
             escapeHtml
-          )}</div>
-          <div class="channel-card-ft">
-            <div class="channel-card-ft-row">
-              <button type="button" class="btn-primary channel-card-btn" data-action="ch-alloc-open" data-mode="allocate" data-rider-id="${escapeAttr(
-                r.id
-              )}" ${canAlloc ? "" : "disabled"}>分配额度</button>
-              <button type="button" class="btn-secondary channel-card-btn" data-action="ch-alloc-open" data-mode="recover" data-rider-id="${escapeAttr(
-                r.id
-              )}" ${canRecover ? "" : "disabled"}>收回额度</button>
-            </div>
-          </div>
-        </article>`;
-        })
-        .join("");
+          )}</div></article>`
+      ).join("");
     } else {
-      body =
-        DAY_ALLOC_LOGS.length === 0
-          ? `<div class="empty-full"><div class="icon">📒</div>暂无变动记录</div>`
-          : DAY_ALLOC_LOGS.map(
-              (l) =>
-                `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
-                  [
-                    ["骑手", escapeHtml(l.riderName)],
-                    ["类型", escapeHtml(l.type)],
-                    ["人天", String(l.days)],
-                    ["时间", escapeHtml(l.time)],
-                    l.remark ? ["备注", escapeHtml(l.remark)] : null,
-                  ].filter(Boolean),
-                  escapeHtml
-                )}</div></article>`
-            ).join("");
+      body = DAY_ALLOC_LOGS.map(
+        (l) =>
+          `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
+            [
+              ["骑手", escapeHtml(l.riderName)],
+              ["型号/池", `${escapeHtml(l.batteryModel)} · ${escapeHtml(l.poolId)}`],
+              ["类型", escapeHtml(l.type)],
+              ["人天", String(l.days)],
+              ["时间", escapeHtml(l.time)],
+            ],
+            escapeHtml
+          )}</div></article>`
+      ).join("");
     }
-    return `${poolHint}<p class="ops-hint">向骑手分配或收回人天额度（对齐 PC dayPool · 额度分配）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
+    return `<p class="ops-hint channel-page-note">分配须选型号池；换型号须收回→还电→再分配→再领电（decision-151）。</p>${subTabs}<div class="channel-card-list">${body}</div>`;
   }
 
   function renderExceptionInbox(session, ctx, itemId) {
@@ -974,125 +817,7 @@
       </div>`;
   }
 
-  function renderPurchaseOrdersBlock(escapeHtml) {
-    if (!CHANNEL_PURCHASE_ORDERS.length) return "";
-    const cards = CHANNEL_PURCHASE_ORDERS.slice(0, 5)
-      .map(
-        (o) =>
-          `<article class="sites-card channel-card"><div class="sites-card-hd"><strong>${escapeHtml(
-            o.id
-          )}</strong><span class="sites-tag">${escapeHtml(o.orderStatus)}</span></div>
-          <div class="channel-card-kv">${renderKv(
-            [
-              ["人天 / 金额", `${o.days} 人天 · ¥${o.amount.toLocaleString("zh-CN")}`],
-              ["支付", escapeHtml(o.payMethod)],
-              ["提交时间", escapeHtml(o.createdAt)],
-              o.transferRef ? ["流水号", escapeHtml(o.transferRef)] : null,
-            ].filter(Boolean),
-            escapeHtml
-          )}</div>
-          <p class="ops-hint" style="margin:8px 0 0">对公<strong>附言请填采购单号</strong>；确认到账后写入「额度明细」。</p>
-          </article>`
-      )
-      .join("");
-    return `<div class="channel-section-hd">最近申购</div>${cards}`;
-  }
-
-  function renderDayPoolPurchaseForm(ch, session, ctx) {
-    const { escapeHtml, escapeAttr } = ctx;
-    const p = profile(session);
-    const f = ch.purchaseForm || defaultPurchaseForm(session);
-    const offline = f.payChannel !== "online";
-    return `
-      <p class="ops-hint">向签约运营商按批发价采购人天；<strong>一运营商一池</strong>，增购入账同一池（对齐 PC decision-114/115）。</p>
-      <div class="sites-form-body channel-deposit-form" id="ch-purchase-form">
-        <div class="sites-field">
-          <label>入账额度池</label>
-          <input type="text" readonly value="${escapeAttr(
-            `${DAY_POOL.id} · ${DAY_POOL.name}（唯一池）`
-          )}" />
-        </div>
-        <div class="sites-field">
-          <label>渠道商</label>
-          <input type="text" readonly value="${escapeAttr(p.channelName)}" />
-        </div>
-        <div class="sites-field">
-          <label>售卖方（运营商）</label>
-          <input type="text" readonly value="${escapeAttr(p.operatorName)}" />
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-days">购买人天数</label>
-          <input id="ch-purchase-days" type="number" inputmode="numeric" min="${MIN_PURCHASE_DAYS}" max="${MAX_PURCHASE_DAYS}"
-            value="${escapeAttr(f.totalDays)}" />
-          <p class="ops-hint">${MIN_PURCHASE_DAYS}～${MAX_PURCHASE_DAYS.toLocaleString(
-      "zh-CN"
-    )} 人天/次</p>
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-valid-from">生效日期</label>
-          <input id="ch-purchase-valid-from" type="date" value="${escapeAttr(f.validFrom)}" />
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-valid-to">失效日期</label>
-          <input id="ch-purchase-valid-to" type="date" value="${escapeAttr(f.validTo)}" />
-        </div>
-        <div class="sites-field">
-          <label>批发单价（元/人天）</label>
-          <input type="text" readonly value="${escapeAttr(String(f.wholesalePrice))}" />
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-order-no">采购单号</label>
-          <input id="ch-purchase-order-no" type="text" value="${escapeAttr(f.orderNo)}" />
-          <p class="ops-hint">对公转账附言请填此单号</p>
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-pay">支付渠道</label>
-          <select id="ch-purchase-pay">
-            <option value="offline"${offline ? " selected" : ""}>线下打款</option>
-            <option value="online"${!offline ? " selected" : ""}>在线支付</option>
-          </select>
-        </div>
-        <div class="sites-field" id="ch-purchase-online-wrap" style="${offline ? "display:none" : ""}">
-          <label for="ch-purchase-online-method">在线方式</label>
-          <select id="ch-purchase-online-method">
-            <option${f.onlinePayMethod === "微信扫码" ? " selected" : ""}>微信扫码</option>
-            <option${f.onlinePayMethod === "支付宝扫码" ? " selected" : ""}>支付宝扫码</option>
-          </select>
-        </div>
-        <div id="ch-purchase-offline-wrap" style="${offline ? "" : "display:none"}">
-          <p class="ops-hint">流水号为付款回单证据；认款以<strong>金额 + 附言（采购单号）</strong>为主。不填转账日。</p>
-          <div class="sites-field">
-            <label for="ch-purchase-transfer-ref">银行流水号</label>
-            <input id="ch-purchase-transfer-ref" type="text" placeholder="付款回单流水号"
-              value="${escapeAttr(f.transferRef || "")}" />
-          </div>
-          <div class="sites-field">
-            <label for="ch-purchase-payer">付款账户（建议）</label>
-            <input id="ch-purchase-payer" type="text" placeholder="对公户名或账号后四位"
-              value="${escapeAttr(f.payerAccount || "")}" />
-          </div>
-        </div>
-        <div class="sites-field">
-          <label for="ch-purchase-remark">备注</label>
-          <textarea id="ch-purchase-remark" rows="2">${escapeHtml(f.remark || "")}</textarea>
-        </div>
-        <div class="sites-field">
-          <label>收款信息（只读）</label>
-          <p class="ops-hint" style="margin:4px 0 0">开户名：${escapeHtml(
-            p.operatorName
-          )} · 招商银行上海分行 · 对公专户（演示）</p>
-        </div>
-      </div>
-      <div class="sites-form-footer">
-        <button type="button" class="sites-footer-ghost" data-action="ch-day-purchase-back">取消</button>
-        <button type="button" class="sites-footer-primary" data-action="ch-day-purchase-submit">提交申购</button>
-      </div>`;
-  }
-
-  function renderDayPool(ch, ctx, session) {
-    if ((ch.dayPoolView || "home") === "purchaseForm") {
-      return renderDayPoolPurchaseForm(ch, session, ctx);
-    }
+  function renderDayPool(ch, ctx) {
     const { escapeHtml, escapeAttr } = ctx;
     const tab = ch.dayTab || "pools";
     const mainTabs = DAY_POOL_TABS.map(
@@ -1122,6 +847,7 @@
           (l) =>
             `<article class="sites-card channel-card"><div class="channel-card-kv">${renderKv(
               [
+                ["池/型号", `${escapeHtml(l.poolId)} · ${escapeHtml(l.batteryModel)}`],
                 ["类型", escapeHtml(l.type)],
                 ["人天", String(l.days)],
                 ["时间", escapeHtml(l.time)],
@@ -1131,26 +857,29 @@
             )}</div></article>`
         ).join("");
       } else {
-        body = `<article class="sites-card channel-card">
-          <div class="sites-card-hd"><strong>${escapeHtml(DAY_POOL.name)}</strong><span class="sites-tag warn">${escapeHtml(
-            DAY_POOL.status
+        body = DAY_POOLS.map(
+          (pool) => `<article class="sites-card channel-card">
+          <div class="sites-card-hd"><strong>${escapeHtml(pool.name)}</strong><span class="sites-tag ${pool.status === "余额不足" ? "warn" : ""}">${escapeHtml(
+            pool.status
           )}</span></div>
           <div class="channel-card-kv">${renderKv(
             [
-              ["池 ID", escapeHtml(DAY_POOL.id)],
-              ["售卖方", escapeHtml(DAY_POOL.sellerName)],
-              ["总购买", `${DAY_POOL.totalDays - DAY_POOL.giftedDays} 人天`],
-              ["赠送", DAY_POOL.giftedDays ? `${DAY_POOL.giftedDays} 人天` : "—"],
-              ["可用/冻结/已消耗", `${DAY_POOL.availableDays} / ${DAY_POOL.frozenDays} / ${DAY_POOL.consumedDays}`],
-              ["余额比例", `${DAY_POOL.balancePct}%`],
-              ["有效期", `${escapeHtml(DAY_POOL.validFrom)} ~ ${escapeHtml(DAY_POOL.validTo)}`],
+              ["池 ID", escapeHtml(pool.id)],
+              ["电池型号", escapeHtml(pool.batteryModel)],
+              ["售卖方", escapeHtml(pool.sellerName)],
+              ["总购买", `${pool.totalDays - (pool.giftedDays || 0)} 人天`],
+              ["赠送", pool.giftedDays ? `${pool.giftedDays} 人天` : "—"],
+              ["可用/冻结/已消耗", `${pool.availableDays} / ${pool.frozenDays} / ${pool.consumedDays}`],
+              ["余额比例", `${pool.balancePct}%`],
+              ["有效期", `${escapeHtml(pool.validFrom)} ~ ${escapeHtml(pool.validTo)}`],
             ],
             escapeHtml
           )}</div>
           <div class="channel-card-ft">
-            <button type="button" class="btn-primary channel-card-btn" data-action="ch-day-purchase-open">增购人天额度</button>
+            <button type="button" class="btn-secondary channel-card-btn" data-action="ch-mock-toast" data-msg="增购同型号人天（Mock）">增购 ${escapeHtml(pool.batteryModel)}</button>
           </div>
-        </article>${renderPurchaseOrdersBlock(escapeHtml)}`;
+        </article>`
+        ).join("");
       }
     } else if (tab === "consume") {
       const sub = ch.consumeSub || "rider";
@@ -1207,7 +936,7 @@
     }
 
     return `
-      <p class="ops-hint channel-page-note">额度池概况与消耗；登记/分配见工作台；无额度持电见待办·异常。</p>
+      <p class="ops-hint channel-page-note">按电池型号多池；分配须指定型号池，领电须型号匹配（decision-151）。登记/分配见工作台。</p>
       <div class="lease-filters"><div class="sites-tabs sites-tabs-scroll" role="tablist">${mainTabs}</div></div>
       ${subTabs}
       <div class="channel-card-list">${body}</div>`;
@@ -1550,7 +1279,7 @@
   }
 
   function renderModuleBody(moduleId, ch, session, ctx) {
-    if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx, session);
+    if (moduleId === "ch.dayPool") return renderDayPool(ch, ctx);
     if (moduleId === "ch.dayRiders") return renderDayRiders(ch, ctx);
     if (moduleId === "ch.dayAlloc") return renderDayAlloc(ch, ctx);
     if (moduleId === "ch.settlement") return renderSettlement(session, ctx);
@@ -1573,26 +1302,8 @@
     }
     const { escapeHtml, session: s } = ctx;
     const creditForm = mod === "ch.credit" && ch.creditView === "depositForm";
-    const purchaseForm = mod === "ch.dayPool" && ch.dayPoolView === "purchaseForm";
-    const allocForm =
-      mod === "ch.dayAlloc" &&
-      (ch.allocView === "allocate" || ch.allocView === "recover");
-    const backAction = creditForm
-      ? "ch-credit-form-back"
-      : purchaseForm
-        ? "ch-day-purchase-back"
-        : allocForm
-          ? "ch-alloc-form-back"
-          : "ch-partner-back";
-    const pageTitle = creditForm
-      ? "提交打款凭证"
-      : purchaseForm
-        ? "购买人天额度"
-        : allocForm
-          ? ch.allocView === "allocate"
-            ? "分配人天额度"
-            : "收回人天额度"
-          : moduleTitle(mod);
+    const backAction = creditForm ? "ch-credit-form-back" : "ch-partner-back";
+    const pageTitle = creditForm ? "提交打款凭证" : moduleTitle(mod);
     return `
       <div class="sites-page ops-page">
         <div class="sites-header">
@@ -1623,13 +1334,6 @@
     isChannelLink,
     scopeHint,
     submitDepositProof,
-    submitDayPoolPurchase,
-    submitAllocateQuota,
-    submitRecoverQuota,
-    riderById,
-    defaultPurchaseForm,
-    MIN_PURCHASE_DAYS,
-    MAX_PURCHASE_DAYS,
     exceptionCount,
     exceptionSummaries,
     getExceptionById,

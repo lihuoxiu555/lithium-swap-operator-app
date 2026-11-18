@@ -102,9 +102,10 @@
       source: "原型-外卖 · dayPool 子集",
       fields: [
         { name: "主 Tab", def: "额度池 / 消耗明细 / 零售价" },
-        { name: "额度池子 Tab", def: "额度池列表 / 额度明细" },
+        { name: "额度池子 Tab", def: "多型号池列表 / 额度明细（含 poolId+型号）" },
+        { name: "型号池", def: "decision-151：48V30Ah、60V30Ah 各一池" },
       ],
-      note: "无额度持电骑手推送待办·异常，非工作台模块",
+      note: "余额不足按单池预警；无额度持电见待办·异常",
       roles: "人天池渠道商 channelDay",
     }),
     "chPartner:dayRiders": S({
@@ -558,22 +559,26 @@
     "channels:assets": S({
       title: "渠道管理 · 渠道权益",
       source: "PRD §24.3",
-      fields: [{ name: "子 Tab", def: "人天池 + 渠道分销；额度调整、查看变动" }],
+      fields: [
+        { name: "子 Tab", def: "人天池 + 渠道分销" },
+        { name: "人天池", def: "按型号多池卡片；池含 batteryModel、调整/变动" },
+      ],
     }),
     "channels:quotaPricing": S({
       title: "渠道管理 · 人天批发价",
-      source: "PC 平台设置 → 人天批发价 · decision-104",
+      source: "PC 平台设置 → 人天批发价 · decision-104 · decision-151",
       fields: [
-        { name: "默认价", def: "无渠道 · 新建签约继承；平台标准价只读" },
-        { name: "渠道覆盖", def: "批发单价 + 最低起购；新增/编辑 Mock 保存" },
-        { name: "Mock", def: "列表 2 条（默认+顺丰）；临时渠道待新增配置" },
+        { name: "默认价", def: "无渠道 · 按型号默认批发；平台标准价只读不分型号" },
+        { name: "渠道覆盖", def: "渠道×电池型号 · 批发单价 + 最低起购" },
+        { name: "Mock", def: "默认 48V/60V + 顺丰 48V/60V + 临时 48V" },
       ],
     }),
     "channels:quotaForm": S({
       title: "人天批发价 · 新增/编辑",
       source: "PC 新增渠道批发价表单",
       fields: [
-        { name: "渠道商", def: "新增必选：未配置批发价的人天池签约（如临时渠道）" },
+        { name: "渠道商", def: "新增必选人天池签约" },
+        { name: "电池型号", def: "必选；同渠道可多型号各配一条" },
         { name: "批发单价", def: "元/人天；默认继承平台标准价可改" },
         { name: "最低起购", def: "人天整数" },
         { name: "状态", def: "生效 / 停用" },

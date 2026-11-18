@@ -7991,11 +7991,12 @@
         }
         case "ch-quota-new": {
           if (!Channels) break;
-          const pending = Channels.dayPoolContractsForQuota().filter(
-            (c) => !Channels.quotaPriceForChannel(c.channelId)
+          const models = Channels.OPERATOR_BATTERY_MODELS || ["48V30Ah", "60V30Ah"];
+          const pending = Channels.dayPoolContractsForQuota().filter((c) =>
+            models.some((m) => !Channels.quotaPairExists(c.channelId, m))
           );
           if (!pending.length) {
-            toast("所有人天池渠道已配置批发价，请在列表中编辑");
+            toast("所有人天池渠道×型号已配置批发价，请在列表中编辑");
             break;
           }
           state.channel.tab = "quotaPricing";

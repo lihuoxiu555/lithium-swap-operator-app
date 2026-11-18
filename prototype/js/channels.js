@@ -38,6 +38,8 @@
   ];
 
   const PLATFORM_STD_DAY_PRICE = 8.5;
+  /** decision-151：人天批发价按渠道 × 电池型号 */
+  const OPERATOR_BATTERY_MODELS = ["48V30Ah", "60V30Ah", "48V20Ah"];
 
   /** @type {Array<object>} 平台设置 → 人天批发价 Mock */
   let operatorDayQuotaPrices = [
@@ -46,7 +48,18 @@
       operatorId: OPERATOR_ID,
       channelId: "*",
       channelName: "默认批发价",
-      wholesalePrice: 8.5,
+      batteryModel: "48V30Ah",
+      wholesalePrice: 9.0,
+      minDays: 500,
+      status: "生效",
+    },
+    {
+      id: "OP-Q-DEFB",
+      operatorId: OPERATOR_ID,
+      channelId: "*",
+      channelName: "默认批发价",
+      batteryModel: "60V30Ah",
+      wholesalePrice: 10.0,
       minDays: 500,
       status: "生效",
     },
@@ -55,8 +68,29 @@
       operatorId: OPERATOR_ID,
       channelId: "CH-SF",
       channelName: "顺丰同城渠道",
+      batteryModel: "48V30Ah",
       wholesalePrice: 8.5,
       minDays: 1000,
+      status: "生效",
+    },
+    {
+      id: "OP-Q-SFB",
+      operatorId: OPERATOR_ID,
+      channelId: "CH-SF",
+      channelName: "顺丰同城渠道",
+      batteryModel: "60V30Ah",
+      wholesalePrice: 9.5,
+      minDays: 500,
+      status: "生效",
+    },
+    {
+      id: "OP-Q-TEMP",
+      operatorId: OPERATOR_ID,
+      channelId: "CH-TEMP",
+      channelName: "临时渠道",
+      batteryModel: "48V30Ah",
+      wholesalePrice: 8.5,
+      minDays: 500,
       status: "生效",
     },
   ];
@@ -379,6 +413,7 @@
       operatorId: "OP-SX",
       operatorName: PAYEE_OPERATOR,
       poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       days: 10000,
       unitPrice: 8.5,
       amount: 85000,
@@ -396,6 +431,7 @@
       operatorId: "OP-SX",
       operatorName: PAYEE_OPERATOR,
       poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       days: 500,
       unitPrice: 8.5,
       amount: 4250,
@@ -412,6 +448,7 @@
       operatorId: "OP-SX",
       operatorName: PAYEE_OPERATOR,
       poolId: "QP-2601",
+      batteryModel: "48V30Ah",
       days: 2000,
       unitPrice: 8.5,
       amount: 17000,
@@ -430,6 +467,7 @@
       operatorId: "OP-SX",
       operatorName: PAYEE_OPERATOR,
       poolId: null,
+      batteryModel: "48V30Ah",
       days: 300,
       unitPrice: 8.5,
       amount: 2550,
@@ -446,14 +484,17 @@
       operatorId: "OP-SX",
       operatorName: PAYEE_OPERATOR,
       poolId: null,
-      days: 150,
-      unitPrice: 8.5,
-      amount: 1275,
-      payMethod: "微信扫码",
-      orderStatus: "支付中",
-      payStatus: "支付中",
-      createdAt: "2026-06-10 15:05",
+      batteryModel: "60V30Ah",
+      days: 800,
+      unitPrice: 9.5,
+      amount: 7600,
+      payMethod: "对公转账",
+      orderStatus: "待确认到账",
+      payStatus: "待付款",
+      createdAt: "2026-06-12 09:00",
       payTime: null,
+      transferRef: "20260612100060",
+      offlineVoucher: "20260612100060",
     },
   ];
 
@@ -556,7 +597,8 @@
   let dayPools = [
     {
       id: "QP-2601",
-      name: "顺丰浦东人天池",
+      name: "顺丰·48V30Ah人天池",
+      batteryModel: "48V30Ah",
       ownerId: "CH-SF",
       ownerName: "顺丰同城渠道",
       sellerId: "OP-SX",
@@ -572,8 +614,27 @@
       validTo: "2026-12-31",
     },
     {
+      id: "QP-2601B",
+      name: "顺丰·60V30Ah人天池",
+      batteryModel: "60V30Ah",
+      ownerId: "CH-SF",
+      ownerName: "顺丰同城渠道",
+      sellerId: "OP-SX",
+      sellerName: PAYEE_OPERATOR,
+      totalDays: 2000,
+      availableDays: 1800,
+      frozenDays: 0,
+      consumedDays: 200,
+      wholesalePrice: 9.5,
+      orderNo: "PO-202606-060",
+      status: "使用中",
+      validFrom: "2026-06-01",
+      validTo: "2026-12-31",
+    },
+    {
       id: "QP-2602",
-      name: "临时渠道人天池",
+      name: "临时渠道·48V30Ah人天池",
+      batteryModel: "48V30Ah",
       ownerId: "CH-TEMP",
       ownerName: "临时渠道",
       sellerId: "OP-SX",
@@ -881,9 +942,22 @@
       });
   }
 
-  function quotaPriceForChannel(channelId) {
+  function quotaPriceForChannel(channelId, batteryModel) {
+    const model = batteryModel || null;
+    if (model) {
+      return operatorDayQuotaPrices.find(
+        (q) =>
+          q.operatorId === OPERATOR_ID && q.channelId === channelId && q.batteryModel === model
+      );
+    }
     return operatorDayQuotaPrices.find(
       (q) => q.operatorId === OPERATOR_ID && q.channelId === channelId
+    );
+  }
+
+  function quotaPairExists(channelId, batteryModel) {
+    return !!operatorDayQuotaPrices.find(
+      (q) => q.operatorId === OPERATOR_ID && q.channelId === channelId && q.batteryModel === batteryModel
     );
   }
 
@@ -934,13 +1008,18 @@
     if (editId === "new") {
       const channelId = form.channelId;
       if (!channelId || channelId === "*") return { ok: false, msg: "请选择渠道" };
-      if (quotaPriceForChannel(channelId)) return { ok: false, msg: "该渠道已配置" };
+      const batteryModel = String(form.batteryModel || "").trim();
+      if (!batteryModel) return { ok: false, msg: "请选择电池型号" };
+      if (quotaPairExists(channelId, batteryModel)) {
+        return { ok: false, msg: "该渠道×型号已配置" };
+      }
       const c = channelContracts.find((x) => x.channelId === channelId);
       operatorDayQuotaPrices.push({
         id: "OP-Q-" + Date.now(),
         operatorId: OPERATOR_ID,
         channelId,
         channelName: c ? c.channelName : channelId,
+        batteryModel,
         wholesalePrice: price,
         minDays,
         status: form.status || "生效",
@@ -1443,7 +1522,8 @@
     if (settlementMode === "人天池") {
       dayPools.unshift({
         id: "QP-" + Date.now().toString().slice(-4),
-        name: channelName + "人天池",
+        name: channelName + "·48V30Ah人天池",
+        batteryModel: "48V30Ah",
         ownerId: channelId,
         ownerName: channelName,
         sellerId: OPERATOR_ID,
@@ -1500,7 +1580,32 @@
   }
 
   function creditPoolFromDayOrder(o) {
-    const pool = dayPools.find((p) => p.ownerId === o.channelId) || dayPools[0];
+    const model = o.batteryModel || "48V30Ah";
+    let pool =
+      (o.poolId && dayPools.find((p) => p.id === o.poolId)) ||
+      dayPools.find((p) => p.ownerId === o.channelId && p.batteryModel === model);
+    if (!pool) {
+      const c = channelContracts.find((x) => x.channelId === o.channelId);
+      pool = {
+        id: "QP-" + Date.now().toString().slice(-4),
+        name: (c ? c.channelName : o.channelName) + "·" + model + "人天池",
+        batteryModel: model,
+        ownerId: o.channelId,
+        ownerName: c ? c.channelName : o.channelName,
+        sellerId: OPERATOR_ID,
+        sellerName: PAYEE_OPERATOR,
+        totalDays: 0,
+        availableDays: 0,
+        frozenDays: 0,
+        consumedDays: 0,
+        wholesalePrice: o.unitPrice || 8.5,
+        orderNo: o.id,
+        status: "使用中",
+        validFrom: formatLocal().slice(0, 10),
+        validTo: "2026-12-31",
+      };
+      dayPools.unshift(pool);
+    }
     if (!pool) return;
     pool.availableDays = (pool.availableDays || 0) + (o.days || 0);
     pool.totalDays = (pool.totalDays || 0) + (o.days || 0);
@@ -1514,7 +1619,7 @@
       balanceAfter: pool.availableDays,
       operator: PAYEE_OPERATOR,
       ref: o.id,
-      reason: "确认到账 · 人天采购",
+      reason: `确认到账 · ${model} 人天采购`,
     });
   }
 
@@ -1711,6 +1816,7 @@
       rows = renderChannelKvRows(
         [
           ["渠道商", escapeHtml(o.channelName)],
+          ["电池型号", escapeHtml(o.batteryModel || "48V30Ah")],
           [
             "人天/金额",
             `<strong>${o.days} 人天</strong> · ¥${o.amount.toLocaleString("zh-CN")}`,
@@ -1783,7 +1889,7 @@
     const subTabs =
       ORDER_SUB_TABS.length > 1
         ? renderSubTabs(ORDER_SUB_TABS, sub, "ch-orders-sub", "sub", escapeHtml, escapeAttr)
-        : `<p class="ops-hint" style="margin:0 14px 8px">人天批发 · 到账后额度池入账</p>`;
+        : `<p class="ops-hint" style="margin:0 14px 8px">人天批发 · 按订单<strong>电池型号</strong>入对应额度池（decision-151）</p>`;
     return subTabs + `<div class="sites-list">${cards}</div>`;
   }
 
@@ -1802,6 +1908,7 @@
             <span class="status-pill ${warn}">${escapeHtml(p.status)}</span>
           </div>
           <div class="sites-card-rows">
+            <div><span>电池型号</span><em>${escapeHtml(p.batteryModel || "—")}</em></div>
             <div><span>可用/总量</span><em>${p.availableDays} / ${p.totalDays} 人天</em></div>
             <div><span>批发价</span><em>¥${p.wholesalePrice}/人天</em></div>
             <div><span>有效期</span><em>${escapeHtml(p.validFrom)} ~ ${escapeHtml(p.validTo)}</em></div>
@@ -2260,6 +2367,7 @@
         const sub = isDef ? "无渠道 · 新建签约继承" : escapeHtml(r.channelId);
         const kv = renderChannelKvRows(
           [
+            ["电池型号", escapeHtml(r.batteryModel || "—")],
             ["平台标准价", `¥${PLATFORM_STD_DAY_PRICE}/人天 · 只读`],
             ["我的批发价", `¥${r.wholesalePrice}/人天`],
             ["最低起购", `${r.minDays} 人天`],
@@ -2269,7 +2377,7 @@
         );
         return `<article class="sites-card channel-card">
           <div class="sites-card-hd">
-            <div class="channel-card-title"><strong>${title}</strong>${isDef ? `<span class="sites-tag ok">默认</span>` : ""}</div>
+            <div class="channel-card-title"><strong>${title}</strong>${isDef ? `<span class="sites-tag ok">默认</span>` : ""}${r.batteryModel ? `<span class="sites-tag">${escapeHtml(r.batteryModel)}</span>` : ""}</div>
             <span class="sites-tag">${sub}</span>
           </div>
           <div class="channel-card-kv">${kv}</div>
@@ -2282,7 +2390,7 @@
       })
       .join("");
     return `
-      <p class="ops-hint channel-page-note">默认价供无渠道/新建签约继承；各渠道可单独覆盖（PC：平台设置 → 人天批发价）。</p>
+      <p class="ops-hint channel-page-note">按 <strong>渠道 × 电池型号</strong> 维护批发价（decision-151）；平台标准日值不分型号。</p>
       <div class="channel-list-toolbar">
         <button type="button" class="btn-primary channel-add-btn" data-action="ch-quota-new">+ 新增渠道批发价</button>
       </div>
@@ -2513,13 +2621,17 @@
     let channelField = "";
     if (isNew) {
       const opts = dayPoolContractsForQuota()
-        .filter((c) => !quotaPriceForChannel(c.channelId))
         .map(
           (c) =>
             `<option value="${escapeAttr(c.channelId)}">${escapeHtml(c.channelName)}</option>`
         )
         .join("");
-      channelField = `<label class="sites-field">渠道商<select id="ch-quota-channelId"><option value="">请选择</option>${opts}</select></label>`;
+      const modelOpts = OPERATOR_BATTERY_MODELS.map(
+        (m) =>
+          `<option value="${escapeAttr(m)}" ${form.batteryModel === m ? "selected" : ""}>${escapeHtml(m)}</option>`
+      ).join("");
+      channelField = `<label class="sites-field">渠道商<select id="ch-quota-channelId"><option value="">请选择</option>${opts}</select></label>
+          <label class="sites-field">电池型号<select id="ch-quota-batteryModel"><option value="">请选择</option>${modelOpts}</select></label>`;
     } else if (row) {
       channelField = `<p class="ops-hint">${escapeHtml(row.channelName)}${
         isDef ? " · 无渠道默认" : ""
@@ -2652,6 +2764,7 @@
     };
     return {
       channelId: isNew ? g("ch-quota-channelId") : undefined,
+      batteryModel: isNew ? g("ch-quota-batteryModel") : undefined,
       wholesalePrice: g("ch-quota-wholesalePrice"),
       minDays: g("ch-quota-minDays"),
       status: g("ch-quota-status"),
@@ -2785,6 +2898,7 @@
   global.OperatorAppChannels = {
     OPERATOR_ID,
     PAYEE_OPERATOR,
+    OPERATOR_BATTERY_MODELS,
     CHANNEL_DEFAULT_CREDIT_LIMIT,
     SETTLEMENT_MODES,
     NEW_CHANNEL_SETTLEMENT_MODES,
@@ -2835,6 +2949,7 @@
     registerOfflineCommissionSettle,
     dayPoolContractsForQuota,
     quotaPriceForChannel,
+    quotaPairExists,
     readQuotaFormFromDom,
     readCardFormFromDom,
     readOfflineSettleFromDom,
