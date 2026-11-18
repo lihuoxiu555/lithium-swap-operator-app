@@ -5949,9 +5949,14 @@
               ${
                 !empty
                   ? `<div class="cab-door-charge">
+              <p>入格口时间 ${escapeHtml(p.inCabinetAt)}</p>
+              <p>入格口电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"}</p>
+              <p>充至${Cabinets.TRICKLE_SOC_MIN}%用时 <strong>${escapeHtml(p.chargeTo95Label)}</strong>${
+                      p.chargeTo95Reached
+                        ? `<span class="cab-door-charge-hint">已达${Cabinets.TRICKLE_SOC_MIN}%</span>`
+                        : `<span class="cab-door-charge-hint">恒流进行中</span>`
+                    }</p>
               <p>充电电流/电压 <strong>电流 ${p.current} A / 电压 ${p.voltage} V</strong></p>
-              <p>入仓时间 ${escapeHtml(p.inCabinetAt)} · 入仓电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"}</p>
-              <p>本次充电用时 ${escapeHtml(p.chargeDurationLabel)}<span class="cab-door-charge-hint">SOC≥${Cabinets.TRICKLE_SOC_MIN}% 涓流，不计用时</span></p>
             </div>`
                   : ""
               }
@@ -5978,7 +5983,12 @@
               ["端口状态", p.portStatus],
               ["服务类型", p.serviceType],
               ["端口服务状态", p.portServiceStatus],
-              ["入仓", `时间 ${p.inCabinetAt} · 电量 ${p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"} · 有效充电 ${p.chargeDurationLabel}`],
+              ["入格口时间", p.inCabinetAt],
+              ["入格口电量", p.inCabinetSoc != null ? p.inCabinetSoc + "%" : "—"],
+              [
+                `充至${Cabinets.TRICKLE_SOC_MIN}%用时`,
+                `${p.chargeTo95Label}${p.chargeTo95Reached ? "（已达95%）" : "（恒流进行中，涓流不计）"}`,
+              ],
               ["已充电量/时长", `${p.chargedKwh} kWh / ${p.chargeMinutes} 分钟`],
               ["充电器开关", p.chargerOn ? "开" : "关"],
               ["充电器控制", `电流 ${p.chargerCurrent} / 电压 ${p.chargerVoltage}`],

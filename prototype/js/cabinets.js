@@ -121,7 +121,8 @@
           health: "正常",
           inCabinetAt: "今天 10:52",
           inCabinetSoc: 58,
-          chargeActiveMinutes: 143,
+          chargeTo95MinutesProjected: 143,
+          chargeConstantMinutesSoFar: 131,
         },
         {
           port: 4,
@@ -131,7 +132,7 @@
           health: "正常",
           inCabinetAt: "今天 11:36",
           inCabinetSoc: 41,
-          chargeActiveMinutes: 96,
+          chargeTo95Minutes: 96,
         },
         {
           port: 7,
@@ -141,7 +142,8 @@
           health: "预警",
           inCabinetAt: "今天 12:18",
           inCabinetSoc: 28,
-          chargeActiveMinutes: 38,
+          chargeConstantMinutesSoFar: 28,
+          chargeTo95MinutesProjected: 102,
         },
       ],
       lastBatteryByVoltage: { "60V": 2, "72V": 1 },
@@ -631,7 +633,6 @@
   /** SOC 达到该值即进入涓流；本次充电用时仅统计低于该值的恒流阶段（后端对齐 activeChargeMinutes） */
   const TRICKLE_SOC_MIN = 95;
 
-  /** 本次充电用时展示（涓流阶段不计入，后端口径由 BMS/桩上报 activeChargeMinutes） */
   function formatChargeDurationActive(minutes) {
     if (minutes == null || minutes <= 0) return "—";
     const h = Math.floor(minutes / 60);
@@ -640,8 +641,33 @@
     return m + "分钟";
   }
 
+  /** 自入格口至 SOC 达 95% 的恒流充电分钟数；未达 95% 为当前恒流已充时长（涓流不计） */
+  function chargeMinutesTo95(bat, soc, inCabinetSoc) {
+    if (!bat || inCabinetSoc == null || soc == null) return { minutes: 0, reached: false };
+    const span = Math.max(1, TRICKLE_SOC_MIN - inCabinetSoc);
+    const reached = soc >= TRICKLE_SOC_MIN;
+    if (reached) {
+      const mins =
+        bat.chargeTo95Minutes != null
+          ? bat.chargeTo95Minutes
+          : bat.chargeActiveMinutes != null
+            ? bat.chargeActiveMinutes
+            : Math.round(((TRICKLE_SOC_MIN - inCabinetSoc) / span) * 143);
+      return { minutes: mins, reached: true };
+    }
+    const delta = Math.max(0, soc - inCabinetSoc);
+    const mins =
+      bat.chargeConstantMinutesSoFar != null
+        ? bat.chargeConstantMinutesSoFar
+        : Math.max(
+            0,
+            Math.round((delta / span) * (bat.chargeTo95MinutesProjected != null ? bat.chargeTo95MinutesProjected : 143))
+          );
+    return { minutes: mins, reached: false };
+  }
+
   function portRows(c) {
-    if (c.ports && c.ports.length && c.ports[0] && "chargePhase" in c.ports[0]) return c.ports;
+    if (c.ports && c.ports.length && c.ports[0] && "chargeTo95Reached" in c.ports[0]) return c.ports;
     const slots = c.slots || 12;
     const bats = c.bats || [];
     const rows = Array.from({ length: slots }, (_, i) => {
@@ -656,16 +682,8 @@
           : bat
             ? Math.max(12, (bat.soc || 0) - Math.min(48, Math.round((TRICKLE_SOC_MIN - (bat.soc || 0)) * 1.1 + 18)))
             : null;
-      const spanToTrickle = inCabinetSoc != null ? Math.max(1, TRICKLE_SOC_MIN - inCabinetSoc) : 1;
-      const deltaConstant =
-        bat && inCabinetSoc != null ? Math.max(0, Math.min(TRICKLE_SOC_MIN, soc) - inCabinetSoc) : 0;
-      const chargeActiveMinutes =
-        bat && bat.chargeActiveMinutes != null
-          ? bat.chargeActiveMinutes
-          : bat
-            ? Math.max(0, Math.round((deltaConstant / spanToTrickle) * 143))
-            : 0;
-      const inCabinetAt = bat ? bat.inCabinetAt || "今天 10:52" : "—";
+      const to95 = bat ? chargeMinutesTo95(bat, soc, inCabinetSoc) : { minutes: 0, reached: false };
+      const inCabinetAt = bat ? bat.inCabinetAt || bat.inSlotAt || "今天 10:52" : "—";
       return {
         portNo: i + 1,
         portStatus: bat ? `已插入 · ${bat.sn}` : "没有插上电池",
@@ -675,7 +693,9 @@
         voltage: bat ? "54.20" : "0.00",
         inCabinetAt,
         inCabinetSoc,
-        chargeDurationLabel: bat ? formatChargeDurationActive(chargeActiveMinutes) : "—",
+        chargeTo95Reached: to95.reached,
+        chargeTo95Label: bat ? formatChargeDurationActive(to95.minutes) : "—",
+        chargeDurationLabel: bat ? formatChargeDurationActive(to95.minutes) : "—",
         portServiceStatus: "启用",
         chargedKwh: bat ? ((bat.soc / 100) * 0.96).toFixed(2) : "0.00",
         chargeMinutes: bat ? Math.max(0, Math.round((100 - bat.soc) * 1.2)) : 0,

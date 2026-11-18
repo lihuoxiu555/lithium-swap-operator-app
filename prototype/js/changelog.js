@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.117",
+      date: "2026-11-18 15:35",
+      title: "格口信息 · 入格口与充至95%用时",
+      items: [
+        "主卡片：入格口时间、入格口电量、充至95%用时（未达标恒流进行中）",
+        "AC-187/188 口径更新",
+      ],
+    },
+    {
       version: "V1.116",
       date: "2026-11-18 15:30",
       title: "格口充电 · 涓流 SOC≥95%",
