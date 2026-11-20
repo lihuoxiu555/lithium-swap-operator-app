@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.130",
+      date: "2026-11-20 11:22",
+      title: "今日数据两块淡蓝分组框",
+      items: [
+        "新/老用户收付、换电三卡各用淡蓝圆角框圈出",
+      ],
+    },
+    {
       version: "V1.129",
       date: "2026-11-20 11:20",
       title: "经营统计加「今日数据」标题",

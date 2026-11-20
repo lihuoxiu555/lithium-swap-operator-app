@@ -584,6 +584,24 @@ button.btn-mock.offcab-btn {
   margin: 4px 16px 2px;
   font-size: 12px;
 }
+.data-stats-compact .today-group {
+  border: 1.5px solid #c5d8ff;
+  background: #f4f8ff;
+  border-radius: 14px;
+  padding: 8px 8px 6px;
+}
+.data-stats-compact .today-group-fund {
+  margin-bottom: 8px;
+}
+.data-stats-compact .today-group-ops {
+  padding: 8px;
+}
+.data-stats-compact .today-group .biz-fund-block:last-child {
+  margin-bottom: 0;
+}
+.data-stats-compact .today-group .summary-card {
+  background: #fff;
+}
 .data-stats-compact .biz-fund-block {
   margin: 0 0 8px;
 }
