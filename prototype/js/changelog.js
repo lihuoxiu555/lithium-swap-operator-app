@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.140",
+      date: "2026-11-20 14:19",
+      title: "收付卡单位上移、过万缩写",
+      items: [
+        "新/老用户：标题改为「收入(元)」「退租(元)」「净收入(元)」，金额行不再跟「元」",
+        "金额 ≥1 万显示 x.xx万，未满 1 万仍显示 x.xx",
+      ],
+    },
+    {
       version: "V1.139",
       date: "2026-11-20 14:08",
       title: "收入减退租等于净收入符号",

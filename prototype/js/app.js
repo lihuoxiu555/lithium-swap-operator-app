@@ -1002,11 +1002,23 @@
       </div>`;
   }
 
+  /** 卡片金额：≥1万显示 x.xx万，否则 x.xx；单位在标题「收入(元)」 */
+  function formatFundYuanDisplay(amountYuan) {
+    const n = Number(amountYuan);
+    if (!isFinite(n)) return "0.00";
+    const abs = Math.abs(n);
+    if (abs >= 10000) {
+      const wan = n / 10000;
+      return wan.toFixed(2) + "万";
+    }
+    return n.toFixed(2);
+  }
+
   function renderFundMetricCard(people, amountYuan, title, opts) {
     const hidePeople = opts && opts.hidePeople;
     const drill = opts && opts.drill;
     const peopleLine = hidePeople ? "" : String(people) + "人";
-    const amountLine = Number(amountYuan).toFixed(2) + "元";
+    const amountLine = formatFundYuanDisplay(amountYuan);
     const cls = `summary-card summary-card-fund${hidePeople ? " is-income" : ""}${drill ? " is-drill" : ""}`;
     const inner = `${drill ? `<i class="card-tap-mark" aria-hidden="true">›</i>` : ""}
       ${hidePeople ? "" : `<div class="fund-people">${escapeHtml(peopleLine)}</div>`}
@@ -1028,11 +1040,11 @@
     return `<div class="biz-fund-block">
       ${label ? `<div class="biz-fund-row-label">${escapeHtml(label)}</div>` : ""}
       <div class="summary-row biz-fund-row" role="group" aria-label="${escapeAttr(label || "今日收付")}">
-      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "收入", { drill: prefix + "-pay" })}
+      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "收入(元)", { drill: prefix + "-pay" })}
       <span class="fund-op fund-op-minus" aria-hidden="true">−</span>
-      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "退租", { drill: prefix + "-refund" })}
+      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "退租(元)", { drill: prefix + "-refund" })}
       <span class="fund-op fund-op-eq" aria-hidden="true">=</span>
-      ${renderFundMetricCard(null, fund.income, "净收入", { hidePeople: true })}
+      ${renderFundMetricCard(null, fund.income, "净收入(元)", { hidePeople: true })}
     </div>
     </div>`;
   }

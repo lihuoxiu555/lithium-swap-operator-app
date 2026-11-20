@@ -662,6 +662,7 @@ button.btn-mock.offcab-btn {
   margin-top: 1px;
   font-size: 9px;
   color: var(--muted);
+  white-space: nowrap;
 }
 .data-stats-compact .summary-card.is-drill,
 .data-stats-compact button.summary-card-fund {
