@@ -383,9 +383,15 @@
           { key: "noSwap3d", val: 6, lab: "3天未换电" },
           { key: "expire3d", val: 3, lab: "3天内到期" },
           {
+            key: "overdueLte3",
+            val: 2,
+            lab: "逾期3天内（含）",
+            link: { action: "open-todo", type: "overdue", bucket: "lte3" },
+          },
+          {
             key: "overdue4to7",
             val: 1,
-            lab: "逾期3~7天内（含）",
+            lab: "逾期4~7天内（含）",
             link: { action: "open-todo", type: "overdue", bucket: "4to7" },
           },
           {
@@ -393,12 +399,6 @@
             val: 1,
             lab: "逾期7天以上",
             link: { action: "open-todo", type: "overdue", bucket: "gt7" },
-          },
-          {
-            key: "overdueLte3",
-            val: 2,
-            lab: "逾期3天内（含）",
-            link: { action: "open-todo", type: "overdue", bucket: "lte3" },
           },
           { key: "frozen", val: personalFrozen, lab: "冻结中" },
         ],

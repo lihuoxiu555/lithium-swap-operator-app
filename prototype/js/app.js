@@ -4181,7 +4181,7 @@
         ? state.todos.overdueBucket === "lte3"
           ? "逾期3天内（含）"
           : state.todos.overdueBucket === "4to7"
-            ? "逾期3~7天内（含）"
+            ? "逾期4~7天内（含）"
             : "逾期7天以上"
         : meta.title;
     return `

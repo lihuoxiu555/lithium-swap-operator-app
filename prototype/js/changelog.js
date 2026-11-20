@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.135",
+      date: "2026-11-20 11:40",
+      title: "逾期三卡按天数升序",
+      items: [
+        "顺序：3天内（含）、4~7天内（含）、7天以上",
+      ],
+    },
+    {
       version: "V1.134",
       date: "2026-11-20 11:38",
       title: "总用户与3天内到期对调",
