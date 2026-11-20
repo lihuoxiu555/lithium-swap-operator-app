@@ -120,7 +120,7 @@
       status: "open",
       subtype: "个人套餐逾期",
       title: "张骑手 · 到期仍持有电池",
-      summary: "已逾期 3 天 · 占用费 ¥30",
+      summary: "已逾期 5 天 · 占用费 ¥50",
       user: "张骑手",
       userId: "U1028",
       phone: "138****1028",
@@ -128,8 +128,8 @@
       sku: "包月30天",
       orderId: "SUB260524001",
       reason: "到期",
-      days: 3,
-      due: 30,
+      days: 5,
+      due: 50,
       dayFee: 10,
       batCode: "BT6060060150025051128831",
       batSn: "BAT-HZ-8831",
@@ -203,6 +203,29 @@
       model: "30V30AH",
       lastSwap: "2026-09-14 20:18",
       applyTime: "2026-09-15 09:10",
+    },
+    {
+      id: "OD-P-03",
+      type: "overdue",
+      status: "open",
+      subtype: "个人套餐逾期",
+      title: "孙骑手 · 到期仍持有电池",
+      summary: "已逾期 12 天 · 占用费 ¥120",
+      user: "孙骑手",
+      userId: "U1088",
+      phone: "135****1088",
+      site: "京东物流专属站",
+      sku: "包月30天",
+      orderId: "SUB260510012",
+      reason: "到期",
+      days: 12,
+      due: 120,
+      dayFee: 10,
+      batCode: "BT6060060150025051129999",
+      batSn: "BAT-HZ-9999",
+      model: "60V30AH",
+      lastSwap: "2026-09-03 16:10",
+      applyTime: "2026-09-03 23:59",
     },
   ];
 
@@ -281,6 +304,18 @@
 
   function pendingOf(typeId) {
     return ITEMS.filter((x) => x.type === typeId && isPending(x));
+  }
+
+  /** bucket: lte3 | 4to7 | gt7 */
+  function overdueBucketOfDays(days) {
+    const d = Number(days) || 0;
+    if (d <= 3) return "lte3";
+    if (d <= 7) return "4to7";
+    return "gt7";
+  }
+
+  function pendingOverdueByBucket(bucket) {
+    return pendingOf("overdue").filter((x) => overdueBucketOfDays(x.days) === bucket);
   }
 
   function canSeeTodos(role) {
@@ -439,6 +474,8 @@
     getTypeMeta,
     getItemById,
     pendingOf,
+    overdueBucketOfDays,
+    pendingOverdueByBucket,
     canSeeTodos,
     canSeeType,
     summaries,

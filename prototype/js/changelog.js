@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.132",
+      date: "2026-11-20 11:32",
+      title: "已逾期拆成三天段卡片",
+      items: [
+        "逾期3天内（含）/ 3~7天（含）/ 7天以上；点卡进对应待办名单",
+        "AC-123",
+      ],
+    },
+    {
       version: "V1.131",
       date: "2026-11-20 11:28",
       title: "今日数据付费退租站点可下钻",

@@ -100,6 +100,7 @@
     todos: {
       view: "list", // list | detail
       type: null, // refund | recharge | overdue
+      overdueBucket: null, // lte3 | 4to7 | gt7
       itemId: null,
       rejectOpen: false,
       rejectReason: "",
@@ -974,9 +975,12 @@
           </div>`;
     if (!c.link) return inner;
     if (c.link.action === "open-todo") {
+      const bucket = c.link.bucket
+        ? ` data-bucket="${escapeAttr(c.link.bucket)}"`
+        : "";
       return `<button type="button" class="home-stat-btn" data-action="open-todo" data-type="${escapeAttr(
         c.link.type
-      )}">${inner}</button>`;
+      )}"${bucket}>${inner}</button>`;
     }
     if (c.link.action === "open-module") {
       return `<button type="button" class="home-stat-btn" data-action="open-module" data-id="${escapeAttr(
@@ -993,7 +997,7 @@
     return `
       <div class="home-stats-block">
         <div class="home-stats-title">${escapeHtml(section.title)}</div>
-        <div class="summary-row home-stats-row${section.cards && section.cards.length === 5 ? " home-stats-row-5" : ""}">${cards}</div>
+        <div class="summary-row home-stats-row">${cards}</div>
       </div>`;
   }
 
@@ -4016,7 +4020,7 @@
       </div>`;
   }
 
-  function openTodoType(typeId) {
+  function openTodoType(typeId, bucket) {
     const role = state.session && state.session.role;
     if (!Todos.canSeeType(role, typeId)) {
       toast("无待办权限");
@@ -4029,6 +4033,7 @@
     }
     state.todos.view = "list";
     state.todos.type = typeId;
+    state.todos.overdueBucket = typeId === "overdue" ? bucket || null : null;
     state.todos.itemId = null;
     state.todos.rejectOpen = false;
     state.todos.rejectReason = "";
@@ -4148,7 +4153,10 @@
     if (!meta) {
       return `<div class="todo-page"><div class="empty-full">待办类型不存在<button type="button" class="btn-secondary" data-action="todos-back-wb">返回待办</button></div></div>`;
     }
-    const list = Todos.pendingOf(meta.id);
+    let list = Todos.pendingOf(meta.id);
+    if (meta.id === "overdue" && state.todos.overdueBucket && Todos.pendingOverdueByBucket) {
+      list = Todos.pendingOverdueByBucket(state.todos.overdueBucket);
+    }
     const cards =
       list.length === 0
         ? `<div class="empty-full"><div class="icon">✓</div>${escapeHtml(meta.empty)}</div>`
@@ -4168,11 +4176,19 @@
             )
             .join("");
 
+    const overdueTitle =
+      meta.id === "overdue" && state.todos.overdueBucket
+        ? state.todos.overdueBucket === "lte3"
+          ? "逾期3天内（含）"
+          : state.todos.overdueBucket === "4to7"
+            ? "逾期3~7天内（含）"
+            : "逾期7天以上"
+        : meta.title;
     return `
       <div class="todo-page">
         <div class="todo-header">
           <button type="button" class="todo-back" data-action="todos-back-wb" aria-label="返回">‹</button>
-          <h1>${escapeHtml(meta.title)}</h1>
+          <h1>${escapeHtml(overdueTitle)}</h1>
           <span class="todo-header-count">${list.length}</span>
         </div>
         <p class="todo-source">${escapeHtml(meta.source)}</p>
@@ -7612,7 +7628,7 @@
           render();
           break;
         case "open-todo":
-          openTodoType(t.dataset.type);
+          openTodoType(t.dataset.type, t.dataset.bucket);
           break;
         case "open-alert":
           openAlertGroup(t.dataset.group);
