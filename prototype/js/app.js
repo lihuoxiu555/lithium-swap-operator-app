@@ -997,11 +997,11 @@
   }
 
   function renderFundMetricCard(people, amountYuan, title, opts) {
-    const showPeople = !(opts && opts.showPeople === false);
-    const peopleLine = showPeople ? String(people) + "人" : "—";
+    const hidePeople = opts && opts.hidePeople;
+    const peopleLine = hidePeople ? "" : String(people) + "人";
     const amountLine = Number(amountYuan).toFixed(2) + "元";
-    return `<div class="summary-card summary-card-fund">
-      <div class="fund-people">${escapeHtml(peopleLine)}</div>
+    return `<div class="summary-card summary-card-fund${hidePeople ? " is-income" : ""}">
+      ${hidePeople ? "" : `<div class="fund-people">${escapeHtml(peopleLine)}</div>`}
       <div class="val fund-amount">${escapeHtml(amountLine)}</div>
       <div class="lab fund-title">${escapeHtml(title)}</div>
     </div>`;
@@ -1013,7 +1013,7 @@
     return `<div class="summary-row biz-fund-row" role="group" aria-label="今日收付">
       ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费")}
       ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租")}
-      ${renderFundMetricCard(null, fund.income, "今日收入", { showPeople: false })}
+      ${renderFundMetricCard(null, fund.income, "今日收入", { hidePeople: true })}
     </div>`;
   }
 
@@ -1021,6 +1021,7 @@
     const home = OpsStats.homeSummary();
     const fund = home.todayFund || (OpsStats && OpsStats.TODAY_FUND);
     const bizCards = (home.bizCards || home.cards || [])
+      .filter((c) => c.key !== "pay")
       .map(
         (c) => `
           <div class="summary-card">
@@ -1033,7 +1034,7 @@
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
         <div class="summary-tap-stage">
           ${renderBizFundStrip(fund)}
-          <div class="summary-row biz-swap-row">${bizCards}</div>
+          <div class="summary-row summary-row-2 biz-swap-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>
         </div>
         <span class="summary-tap-hint">点击查看近7日趋势 <i>›</i></span>

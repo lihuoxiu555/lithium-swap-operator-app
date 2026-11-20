@@ -586,6 +586,12 @@ button.btn-mock.offcab-btn {
 .data-stats-compact .biz-swap-row {
   margin: 0;
 }
+.data-stats-compact .summary-row-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.data-stats-compact .summary-card-fund.is-income {
+  justify-content: center;
+}
 .data-stats-compact .summary-card-fund {
   display: flex;
   flex-direction: column;

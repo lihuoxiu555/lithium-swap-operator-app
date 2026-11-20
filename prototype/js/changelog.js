@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.123",
+      date: "2026-11-20 10:22",
+      title: "去掉收入「—」与营收第三卡",
+      items: [
+        "今日收入仅金额+标题；换电摘要改为 2 卡",
+        "AC-09",
+      ],
+    },
+    {
       version: "V1.122",
       date: "2026-11-20 10:18",
       title: "收付小卡三行：人·元·标题",
