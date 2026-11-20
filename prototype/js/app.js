@@ -997,9 +997,14 @@
   }
 
   function renderBizFundStrip(fund) {
-    if (!fund) return "";
-    const pay = OpsStats.formatFundPeopleYuan(fund.pay.people, fund.pay.amount);
-    const refund = OpsStats.formatFundPeopleYuan(fund.refund.people, fund.refund.amount);
+    fund = fund || (OpsStats && OpsStats.TODAY_FUND);
+    if (!fund || !fund.pay || !fund.refund) return "";
+    const fmt =
+      OpsStats && OpsStats.formatFundPeopleYuan
+        ? OpsStats.formatFundPeopleYuan.bind(OpsStats)
+        : (people, amount) => String(people) + "-" + Number(amount).toFixed(2);
+    const pay = fmt(fund.pay.people, fund.pay.amount);
+    const refund = fmt(fund.refund.people, fund.refund.amount);
     const income = Number(fund.income).toFixed(2);
     return `<div class="biz-fund-strip" role="group" aria-label="今日收付">
       <p>今日付费：<strong>${escapeHtml(pay)}</strong>（人-元）</p>
@@ -1010,6 +1015,7 @@
 
   function renderHomeBizSnapshot() {
     const home = OpsStats.homeSummary();
+    const fund = home.todayFund || (OpsStats && OpsStats.TODAY_FUND);
     const bizCards = (home.bizCards || home.cards || [])
       .map(
         (c) => `
@@ -1021,7 +1027,7 @@
       .join("");
     const summary = `
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
-        ${renderBizFundStrip(home.todayFund)}
+        ${renderBizFundStrip(fund)}
         <div class="summary-tap-stage">
           <div class="summary-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>

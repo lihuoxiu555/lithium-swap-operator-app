@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.120",
+      date: "2026-11-20 09:58",
+      title: "修复今日收付行未加载",
+      items: [
+        "index 同步 ops-stats.js 缓存版本；app 回退 TODAY_FUND",
+        "AC-09",
+      ],
+    },
+    {
       version: "V1.119",
       date: "2026-11-20 09:52",
       title: "数据统计 · 今日收付行与紧凑布局",
