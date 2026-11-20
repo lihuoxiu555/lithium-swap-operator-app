@@ -580,8 +580,18 @@ button.btn-mock.offcab-btn {
 .data-stats-compact .summary-wrap {
   margin-top: 6px;
 }
+.data-stats-compact .biz-fund-block {
+  margin: 0 0 8px;
+}
+.data-stats-compact .biz-fund-row-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 5px 2px;
+  text-align: left;
+}
 .data-stats-compact .biz-fund-row {
-  margin: 0 0 6px;
+  margin: 0;
 }
 .data-stats-compact .biz-swap-row {
   margin: 0;

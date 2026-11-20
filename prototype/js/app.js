@@ -1007,19 +1007,25 @@
     </div>`;
   }
 
-  function renderBizFundStrip(fund) {
+  function renderBizFundStrip(fund, rowLabel) {
     fund = fund || (OpsStats && OpsStats.TODAY_FUND);
     if (!fund || !fund.pay || !fund.refund) return "";
-    return `<div class="summary-row biz-fund-row" role="group" aria-label="今日收付">
+    const label = rowLabel || "";
+    return `<div class="biz-fund-block">
+      ${label ? `<div class="biz-fund-row-label">${escapeHtml(label)}</div>` : ""}
+      <div class="summary-row biz-fund-row" role="group" aria-label="${escapeAttr(label || "今日收付")}">
       ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费")}
       ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租")}
       ${renderFundMetricCard(null, fund.income, "今日收入", { hidePeople: true })}
+    </div>
     </div>`;
   }
 
   function renderHomeBizSnapshot() {
     const home = OpsStats.homeSummary();
-    const fund = home.todayFund || (OpsStats && OpsStats.TODAY_FUND);
+    const fundNew = home.todayFundNew || (OpsStats && OpsStats.TODAY_FUND_NEW);
+    const fundOld = home.todayFundOld || (OpsStats && OpsStats.TODAY_FUND_OLD);
+    const fund = fundNew || home.todayFund || (OpsStats && OpsStats.TODAY_FUND);
     const bizCards = (home.bizCards || home.cards || [])
       .filter((c) => c.key !== "pay")
       .map(
@@ -1033,7 +1039,8 @@
     const summary = `
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
         <div class="summary-tap-stage">
-          ${renderBizFundStrip(fund)}
+          ${renderBizFundStrip(fundNew || fund, "新用户")}
+          ${renderBizFundStrip(fundOld, "老用户")}
           <div class="summary-row summary-row-ops biz-swap-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>
         </div>

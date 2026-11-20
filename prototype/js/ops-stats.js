@@ -299,16 +299,22 @@
    * 三卡无时间筛，点整区进经营统计。
    */
   /**
-   * 今日付费 / 退租 / 收入（自然日；**均不含押金**）
-   * - 付费：`paid_at` 今日支付成功的人次与实付金额
-   * - 退租：今日退款成功（套餐退租等，不含押金退还）
-   * - 收入：今日经营实收净额（付费 − 退租等，不含押金）
+   * 今日付费 / 退租 / 收入（自然日；**均不含押金**），按新/老用户拆行
+   * - 新用户：本主体首次开通发生在今日的骑手
+   * - 老用户：开通日早于今日
+   * - 付费：`paid_at` 今日支付成功；退租：今日退款成功（不含押金）；收入：付费−退租
    */
-  const TODAY_FUND = {
-    pay: { people: 5, amount: 1034.0 },
-    refund: { people: 1, amount: 299.0 },
-    income: 784.0,
+  const TODAY_FUND_NEW = {
+    pay: { people: 2, amount: 598.0 },
+    refund: { people: 0, amount: 0 },
+    income: 598.0,
   };
+  const TODAY_FUND_OLD = {
+    pay: { people: 3, amount: 436.0 },
+    refund: { people: 1, amount: 299.0 },
+    income: 137.0,
+  };
+  const TODAY_FUND = TODAY_FUND_NEW;
 
   function formatFundPeopleYuan(people, amount) {
     const n = Number(amount);
@@ -323,6 +329,8 @@
     const personalFrozen = BIZ_KPI.personalFrozen;
     return {
       todayFund: TODAY_FUND,
+      todayFundNew: TODAY_FUND_NEW,
+      todayFundOld: TODAY_FUND_OLD,
       bizCards: [
         { key: "swaps", val: 39, lab: "今日换电次数（次）" },
         { key: "riders", val: 18, lab: "今日换电人数（人）" },
@@ -442,6 +450,8 @@
     homeSummary,
     formatFundPeopleYuan,
     TODAY_FUND,
+    TODAY_FUND_NEW,
+    TODAY_FUND_OLD,
     slotUtil,
     busyLevel,
     busySitesForScope,

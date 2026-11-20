@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.127",
+      date: "2026-11-20 11:15",
+      title: "收付区拆新用户 / 老用户两行",
+      items: [
+        "圈中三卡复制：第一行新用户、第二行老用户，指标仍为付费/退租/收入",
+        "AC-09",
+      ],
+    },
+    {
       version: "V1.126",
       date: "2026-11-20 10:55",
       title: "经营统计右侧字段写清口径",
