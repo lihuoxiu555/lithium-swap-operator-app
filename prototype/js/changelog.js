@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.121",
+      date: "2026-11-20 10:02",
+      title: "今日收付改三小卡样式",
+      items: [
+        "与下方经营三卡同 summary-card 布局",
+        "AC-09",
+      ],
+    },
+    {
       version: "V1.120",
       date: "2026-11-20 09:58",
       title: "修复今日收付行未加载",

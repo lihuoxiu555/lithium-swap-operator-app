@@ -1006,10 +1006,19 @@
     const pay = fmt(fund.pay.people, fund.pay.amount);
     const refund = fmt(fund.refund.people, fund.refund.amount);
     const income = Number(fund.income).toFixed(2);
-    return `<div class="biz-fund-strip" role="group" aria-label="今日收付">
-      <p>今日付费：<strong>${escapeHtml(pay)}</strong>（人-元）</p>
-      <p>今日退租：<strong>${escapeHtml(refund)}</strong>（人-元）</p>
-      <p>今日收入：<strong>${escapeHtml(income)}</strong>（元）</p>
+    return `<div class="summary-row biz-fund-row" role="group" aria-label="今日收付">
+      <div class="summary-card">
+        <div class="val">${escapeHtml(pay)}</div>
+        <div class="lab">今日付费（人-元）</div>
+      </div>
+      <div class="summary-card">
+        <div class="val">${escapeHtml(refund)}</div>
+        <div class="lab">今日退租（人-元）</div>
+      </div>
+      <div class="summary-card">
+        <div class="val">${escapeHtml(income)}</div>
+        <div class="lab">今日收入（元）</div>
+      </div>
     </div>`;
   }
 
@@ -1027,9 +1036,9 @@
       .join("");
     const summary = `
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
-        ${renderBizFundStrip(fund)}
         <div class="summary-tap-stage">
-          <div class="summary-row">${bizCards}</div>
+          ${renderBizFundStrip(fund)}
+          <div class="summary-row biz-swap-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>
         </div>
         <span class="summary-tap-hint">点击查看近7日趋势 <i>›</i></span>

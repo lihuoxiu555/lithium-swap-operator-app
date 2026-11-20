@@ -580,26 +580,15 @@ button.btn-mock.offcab-btn {
 .data-stats-compact .summary-wrap {
   margin-top: 6px;
 }
-.data-stats-compact .biz-fund-strip {
+.data-stats-compact .biz-fund-row {
   margin: 0 0 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f4f7fc;
-  border: 1px solid var(--line);
-  font-size: 10px;
-  color: var(--ink-2);
-  line-height: 1.45;
-  display: grid;
-  gap: 3px;
-  text-align: left;
 }
-.data-stats-compact .biz-fund-strip p {
+.data-stats-compact .biz-swap-row {
   margin: 0;
 }
-.data-stats-compact .biz-fund-strip strong {
-  color: var(--ink);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.data-stats-compact .biz-fund-row .val {
+  font-size: 14px;
+  letter-spacing: -0.03em;
 }
 .data-stats-compact .summary-card {
   padding: 8px 6px;
