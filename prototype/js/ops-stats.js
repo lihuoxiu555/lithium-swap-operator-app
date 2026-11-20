@@ -343,10 +343,10 @@
   }
 
   const TODAY_DRILL_META = {
-    "new-pay": { title: "新用户 · 今日付费", kind: "users", empty: "暂无新用户付费" },
-    "new-refund": { title: "新用户 · 今日退租", kind: "users", empty: "暂无新用户退租" },
-    "old-pay": { title: "老用户 · 今日付费", kind: "users", empty: "暂无老用户付费" },
-    "old-refund": { title: "老用户 · 今日退租", kind: "users", empty: "暂无老用户退租" },
+    "new-pay": { title: "新用户 · 收入", kind: "users", empty: "暂无新用户收入" },
+    "new-refund": { title: "新用户 · 退租", kind: "users", empty: "暂无新用户退租" },
+    "old-pay": { title: "老用户 · 收入", kind: "users", empty: "暂无老用户收入" },
+    "old-refund": { title: "老用户 · 退租", kind: "users", empty: "暂无老用户退租" },
     "active-sites": { title: "今日活跃站点", kind: "sites", empty: "暂无活跃站点" },
   };
 
@@ -380,7 +380,7 @@
             sub: `个人 ${personalUsers} · 渠道 ${channelUsers}`,
             link: { action: "open-module", id: "biz.stats" },
           },
-          { key: "noSwap3d", val: 6, lab: "3天未换电" },
+          { key: "frozen", val: personalFrozen, lab: "冻结中" },
           { key: "expire3d", val: 3, lab: "3天内到期" },
           {
             key: "overdueLte3",
@@ -400,7 +400,6 @@
             lab: "逾期7天以上",
             link: { action: "open-todo", type: "overdue", bucket: "gt7" },
           },
-          { key: "frozen", val: personalFrozen, lab: "冻结中" },
         ],
       },
     };

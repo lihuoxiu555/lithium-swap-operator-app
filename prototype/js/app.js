@@ -1028,9 +1028,9 @@
     return `<div class="biz-fund-block">
       ${label ? `<div class="biz-fund-row-label">${escapeHtml(label)}</div>` : ""}
       <div class="summary-row biz-fund-row" role="group" aria-label="${escapeAttr(label || "今日收付")}">
-      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费", { drill: prefix + "-pay" })}
-      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租", { drill: prefix + "-refund" })}
-      ${renderFundMetricCard(null, fund.income, "今日收入", { hidePeople: true })}
+      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "收入", { drill: prefix + "-pay" })}
+      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "退租", { drill: prefix + "-refund" })}
+      ${renderFundMetricCard(null, fund.income, "净收入", { hidePeople: true })}
     </div>
     </div>`;
   }
