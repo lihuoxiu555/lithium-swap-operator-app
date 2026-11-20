@@ -92,12 +92,22 @@
       ],
       fields: [
         { name: "布局", def: "模块「今日数据」（新/老用户收付 + 运营三卡）+ 用户数据 5 格" },
-        { name: "点击", def: "收付+运营整区进经营统计详情，图表默认近7日" },
+        { name: "点击", def: "付费/退租卡进用户明细；活跃站点进站点列表；收入与换电次数/人数+「近7日趋势」进经营统计详情" },
       ],
       enums: ["今日：[今日0点,明日0点)"],
       empty: "0 仍展示",
       roles: "管理员与员工同数（员工是否按指定站点裁 [待确认]）",
       note: "金额均为 C 端实付/退款，不是清分净额。点卡进经营统计看趋势。",
+    }),
+    "dataStats:drill": S({
+      title: "今日数据 · 明细",
+      source: "经营统计下钻",
+      fields: [
+        { name: "付费/退租", def: "列出该人群当日对应订单骑手：姓名、手机、金额、时间、站点、说明。不含押金" },
+        { name: "活跃站点", def: "列出今日至少 1 笔成功换电的站点：名称、成功笔数、换电人数" },
+        { name: "空态", def: "新用户退租 Mock 为空「暂无新用户退租」" },
+      ],
+      empty: "暂无记录",
     }),
     "dataStats:asset": S({
       title: "数据统计 · 资产统计",
@@ -1001,6 +1011,7 @@
       return "cabinets:" + v;
     }
     if (sc === "dataStats") {
+      if (state.dataStats && state.dataStats.drill) return "dataStats:drill";
       const sess = state.session;
       if (
         sess &&

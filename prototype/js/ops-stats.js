@@ -316,6 +316,40 @@
   };
   const TODAY_FUND = TODAY_FUND_NEW;
 
+  /** 今日数据可下钻明细（人 / 站点） */
+  const TODAY_DRILL = {
+    "new-pay": [
+      { name: "车贵益", phone: "15995582833", amount: 299, time: "今天 09:12", site: "浦东骑手驿站", note: "包月30天·新购" },
+      { name: "李新骑", phone: "13821010088", amount: 299, time: "今天 10:06", site: "世博换电服务点", note: "包月30天·新购" },
+    ],
+    "new-refund": [],
+    "old-pay": [
+      { name: "史建国", phone: "18915821617", amount: 199, time: "今天 08:41", site: "溧阳运营", note: "续费" },
+      { name: "王骑手", phone: "13821010001", amount: 99, time: "今天 11:02", site: "浦东骑手驿站", note: "次卡" },
+      { name: "赵师傅", phone: "13700001122", amount: 138, time: "今天 11:28", site: "京东物流专属站", note: "续费" },
+    ],
+    "old-refund": [
+      { name: "周骑手", phone: "13655556666", amount: 299, time: "今天 10:18", site: "浦东骑手驿站", note: "套餐退租·不含押金" },
+    ],
+    "active-sites": [
+      { id: "ST-SH-01", name: "浦东骑手驿站", swaps: 22, riders: 9 },
+      { id: "ST-SH-02", name: "世博换电服务点", swaps: 10, riders: 5 },
+      { id: "ST-SH-JD", name: "京东物流专属站", swaps: 7, riders: 4 },
+    ],
+  };
+
+  function todayDrill(kind) {
+    return TODAY_DRILL[kind] ? TODAY_DRILL[kind].slice() : [];
+  }
+
+  const TODAY_DRILL_META = {
+    "new-pay": { title: "新用户 · 今日付费", kind: "users", empty: "暂无新用户付费" },
+    "new-refund": { title: "新用户 · 今日退租", kind: "users", empty: "暂无新用户退租" },
+    "old-pay": { title: "老用户 · 今日付费", kind: "users", empty: "暂无老用户付费" },
+    "old-refund": { title: "老用户 · 今日退租", kind: "users", empty: "暂无老用户退租" },
+    "active-sites": { title: "今日活跃站点", kind: "sites", empty: "暂无活跃站点" },
+  };
+
   function formatFundPeopleYuan(people, amount) {
     const n = Number(amount);
     const p = Number(people) || 0;
@@ -448,6 +482,8 @@
     TODAY_FUND,
     TODAY_FUND_NEW,
     TODAY_FUND_OLD,
+    TODAY_DRILL_META,
+    todayDrill,
     slotUtil,
     busyLevel,
     busySitesForScope,

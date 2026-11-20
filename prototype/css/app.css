@@ -648,6 +648,26 @@ button.btn-mock.offcab-btn {
   font-size: 9px;
   color: var(--muted);
 }
+.data-stats-compact .summary-card.is-drill,
+.data-stats-compact button.summary-card-fund {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+  border: 1px solid var(--line);
+  font: inherit;
+  color: inherit;
+}
+.data-stats-compact .summary-card.is-drill:active,
+.data-stats-compact button.summary-card-fund:active {
+  opacity: 0.88;
+}
+.data-stats-compact .summary-tap-hint.is-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
 .data-stats-compact .summary-card {
   padding: 11px 6px;
   border-radius: 10px;

@@ -39,6 +39,7 @@
     tab: "dataStats",
     dataStats: {
       subTab: "biz", // biz | asset
+      drill: null, // { kind } | null
     },
     clientShell: "standalone",
     activeScenario: "admin",
@@ -998,24 +999,31 @@
 
   function renderFundMetricCard(people, amountYuan, title, opts) {
     const hidePeople = opts && opts.hidePeople;
+    const drill = opts && opts.drill;
     const peopleLine = hidePeople ? "" : String(people) + "人";
     const amountLine = Number(amountYuan).toFixed(2) + "元";
-    return `<div class="summary-card summary-card-fund${hidePeople ? " is-income" : ""}">
-      ${hidePeople ? "" : `<div class="fund-people">${escapeHtml(peopleLine)}</div>`}
+    const cls = `summary-card summary-card-fund${hidePeople ? " is-income" : ""}${drill ? " is-drill" : ""}`;
+    const inner = `${hidePeople ? "" : `<div class="fund-people">${escapeHtml(peopleLine)}</div>`}
       <div class="val fund-amount">${escapeHtml(amountLine)}</div>
-      <div class="lab fund-title">${escapeHtml(title)}</div>
-    </div>`;
+      <div class="lab fund-title">${escapeHtml(title)}</div>`;
+    if (drill) {
+      return `<button type="button" class="${cls}" data-action="open-today-drill" data-kind="${escapeAttr(
+        drill
+      )}">${inner}</button>`;
+    }
+    return `<div class="${cls}">${inner}</div>`;
   }
 
   function renderBizFundStrip(fund, rowLabel) {
     fund = fund || (OpsStats && OpsStats.TODAY_FUND);
     if (!fund || !fund.pay || !fund.refund) return "";
     const label = rowLabel || "";
+    const prefix = label === "老用户" ? "old" : "new";
     return `<div class="biz-fund-block">
       ${label ? `<div class="biz-fund-row-label">${escapeHtml(label)}</div>` : ""}
       <div class="summary-row biz-fund-row" role="group" aria-label="${escapeAttr(label || "今日收付")}">
-      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费")}
-      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租")}
+      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费", { drill: prefix + "-pay" })}
+      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租", { drill: prefix + "-refund" })}
       ${renderFundMetricCard(null, fund.income, "今日收入", { hidePeople: true })}
     </div>
     </div>`;
@@ -1028,17 +1036,19 @@
     const fund = fundNew || home.todayFund || (OpsStats && OpsStats.TODAY_FUND);
     const bizCards = (home.bizCards || home.cards || [])
       .filter((c) => c.key !== "pay")
-      .map(
-        (c) => `
-          <div class="summary-card">
-            <div class="val">${Number(c.val).toLocaleString("zh-CN", { minimumFractionDigits: c.key === "pay" ? 2 : 0, maximumFractionDigits: c.key === "pay" ? 2 : 0 })}</div>
-            <div class="lab">${escapeHtml(c.lab)}</div>
-          </div>`
-      )
+      .map((c) => {
+        const drill = c.key === "activeSites" ? "active-sites" : "";
+        const inner = `<div class="val">${Number(c.val).toLocaleString("zh-CN")}</div>
+            <div class="lab">${escapeHtml(c.lab)}</div>`;
+        if (drill) {
+          return `<button type="button" class="summary-card is-drill" data-action="open-today-drill" data-kind="${drill}">${inner}</button>`;
+        }
+        return `<div class="summary-card">${inner}</div>`;
+      })
       .join("");
     const summary = `
       <div class="home-stats-title today-data-title">今日数据</div>
-      <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
+      <div class="summary-wrap">
         <div class="summary-tap-stage">
           <div class="today-group today-group-fund">
           ${renderBizFundStrip(fundNew || fund, "新用户")}
@@ -1047,12 +1057,62 @@
           <div class="today-group today-group-ops">
           <div class="summary-row summary-row-ops biz-swap-row">${bizCards}</div>
           </div>
-          <span class="summary-tap-finger" aria-hidden="true"></span>
         </div>
-        <span class="summary-tap-hint">点击查看近7日趋势 <i>›</i></span>
-      </button>`;
+        <button type="button" class="summary-tap-hint is-btn" data-action="open-module" data-id="biz.stats">点击查看近7日趋势 <i>›</i></button>
+      </div>`;
     const userStats = home.userSection ? renderHomeStatSection(home.userSection, true) : "";
     return `${summary}${userStats}`;
+  }
+
+  function renderTodayDrill() {
+    const kind = state.dataStats.drill;
+    const meta = (OpsStats.TODAY_DRILL_META && OpsStats.TODAY_DRILL_META[kind]) || {
+      title: "明细",
+      kind: "users",
+      empty: "暂无记录",
+    };
+    const rows = OpsStats.todayDrill ? OpsStats.todayDrill(kind) : [];
+    let listHtml = "";
+    if (!rows.length) {
+      listHtml = `<div class="empty-full"><div class="icon">—</div>${escapeHtml(meta.empty)}</div>`;
+    } else if (meta.kind === "sites") {
+      listHtml = rows
+        .map(
+          (s) => `<article class="sites-card">
+          <div class="sites-card-hd"><div><strong>${escapeHtml(s.name)}</strong></div></div>
+          <div class="sites-card-rows">
+            <div><span>今日成功换电</span><em>${s.swaps} 笔</em></div>
+            <div><span>换电人数</span><em>${s.riders} 人</em></div>
+          </div>
+        </article>`
+        )
+        .join("");
+    } else {
+      listHtml = rows
+        .map(
+          (u) => `<article class="user-card">
+          <div class="user-id"><strong>${escapeHtml(u.name || "—")}</strong></div>
+          <div class="lease-fields">
+            <div class="lease-row"><span class="lk">手机号</span><span class="lv">${escapeHtml(u.phone)}</span></div>
+            <div class="lease-row"><span class="lk">金额</span><span class="lv">${Number(u.amount).toFixed(2)} 元</span></div>
+            <div class="lease-row"><span class="lk">时间</span><span class="lv">${escapeHtml(u.time)}</span></div>
+            <div class="lease-row"><span class="lk">站点</span><span class="lv">${escapeHtml(u.site)}</span></div>
+            <div class="lease-row"><span class="lk">说明</span><span class="lv">${escapeHtml(u.note || "—")}</span></div>
+          </div>
+        </article>`
+        )
+        .join("");
+    }
+    return `
+      <div class="sites-page">
+        <div class="sites-header">
+          <button type="button" class="sites-back" data-action="back-today-drill" aria-label="返回">‹</button>
+          <h1>${escapeHtml(meta.title)}</h1>
+          <div class="sites-header-spacer"></div>
+        </div>
+        <p class="ops-hint">不含押金。${meta.kind === "sites" ? "今日至少 1 笔成功换电的站点。" : "对应卡片人数与金额口径。"}</p>
+        <div class="sites-list">${listHtml}</div>
+      </div>`;
   }
 
   function renderDataStatsSubTabs() {
@@ -1077,6 +1137,7 @@
         session: s,
       });
     }
+    if (state.dataStats.drill) return renderTodayDrill();
     const sub = state.dataStats.subTab || "biz";
     const body =
       sub === "asset"
@@ -6639,6 +6700,7 @@
       state.screen === "channelPartner" ||
       state.screen === "cabinets" ||
       state.screen === "deviceStats" ||
+      (state.screen === "dataStats" && state.dataStats && state.dataStats.drill) ||
       state.screen === "userList" ||
       state.screen === "userSms" ||
       state.screen === "userPay" ||
@@ -7533,6 +7595,20 @@
             setHash("#/dataStats");
           }
           track("data_stats_subtab", { tab: state.dataStats.subTab });
+          render();
+          break;
+        case "open-today-drill":
+          e.stopPropagation();
+          state.dataStats.drill = t.dataset.kind || null;
+          track("today_drill_open", { kind: state.dataStats.drill });
+          render();
+          break;
+        case "back-today-drill":
+          state.dataStats.drill = null;
+          state.screen = "dataStats";
+          state.tab = "dataStats";
+          state.dataStats.subTab = "biz";
+          setHash("#/dataStats");
           render();
           break;
         case "open-todo":

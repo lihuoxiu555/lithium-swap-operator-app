@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.131",
+      date: "2026-11-20 11:28",
+      title: "今日数据付费退租站点可下钻",
+      items: [
+        "圈中卡跳转用户/站点明细；近7日趋势仍进经营统计",
+        "AC-190",
+      ],
+    },
+    {
       version: "V1.130",
       date: "2026-11-20 11:22",
       title: "今日数据两块淡蓝分组框",
