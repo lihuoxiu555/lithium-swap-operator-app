@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.133",
+      date: "2026-11-20 11:35",
+      title: "用户数据两卡对调",
+      items: [
+        "总用户与逾期3天内互换位置",
+      ],
+    },
+    {
       version: "V1.132",
       date: "2026-11-20 11:32",
       title: "已逾期拆成三天段卡片",
