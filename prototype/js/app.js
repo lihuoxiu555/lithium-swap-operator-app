@@ -996,29 +996,24 @@
       </div>`;
   }
 
+  function renderFundMetricCard(people, amountYuan, title, opts) {
+    const showPeople = !(opts && opts.showPeople === false);
+    const peopleLine = showPeople ? String(people) + "人" : "—";
+    const amountLine = Number(amountYuan).toFixed(2) + "元";
+    return `<div class="summary-card summary-card-fund">
+      <div class="fund-people">${escapeHtml(peopleLine)}</div>
+      <div class="val fund-amount">${escapeHtml(amountLine)}</div>
+      <div class="lab fund-title">${escapeHtml(title)}</div>
+    </div>`;
+  }
+
   function renderBizFundStrip(fund) {
     fund = fund || (OpsStats && OpsStats.TODAY_FUND);
     if (!fund || !fund.pay || !fund.refund) return "";
-    const fmt =
-      OpsStats && OpsStats.formatFundPeopleYuan
-        ? OpsStats.formatFundPeopleYuan.bind(OpsStats)
-        : (people, amount) => String(people) + "-" + Number(amount).toFixed(2);
-    const pay = fmt(fund.pay.people, fund.pay.amount);
-    const refund = fmt(fund.refund.people, fund.refund.amount);
-    const income = Number(fund.income).toFixed(2);
     return `<div class="summary-row biz-fund-row" role="group" aria-label="今日收付">
-      <div class="summary-card">
-        <div class="val">${escapeHtml(pay)}</div>
-        <div class="lab">今日付费（人-元）</div>
-      </div>
-      <div class="summary-card">
-        <div class="val">${escapeHtml(refund)}</div>
-        <div class="lab">今日退租（人-元）</div>
-      </div>
-      <div class="summary-card">
-        <div class="val">${escapeHtml(income)}</div>
-        <div class="lab">今日收入（元）</div>
-      </div>
+      ${renderFundMetricCard(fund.pay.people, fund.pay.amount, "今日付费")}
+      ${renderFundMetricCard(fund.refund.people, fund.refund.amount, "今日退租")}
+      ${renderFundMetricCard(null, fund.income, "今日收入", { showPeople: false })}
     </div>`;
   }
 

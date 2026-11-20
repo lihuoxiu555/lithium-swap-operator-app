@@ -586,9 +586,29 @@ button.btn-mock.offcab-btn {
 .data-stats-compact .biz-swap-row {
   margin: 0;
 }
-.data-stats-compact .biz-fund-row .val {
-  font-size: 14px;
-  letter-spacing: -0.03em;
+.data-stats-compact .summary-card-fund {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+}
+.data-stats-compact .summary-card-fund .fund-people {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1.2;
+}
+.data-stats-compact .summary-card-fund .fund-amount {
+  font-size: 15px;
+  margin: 0;
+  line-height: 1.15;
+}
+.data-stats-compact .summary-card-fund .fund-title {
+  margin-top: 1px;
+  font-size: 9px;
+  color: var(--muted);
 }
 .data-stats-compact .summary-card {
   padding: 8px 6px;
