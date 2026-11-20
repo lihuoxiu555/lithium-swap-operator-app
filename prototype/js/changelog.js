@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.139",
+      date: "2026-11-20 14:08",
+      title: "收入减退租等于净收入符号",
+      items: [
+        "新/老用户三卡之间蓝色 − 与 =",
+      ],
+    },
+    {
       version: "V1.138",
       date: "2026-11-20 13:40",
       title: "收付卡改名、冻结中替换未换电",
