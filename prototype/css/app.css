@@ -676,6 +676,12 @@ button.btn-mock.offcab-btn {
   font-size: 8px;
   margin-top: 2px;
 }
+.data-stats-compact .home-stats-row-5 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.data-stats-compact .home-stats-row-5 > :nth-child(4) {
+  grid-column: 1 / 3;
+}
 .home-stats-block { margin: 10px 14px 0; }
 .home-stats-title {
   font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 8px 2px;

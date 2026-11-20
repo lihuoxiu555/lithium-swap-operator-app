@@ -339,12 +339,8 @@
       userSection: {
         title: "用户数据",
         cards: [
-          { key: "newToday", val: 2, lab: "今日新增" },
-          { key: "renewToday", val: 5, lab: "今日续费" },
           { key: "expire3d", val: 3, lab: "3天内到期" },
           { key: "noSwap3d", val: 6, lab: "3天未换电" },
-          { key: "terminateToday", val: 1, lab: "今日退租" },
-          { key: "returnBatToday", val: 2, lab: "今日退电" },
           {
             key: "overdue",
             val: 4,

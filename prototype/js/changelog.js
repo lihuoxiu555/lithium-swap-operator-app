@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.128",
+      date: "2026-11-20 11:18",
+      title: "用户数据去掉新增续费退租退电",
+      items: [
+        "保留 3天内到期、3天未换电、已逾期、总用户、冻结中",
+        "AC-123",
+      ],
+    },
+    {
       version: "V1.127",
       date: "2026-11-20 11:15",
       title: "收付区拆新用户 / 老用户两行",

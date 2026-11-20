@@ -992,7 +992,7 @@
     return `
       <div class="home-stats-block">
         <div class="home-stats-title">${escapeHtml(section.title)}</div>
-        <div class="summary-row home-stats-row">${cards}</div>
+        <div class="summary-row home-stats-row${section.cards && section.cards.length === 5 ? " home-stats-row-5" : ""}">${cards}</div>
       </div>`;
   }
 
