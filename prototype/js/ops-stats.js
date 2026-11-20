@@ -373,8 +373,6 @@
       userSection: {
         title: "用户数据",
         cards: [
-          { key: "expire3d", val: 3, lab: "3天内到期" },
-          { key: "noSwap3d", val: 6, lab: "3天未换电" },
           {
             key: "validUsers",
             val: personalUsers + channelUsers,
@@ -382,6 +380,8 @@
             sub: `个人 ${personalUsers} · 渠道 ${channelUsers}`,
             link: { action: "open-module", id: "biz.stats" },
           },
+          { key: "noSwap3d", val: 6, lab: "3天未换电" },
+          { key: "expire3d", val: 3, lab: "3天内到期" },
           {
             key: "overdue4to7",
             val: 1,
