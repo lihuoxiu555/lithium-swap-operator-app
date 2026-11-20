@@ -578,7 +578,11 @@ button.btn-mock.offcab-btn {
 }
 /* 经营统计：紧凑页；卡片高度在紧凑基准上 +1/3 */
 .data-stats-compact .summary-wrap {
-  margin-top: 6px;
+  margin-top: 4px;
+}
+.data-stats-compact .today-data-title {
+  margin: 4px 16px 2px;
+  font-size: 12px;
 }
 .data-stats-compact .biz-fund-block {
   margin: 0 0 8px;

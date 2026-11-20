@@ -1037,6 +1037,7 @@
       )
       .join("");
     const summary = `
+      <div class="home-stats-title today-data-title">今日数据</div>
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
         <div class="summary-tap-stage">
           ${renderBizFundStrip(fundNew || fund, "新用户")}

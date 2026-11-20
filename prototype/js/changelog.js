@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.129",
+      date: "2026-11-20 11:20",
+      title: "经营统计加「今日数据」标题",
+      items: [
+        "收付+换电区域上方模块标题：今日数据",
+      ],
+    },
+    {
       version: "V1.128",
       date: "2026-11-20 11:18",
       title: "用户数据去掉新增续费退租退电",
