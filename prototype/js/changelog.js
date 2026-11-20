@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.119",
+      date: "2026-11-20 09:52",
+      title: "数据统计 · 今日收付行与紧凑布局",
+      items: [
+        "经营统计上方：今日付费/退租/收入（不含押金）；三卡与 Mock 对齐截图",
+        "整体高度约 2/3；AC-09/189",
+      ],
+    },
+    {
       version: "V1.118",
       date: "2026-11-18 15:38",
       title: "修复双身份选管理员无响应",

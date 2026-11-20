@@ -996,19 +996,32 @@
       </div>`;
   }
 
+  function renderBizFundStrip(fund) {
+    if (!fund) return "";
+    const pay = OpsStats.formatFundPeopleYuan(fund.pay.people, fund.pay.amount);
+    const refund = OpsStats.formatFundPeopleYuan(fund.refund.people, fund.refund.amount);
+    const income = Number(fund.income).toFixed(2);
+    return `<div class="biz-fund-strip" role="group" aria-label="今日收付">
+      <p>今日付费：<strong>${escapeHtml(pay)}</strong>（人-元）</p>
+      <p>今日退租：<strong>${escapeHtml(refund)}</strong>（人-元）</p>
+      <p>今日收入：<strong>${escapeHtml(income)}</strong>（元）</p>
+    </div>`;
+  }
+
   function renderHomeBizSnapshot() {
     const home = OpsStats.homeSummary();
     const bizCards = (home.bizCards || home.cards || [])
       .map(
         (c) => `
           <div class="summary-card">
-            <div class="val">${Number(c.val).toLocaleString("zh-CN")}</div>
+            <div class="val">${Number(c.val).toLocaleString("zh-CN", { minimumFractionDigits: c.key === "pay" ? 2 : 0, maximumFractionDigits: c.key === "pay" ? 2 : 0 })}</div>
             <div class="lab">${escapeHtml(c.lab)}</div>
           </div>`
       )
       .join("");
     const summary = `
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
+        ${renderBizFundStrip(home.todayFund)}
         <div class="summary-tap-stage">
           <div class="summary-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>
@@ -1045,7 +1058,7 @@
     const body =
       sub === "asset"
         ? `<div class="data-stats-body">${renderDeviceStatsBody()}</div>`
-        : `<div class="data-stats-body">${renderHomeBizSnapshot()}</div>`;
+        : `<div class="data-stats-body data-stats-compact">${renderHomeBizSnapshot()}</div>`;
     return `
       <div class="data-stats-page">
         <div class="wb-top">

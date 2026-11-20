@@ -298,15 +298,35 @@
    * 工作台摘要：今日三卡 + 用户数据 + 电池数据（decision-055）
    * 三卡无时间筛，点整区进经营统计。
    */
+  /**
+   * 今日付费 / 退租 / 收入（自然日；**均不含押金**）
+   * - 付费：`paid_at` 今日支付成功的人次与实付金额
+   * - 退租：今日退款成功（套餐退租等，不含押金退还）
+   * - 收入：今日经营实收净额（付费 − 退租等，不含押金）
+   */
+  const TODAY_FUND = {
+    pay: { people: 5, amount: 1034.0 },
+    refund: { people: 1, amount: 299.0 },
+    income: 784.0,
+  };
+
+  function formatFundPeopleYuan(people, amount) {
+    const n = Number(amount);
+    const p = Number(people) || 0;
+    const amt = Number.isFinite(n) ? n.toFixed(2) : "0.00";
+    return p + "-" + amt;
+  }
+
   function homeSummary() {
     const personalUsers = BIZ_KPI.personalUsers;
     const channelUsers = BIZ_KPI.channelUsers;
     const personalFrozen = BIZ_KPI.personalFrozen;
     return {
+      todayFund: TODAY_FUND,
       bizCards: [
-        { key: "swaps", val: 86, lab: "今日换电次数（次）" },
+        { key: "swaps", val: 39, lab: "今日换电次数（次）" },
         { key: "riders", val: 18, lab: "今日换电人数（人）" },
-        { key: "pay", val: 4690, lab: "今日套餐收入（元）" },
+        { key: "pay", val: 485.06, lab: "今日营收收入（元）" },
       ],
       userSection: {
         title: "用户数据",
@@ -420,6 +440,8 @@
     bizKpi,
     bizCharts,
     homeSummary,
+    formatFundPeopleYuan,
+    TODAY_FUND,
     slotUtil,
     busyLevel,
     busySitesForScope,

@@ -576,6 +576,74 @@ button.btn-mock.offcab-btn {
 .data-stats-body {
   padding-bottom: 4px;
 }
+/* 经营统计：整体纵向节奏约为原先的 2/3 */
+.data-stats-compact .summary-wrap {
+  margin-top: 6px;
+}
+.data-stats-compact .biz-fund-strip {
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f4f7fc;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+.data-stats-compact .biz-fund-strip p {
+  margin: 0;
+}
+.data-stats-compact .biz-fund-strip strong {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.data-stats-compact .summary-card {
+  padding: 8px 6px;
+  border-radius: 10px;
+}
+.data-stats-compact .summary-card .val {
+  font-size: 16px;
+}
+.data-stats-compact .summary-card .lab {
+  font-size: 9px;
+  margin-top: 2px;
+}
+.data-stats-compact .summary-row {
+  gap: 6px;
+}
+.data-stats-compact .summary-tap-hint {
+  margin-top: 5px;
+  font-size: 10px;
+}
+.data-stats-compact .summary-tap-finger {
+  width: 18px;
+  height: 18px;
+  top: 32%;
+}
+.data-stats-compact .home-stats-block {
+  margin: 6px 14px 0;
+}
+.data-stats-compact .home-stats-title {
+  font-size: 12px;
+  margin: 0 0 5px 2px;
+}
+.data-stats-compact .home-stats-row .summary-card.stat-blue {
+  padding: 8px 6px;
+}
+.data-stats-compact .home-stats-row .summary-card.stat-blue .val {
+  font-size: 16px;
+}
+.data-stats-compact .home-stats-row .summary-card.stat-blue .lab {
+  font-size: 9px;
+}
+.data-stats-compact .home-stats-row .summary-card .sub {
+  font-size: 8px;
+  margin-top: 2px;
+}
 .home-stats-block { margin: 10px 14px 0; }
 .home-stats-title {
   font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 8px 2px;
