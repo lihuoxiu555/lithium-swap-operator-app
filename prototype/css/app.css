@@ -576,7 +576,7 @@ button.btn-mock.offcab-btn {
 .data-stats-body {
   padding-bottom: 4px;
 }
-/* 经营统计：整体纵向节奏约为原先的 2/3 */
+/* 经营统计：紧凑页；卡片高度在紧凑基准上 +1/3 */
 .data-stats-compact .summary-wrap {
   margin-top: 6px;
 }
@@ -597,8 +597,8 @@ button.btn-mock.offcab-btn {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  min-height: 58px;
+  gap: 3px;
+  min-height: 77px;
 }
 .data-stats-compact .summary-card-fund .fund-people {
   font-size: 11px;
@@ -617,8 +617,14 @@ button.btn-mock.offcab-btn {
   color: var(--muted);
 }
 .data-stats-compact .summary-card {
-  padding: 8px 6px;
+  padding: 11px 6px;
   border-radius: 10px;
+  min-height: 70px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .data-stats-compact .summary-card .val {
   font-size: 16px;
@@ -647,7 +653,8 @@ button.btn-mock.offcab-btn {
   margin: 0 0 5px 2px;
 }
 .data-stats-compact .home-stats-row .summary-card.stat-blue {
-  padding: 8px 6px;
+  padding: 11px 6px;
+  min-height: 70px;
 }
 .data-stats-compact .home-stats-row .summary-card.stat-blue .val {
   font-size: 16px;

@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.124",
+      date: "2026-11-20 10:45",
+      title: "经营统计卡片高度 +1/3",
+      items: [
+        "收付/换电/用户格 summary-card 统一加高（min-height + padding）",
+      ],
+    },
+    {
       version: "V1.123",
       date: "2026-11-20 10:22",
       title: "去掉收入「—」与营收第三卡",
