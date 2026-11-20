@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.126",
+      date: "2026-11-20 10:55",
+      title: "经营统计右侧字段写清口径",
+      items: [
+        "page-specs dataStats 补全收付/换电/活跃站点/用户九格统计定义",
+      ],
+    },
+    {
       version: "V1.125",
       date: "2026-11-20 10:50",
       title: "经营摘要补今日活跃站点",
