@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.136",
+      date: "2026-11-20 11:42",
+      title: "可点卡片数字加高亮下划线",
+      items: [
+        "付费/退租/活跃站点/逾期分段/总用户数字高亮下横线",
+      ],
+    },
+    {
       version: "V1.135",
       date: "2026-11-20 11:40",
       title: "逾期三卡按天数升序",

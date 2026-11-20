@@ -967,9 +967,13 @@
     const sub = c.sub
       ? `<div class="sub">${escapeHtml(c.sub)}</div>`
       : "";
+    const n = Number(c.val).toLocaleString("zh-CN");
+    const valHtml = c.link
+      ? `<span class="kpi-link">${n}</span>`
+      : n;
     const inner = `
           <div class="${cls}">
-            <div class="val">${Number(c.val).toLocaleString("zh-CN")}</div>
+            <div class="val">${valHtml}</div>
             <div class="lab">${escapeHtml(c.lab)}</div>
             ${sub}
           </div>`;
@@ -1007,8 +1011,20 @@
     const peopleLine = hidePeople ? "" : String(people) + "人";
     const amountLine = Number(amountYuan).toFixed(2) + "元";
     const cls = `summary-card summary-card-fund${hidePeople ? " is-income" : ""}${drill ? " is-drill" : ""}`;
-    const inner = `${hidePeople ? "" : `<div class="fund-people">${escapeHtml(peopleLine)}</div>`}
-      <div class="val fund-amount">${escapeHtml(amountLine)}</div>
+    const inner = `${
+      hidePeople
+        ? ""
+        : `<div class="fund-people">${
+            drill
+              ? `<span class="kpi-link">${escapeHtml(String(people))}</span>人`
+              : escapeHtml(peopleLine)
+          }</div>`
+    }
+      <div class="val fund-amount">${
+        drill
+          ? `<span class="kpi-link">${Number(amountYuan).toFixed(2)}</span>元`
+          : escapeHtml(amountLine)
+      }</div>
       <div class="lab fund-title">${escapeHtml(title)}</div>`;
     if (drill) {
       return `<button type="button" class="${cls}" data-action="open-today-drill" data-kind="${escapeAttr(
@@ -1042,7 +1058,10 @@
       .filter((c) => c.key !== "pay")
       .map((c) => {
         const drill = c.key === "activeSites" ? "active-sites" : "";
-        const inner = `<div class="val">${Number(c.val).toLocaleString("zh-CN")}</div>
+        const n = Number(c.val).toLocaleString("zh-CN");
+        const inner = `<div class="val">${
+          drill ? `<span class="kpi-link">${n}</span>` : n
+        }</div>
             <div class="lab">${escapeHtml(c.lab)}</div>`;
         if (drill) {
           return `<button type="button" class="summary-card is-drill" data-action="open-today-drill" data-kind="${drill}">${inner}</button>`;
