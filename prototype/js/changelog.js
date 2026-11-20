@@ -17,6 +17,14 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.137",
+      date: "2026-11-20 11:45",
+      title: "可点卡改为角标 › 区分",
+      items: [
+        "撤回数字下划线；可点卡右上角 › + 描边",
+      ],
+    },
+    {
       version: "V1.136",
       date: "2026-11-20 11:42",
       title: "可点卡片数字加高亮下划线",
