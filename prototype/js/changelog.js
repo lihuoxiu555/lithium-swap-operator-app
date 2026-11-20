@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.125",
+      date: "2026-11-20 10:50",
+      title: "经营摘要补今日活跃站点",
+      items: [
+        "换电行第三卡：今日活跃站点（个）；三卡列宽 1.2:0.9:0.9",
+        "AC-09",
+      ],
+    },
+    {
       version: "V1.124",
       date: "2026-11-20 10:45",
       title: "经营统计卡片高度 +1/3",

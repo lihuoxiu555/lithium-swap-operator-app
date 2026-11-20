@@ -326,6 +326,7 @@
       bizCards: [
         { key: "swaps", val: 39, lab: "今日换电次数（次）" },
         { key: "riders", val: 18, lab: "今日换电人数（人）" },
+        { key: "activeSites", val: 3, lab: "今日活跃站点（个）" },
       ],
       userSection: {
         title: "用户数据",

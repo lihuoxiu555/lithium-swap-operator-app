@@ -1034,7 +1034,7 @@
       <button type="button" class="summary-wrap is-tappable" data-action="open-module" data-id="biz.stats" aria-label="点击进入经营统计详情，查看近7日趋势">
         <div class="summary-tap-stage">
           ${renderBizFundStrip(fund)}
-          <div class="summary-row summary-row-2 biz-swap-row">${bizCards}</div>
+          <div class="summary-row summary-row-ops biz-swap-row">${bizCards}</div>
           <span class="summary-tap-finger" aria-hidden="true"></span>
         </div>
         <span class="summary-tap-hint">点击查看近7日趋势 <i>›</i></span>
