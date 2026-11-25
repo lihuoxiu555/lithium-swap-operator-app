@@ -285,45 +285,13 @@
     };
   }
 
-  /** 将总量拆成 60V / 72V，日间比例略变，合计仍等于原值 */
-  function splitVoltSeries(values) {
-    const v60 = [];
-    const v72 = [];
-    (values || []).forEach((v, i) => {
-      const n = Number(v) || 0;
-      const p60 = 0.38 + ((i * 7) % 13) / 100;
-      const a = Math.round(n * p60);
-      v60.push(a);
-      v72.push(Math.max(0, n - a));
-    });
-    return { v60, v72 };
-  }
-
-  function withVoltMix(chart) {
-    const keys = ["rent", "swaps", "dau", "orderNew", "newUser"];
-    const extra = {};
-    keys.forEach((k) => {
-      const parts = splitVoltSeries(chart[k]);
-      extra[k + "60"] = parts.v60;
-      extra[k + "72"] = parts.v72;
-      const yoyParts = splitVoltSeries(chart[k + "Yoy"]);
-      extra[k + "Yoy60"] = yoyParts.v60;
-      extra[k + "Yoy72"] = yoyParts.v72;
-    });
-    return Object.assign({}, chart, extra);
-  }
-
   function bizCharts(mode, year, month) {
     const chartMode = mode || "7d";
-    let chart;
-    if (chartMode === "today") chart = TODAY_PRESET;
-    else if (chartMode === "7d") chart = SEVEN_DAY_PRESET;
-    else {
-      const y = Number(year) || DEMO_TODAY.year;
-      const m = Number(month) || DEMO_TODAY.month;
-      chart = buildMonthChart(y, m);
-    }
-    return withVoltMix(withYoy(chart));
+    if (chartMode === "today") return withYoy(TODAY_PRESET);
+    if (chartMode === "7d") return withYoy(SEVEN_DAY_PRESET);
+    const y = Number(year) || DEMO_TODAY.year;
+    const m = Number(month) || DEMO_TODAY.month;
+    return withYoy(buildMonthChart(y, m));
   }
 
   /**

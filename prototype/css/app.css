@@ -2450,33 +2450,6 @@ button.btn-mock.offcab-btn {
   height: 8px;
   border-radius: 2px;
 }
-.biz-bar-stack.is-mix {
-  max-width: 16px;
-  width: 100%;
-}
-.biz-bar-stack.is-yoy-mix {
-  max-width: 14px;
-}
-.biz-bar-stack.is-yoy-mix small {
-  font-weight: 600;
-}
-.biz-bar-stack.is-mix .biz-mix {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  width: 100%;
-  max-width: 14px;
-  flex: 1;
-  min-height: 0;
-  border-radius: 3px 3px 0 0;
-  overflow: hidden;
-}
-.biz-bar-stack.is-mix .biz-mix i {
-  max-width: none;
-  width: 100%;
-  border-radius: 0;
-  flex: none;
-}
 .sites-list {
   padding: 10px 12px 24px;
   display: flex;

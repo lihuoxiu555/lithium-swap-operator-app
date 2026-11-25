@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.144",
+      date: "2026-11-25 10:21",
+      title: "撤回经营图表今日改动",
+      items: [
+        "经营统计·图表恢复原双柱：彩色本期、灰色同比",
+        "不再按 60V/72V 堆叠",
+      ],
+    },
+    {
       version: "V1.143",
       date: "2026-11-25 10:18",
       title: "用户管理默认套餐有效 Tab",
