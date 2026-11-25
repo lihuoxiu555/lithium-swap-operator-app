@@ -306,6 +306,9 @@
       const parts = splitVoltSeries(chart[k]);
       extra[k + "60"] = parts.v60;
       extra[k + "72"] = parts.v72;
+      const yoyParts = splitVoltSeries(chart[k + "Yoy"]);
+      extra[k + "Yoy60"] = yoyParts.v60;
+      extra[k + "Yoy72"] = yoyParts.v72;
     });
     return Object.assign({}, chart, extra);
   }

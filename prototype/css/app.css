@@ -2451,8 +2451,14 @@ button.btn-mock.offcab-btn {
   border-radius: 2px;
 }
 .biz-bar-stack.is-mix {
-  max-width: 22px;
+  max-width: 16px;
   width: 100%;
+}
+.biz-bar-stack.is-yoy-mix {
+  max-width: 14px;
+}
+.biz-bar-stack.is-yoy-mix small {
+  font-weight: 600;
 }
 .biz-bar-stack.is-mix .biz-mix {
   display: flex;

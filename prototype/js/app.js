@@ -4724,43 +4724,87 @@
     ];
   }
 
-  function renderBizStackedPlot(labels, segments) {
-    const totals = (labels || []).map((_, i) =>
-      (segments || []).reduce((s, seg) => s + (Number(seg.values[i]) || 0), 0)
+  function lightenHex(hex, t) {
+    const n = String(hex || "").replace("#", "");
+    if (n.length !== 6) return "#cbd5e1";
+    const mix = (c) => Math.round(c + (255 - c) * (t == null ? 0.55 : t));
+    const r = mix(parseInt(n.slice(0, 2), 16));
+    const g = mix(parseInt(n.slice(2, 4), 16));
+    const b = mix(parseInt(n.slice(4, 6), 16));
+    return (
+      "#" +
+      [r, g, b]
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")
     );
-    const max = Math.max(1, ...totals);
+  }
+
+  function stackPartsHtml(segments, i, max) {
+    return (segments || [])
+      .map((seg) => {
+        const v = Number(seg.values[i]) || 0;
+        const h = max ? Math.max(v ? 4 : 0, Math.round((v / max) * 100)) : 0;
+        if (!h) return "";
+        return `<i style="height:${h}%;background:${seg.color}" title="${escapeAttr(
+          seg.name + " " + v
+        )}"></i>`;
+      })
+      .join("");
+  }
+
+  function renderBizStackedPlot(labels, currentSegs, yoySegs) {
+    const curTotals = (labels || []).map((_, i) =>
+      (currentSegs || []).reduce((s, seg) => s + (Number(seg.values[i]) || 0), 0)
+    );
+    const yoyTotals = (labels || []).map((_, i) =>
+      (yoySegs || []).reduce((s, seg) => s + (Number(seg.values[i]) || 0), 0)
+    );
+    const max = Math.max(1, ...curTotals, ...yoyTotals);
+    const hasYoy = yoySegs && yoySegs.length;
     const cols = (labels || [])
       .map((lb, i) => {
-        const total = totals[i];
-        const parts = (segments || [])
-          .map((seg) => {
-            const v = Number(seg.values[i]) || 0;
-            const h = total ? Math.max(v ? 4 : 0, Math.round((v / max) * 100)) : 0;
-            if (!h) return "";
-            return `<i style="height:${h}%;background:${seg.color}" title="${escapeAttr(
-              seg.name + " " + v
-            )}"></i>`;
-          })
-          .join("");
-        return `<div class="biz-col"><div class="biz-bars"><span class="biz-bar-stack is-mix"><small class="is-cur">${total}</small><span class="biz-mix">${parts}</span></span></div><em>${escapeHtml(
+        const curBar = `<span class="biz-bar-stack is-mix"><small class="is-cur">${curTotals[i]}</small><span class="biz-mix">${stackPartsHtml(
+          currentSegs,
+          i,
+          max
+        )}</span></span>`;
+        const yoyBar = hasYoy
+          ? `<span class="biz-bar-stack is-mix is-yoy-mix"><small class="is-yoy">${yoyTotals[i]}</small><span class="biz-mix">${stackPartsHtml(
+              yoySegs,
+              i,
+              max,
+              true
+            )}</span></span>`
+          : "";
+        return `<div class="biz-col"><div class="biz-bars">${curBar}${yoyBar}</div><em>${escapeHtml(
           lb
         )}</em></div>`;
       })
       .join("");
-    const legend = `<div class="biz-legend">${(segments || [])
+    const legendItems = []
+      .concat(currentSegs || [])
+      .concat(yoySegs || [])
       .map(
         (s) =>
           `<span><i style="background:${s.color}"></i>${escapeHtml(s.name)}</span>`
       )
-      .join("")}</div>`;
-    return `<div class="biz-plot">${cols}</div>${legend}`;
+      .join("");
+    return `<div class="biz-plot">${cols}</div><div class="biz-legend">${legendItems}</div>`;
   }
 
   function voltChartSegments(chart, key, color60, color72) {
-    return [
-      { name: "60V", color: color60 || "#3b82f6", values: chart[key + "60"] || [] },
-      { name: "72V", color: color72 || "#f59e0b", values: chart[key + "72"] || [] },
-    ];
+    const c60 = color60 || "#3b82f6";
+    const c72 = color72 || "#f59e0b";
+    return {
+      current: [
+        { name: "60V 本期", color: c60, values: chart[key + "60"] || [] },
+        { name: "72V 本期", color: c72, values: chart[key + "72"] || [] },
+      ],
+      yoy: [
+        { name: "60V 同比", color: lightenHex(c60, 0.55), values: chart[key + "Yoy60"] || [] },
+        { name: "72V 同比", color: lightenHex(c72, 0.55), values: chart[key + "Yoy72"] || [] },
+      ],
+    };
   }
 
   function renderBizBarPlot(labels, series, opts = {}) {
@@ -5090,31 +5134,48 @@
       body = `${renderBizChartPicker()}
         <p class="ops-hint">按<strong>${escapeHtml(
           chart.periodLabel || "近7日"
-        )}</strong>展示。每日一根<strong>堆叠柱</strong>：蓝=60V、橙=72V，柱顶为合计。套餐购买金额 = C 端实付，<strong>不按站点拆</strong>。</p>
+        )}</strong>展示。每日<strong>两根堆叠柱</strong>：深色=本期 60V/72V，浅同色=同比（${escapeHtml(
+          chart.yoyHint || "去年同期"
+        )}）。柱顶数字：深=本期合计，浅=同比合计。套餐购买金额 = C 端实付，<strong>不按站点拆</strong>。</p>
         ${renderBizChartCard(
           "套餐购买金额",
-          "C 端实付 · 按套餐电池型号堆叠",
-          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "rent", C.rent, C.orderNew))
+          "C 端实付 · 型号堆叠 + 浅色同比",
+          (function () {
+            const s = voltChartSegments(chart, "rent", C.rent, C.orderNew);
+            return renderBizStackedPlot(chart.labels, s.current, s.yoy);
+          })()
         )}
         ${renderBizChartCard(
           "换电订单数",
-          "成功 + 失败 · 按电池型号堆叠",
-          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "swaps", C.swap, C.orderNew))
+          "成功 + 失败 · 型号堆叠 + 浅色同比",
+          (function () {
+            const s = voltChartSegments(chart, "swaps", C.swap, C.orderNew);
+            return renderBizStackedPlot(chart.labels, s.current, s.yoy);
+          })()
         )}
         ${renderBizChartCard(
           "活跃用户",
-          "去重骑手 · 按持电/套餐型号堆叠",
-          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "dau", C.dau, C.orderNew))
+          "去重骑手 · 型号堆叠 + 浅色同比",
+          (function () {
+            const s = voltChartSegments(chart, "dau", C.dau, C.orderNew);
+            return renderBizStackedPlot(chart.labels, s.current, s.yoy);
+          })()
         )}
         ${renderBizChartCard(
           "套餐新购",
-          "新购订单 · 按套餐型号堆叠",
-          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "orderNew", C.orderValid, C.orderNew))
+          "新购订单 · 型号堆叠 + 浅色同比",
+          (function () {
+            const s = voltChartSegments(chart, "orderNew", C.orderValid, C.orderNew);
+            return renderBizStackedPlot(chart.labels, s.current, s.yoy);
+          })()
         )}
         ${renderBizChartCard(
           "新增用户",
-          "去重新增 · 按开通套餐型号堆叠",
-          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "newUser", C.newUser, C.orderNew))
+          "去重新增 · 型号堆叠 + 浅色同比",
+          (function () {
+            const s = voltChartSegments(chart, "newUser", C.newUser, C.orderNew);
+            return renderBizStackedPlot(chart.labels, s.current, s.yoy);
+          })()
         )}`;
     } else {
       const scopeHint =

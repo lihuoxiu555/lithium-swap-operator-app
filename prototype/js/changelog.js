@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.142",
+      date: "2026-11-25 10:15",
+      title: "经营图表恢复浅色同比柱",
+      items: [
+        "每日两根堆叠柱：深色本期 60V/72V，同色系浅色为同比",
+        "柱顶深色=本期合计，浅色=同比合计",
+      ],
+    },
+    {
       version: "V1.141",
       date: "2026-11-25 09:52",
       title: "套餐/用户/收付按电池型号看人数",
