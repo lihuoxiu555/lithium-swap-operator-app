@@ -21,6 +21,7 @@
       userName: "史建国",
       phone: "18915821617",
       packageName: "60V 60AH · 包月30天",
+      voltage: "60V",
       amount: 389,
       status: "paid",
       paidAt: "2026-09-15 13:43:04",
@@ -35,6 +36,7 @@
       userName: "周强",
       phone: "13800138001",
       packageName: "72V 60AH · 30天",
+      voltage: "72V",
       amount: 389,
       status: "paid",
       paidAt: "2026-09-01 10:00:12",
@@ -49,6 +51,7 @@
       userName: "赵阳",
       phone: "13092134051",
       packageName: "60V 60AH · 30天",
+      voltage: "60V",
       amount: 389,
       status: "paid",
       paidAt: "2026-09-02 10:24:47",
@@ -63,6 +66,7 @@
       userName: "李敏",
       phone: "15722783885",
       packageName: "72V 60AH · 90天",
+      voltage: "72V",
       amount: 999,
       status: "paid",
       paidAt: "2026-09-11 13:06:41",
@@ -77,6 +81,7 @@
       userName: "陈晓",
       phone: "13600001111",
       packageName: "60V 60AH · 30天",
+      voltage: "60V",
       amount: 389,
       status: "pending",
       paidAt: "",
@@ -91,6 +96,7 @@
       userName: "刘洋",
       phone: "13912345678",
       packageName: "72V 60AH · 30天",
+      voltage: "72V",
       amount: 389,
       status: "pending",
       paidAt: "",
@@ -101,10 +107,19 @@
     },
   ];
 
-  function filterOrders(tab, kw) {
+  function voltageOf(order) {
+    if (order && order.voltage) return order.voltage;
+    const m = String((order && order.packageName) || "").toUpperCase().match(/(\d+)\s*V/);
+    return m ? m[1] + "V" : "";
+  }
+
+  function filterOrders(tab, kw, model) {
     let list = ORDERS.slice();
     if (tab && tab !== "all") {
       list = list.filter((o) => o.status === tab);
+    }
+    if (model && model !== "all") {
+      list = list.filter((o) => voltageOf(o) === model);
     }
     const q = (kw || "").trim();
     if (q) {
@@ -113,7 +128,8 @@
           o.phone.includes(q) ||
           o.userName.includes(q) ||
           o.orderNo.includes(q) ||
-          (o.swapOrderNo && o.swapOrderNo.includes(q))
+          (o.swapOrderNo && o.swapOrderNo.includes(q)) ||
+          (o.packageName && o.packageName.includes(q))
       );
     }
     return list;
@@ -128,6 +144,7 @@
     PAY_STATUS,
     ORDERS,
     filterOrders,
+    voltageOf,
     statusLabel,
   };
 })(window);

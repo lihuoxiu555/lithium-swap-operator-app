@@ -40,6 +40,7 @@
     dataStats: {
       subTab: "biz", // biz | asset
       drill: null, // { kind } | null
+      model: "all",
     },
     clientShell: "standalone",
     activeScenario: "admin",
@@ -141,11 +142,13 @@
       smsKw: "",
       payKw: "",
       payTab: "success",
+      model: "all",
     },
     employees: Employees ? Employees.defaultState() : { view: "list", kw: "", cityFilter: "全部", editId: null },
     packageOrders: {
       tab: "all",
       kw: "",
+      model: "all",
     },
     battery: {
       sn: null,
@@ -1085,6 +1088,29 @@
     return `${summary}${userStats}`;
   }
 
+  function renderModelPeopleChips(scope, selected) {
+    const stats = (OpsStats && OpsStats.MODEL_USER_STATS) || [
+      { id: "60V", people: 34 },
+      { id: "72V", people: 45 },
+    ];
+    const sel = selected || "all";
+    const allBtn = `<button type="button" class="model-chip${sel === "all" ? " active" : ""}" data-action="model-filter" data-scope="${escapeAttr(
+      scope
+    )}" data-model="all">全部</button>`;
+    const rest = stats
+      .map((m) => {
+        const on = sel === m.id ? " active" : "";
+        return `<button type="button" class="model-chip${on}" data-action="model-filter" data-scope="${escapeAttr(
+          scope
+        )}" data-model="${escapeAttr(m.id)}">${escapeHtml(m.id)}（${m.people}人）</button>`;
+      })
+      .join("");
+    return `<div class="model-stat-bar">
+      <div class="model-stat-label">电池型号用户</div>
+      <div class="model-stat-chips" role="tablist">${allBtn}${rest}</div>
+    </div>`;
+  }
+
   function renderTodayDrill() {
     const kind = state.dataStats.drill;
     const meta = (OpsStats.TODAY_DRILL_META && OpsStats.TODAY_DRILL_META[kind]) || {
@@ -1092,7 +1118,8 @@
       kind: "users",
       empty: "暂无记录",
     };
-    const rows = OpsStats.todayDrill ? OpsStats.todayDrill(kind) : [];
+    const model = state.dataStats.model || "all";
+    const rows = OpsStats.todayDrill ? OpsStats.todayDrill(kind, model) : [];
     let listHtml = "";
     if (!rows.length) {
       listHtml = `<div class="empty-full"><div class="icon">—</div>${escapeHtml(meta.empty)}</div>`;
@@ -1118,12 +1145,14 @@
             <div class="lease-row"><span class="lk">金额</span><span class="lv">${Number(u.amount).toFixed(2)} 元</span></div>
             <div class="lease-row"><span class="lk">时间</span><span class="lv">${escapeHtml(u.time)}</span></div>
             <div class="lease-row"><span class="lk">站点</span><span class="lv">${escapeHtml(u.site)}</span></div>
+            <div class="lease-row"><span class="lk">套餐SKU</span><span class="lv">${escapeHtml(u.sku || "—")}</span></div>
             <div class="lease-row"><span class="lk">说明</span><span class="lv">${escapeHtml(u.note || "—")}</span></div>
           </div>
         </article>`
         )
         .join("");
     }
+    const showModel = meta.kind === "users";
     return `
       <div class="sites-page">
         <div class="sites-header">
@@ -1131,7 +1160,8 @@
           <h1>${escapeHtml(meta.title)}</h1>
           <div class="sites-header-spacer"></div>
         </div>
-        <p class="ops-hint">不含押金。${meta.kind === "sites" ? "今日至少 1 笔成功换电的站点。" : "对应卡片人数与金额口径。"}</p>
+        <p class="ops-hint">不含押金。${meta.kind === "sites" ? "今日至少 1 笔成功换电的站点。" : "对应卡片人数与金额口径。型号人数=购买该电压套餐去重用户（主体累计）。"}</p>
+        ${showModel ? renderModelPeopleChips("drill", model) : ""}
         <div class="sites-list">${listHtml}</div>
       </div>`;
   }
@@ -1726,7 +1756,7 @@
 
   function renderPackageOrders() {
     const po = state.packageOrders;
-    const list = PackageOrders.filterOrders(po.tab, po.kw);
+    const list = PackageOrders.filterOrders(po.tab, po.kw, po.model);
     const tabs = PackageOrders.TABS.map((t) => {
       const on = po.tab === t.id ? " active" : "";
       return `<button type="button" class="sites-tab${on}" data-action="pkg-tab" data-tab="${escapeAttr(
@@ -1772,7 +1802,8 @@
     return `
       <div class="sites-page">
         ${opsHeader("套餐订单")}
-        <p class="ops-hint" style="margin:0 14px 8px">个人套餐<strong>购买</strong>订单，与换电订单分离。已支付 / 待支付 Tab 筛选。</p>
+        <p class="ops-hint" style="margin:0 14px 8px">个人套餐<strong>购买</strong>订单，与换电订单分离。型号人数=购买该电压套餐的去重用户。</p>
+        ${renderModelPeopleChips("pkg", po.model || "all")}
         <div class="sites-filters">
           <div class="sites-search-row">
             <input id="pkg-kw" type="search" value="${escapeAttr(
@@ -4693,6 +4724,45 @@
     ];
   }
 
+  function renderBizStackedPlot(labels, segments) {
+    const totals = (labels || []).map((_, i) =>
+      (segments || []).reduce((s, seg) => s + (Number(seg.values[i]) || 0), 0)
+    );
+    const max = Math.max(1, ...totals);
+    const cols = (labels || [])
+      .map((lb, i) => {
+        const total = totals[i];
+        const parts = (segments || [])
+          .map((seg) => {
+            const v = Number(seg.values[i]) || 0;
+            const h = total ? Math.max(v ? 4 : 0, Math.round((v / max) * 100)) : 0;
+            if (!h) return "";
+            return `<i style="height:${h}%;background:${seg.color}" title="${escapeAttr(
+              seg.name + " " + v
+            )}"></i>`;
+          })
+          .join("");
+        return `<div class="biz-col"><div class="biz-bars"><span class="biz-bar-stack is-mix"><small class="is-cur">${total}</small><span class="biz-mix">${parts}</span></span></div><em>${escapeHtml(
+          lb
+        )}</em></div>`;
+      })
+      .join("");
+    const legend = `<div class="biz-legend">${(segments || [])
+      .map(
+        (s) =>
+          `<span><i style="background:${s.color}"></i>${escapeHtml(s.name)}</span>`
+      )
+      .join("")}</div>`;
+    return `<div class="biz-plot">${cols}</div>${legend}`;
+  }
+
+  function voltChartSegments(chart, key, color60, color72) {
+    return [
+      { name: "60V", color: color60 || "#3b82f6", values: chart[key + "60"] || [] },
+      { name: "72V", color: color72 || "#f59e0b", values: chart[key + "72"] || [] },
+    ];
+  }
+
   function renderBizBarPlot(labels, series, opts = {}) {
     const max = Math.max(1, ...series.flatMap((s) => s.values || []));
     const showVal = !opts.hideValue;
@@ -5020,48 +5090,31 @@
       body = `${renderBizChartPicker()}
         <p class="ops-hint">按<strong>${escapeHtml(
           chart.periodLabel || "近7日"
-        )}</strong>展示。套餐购买金额 = C 端实付合计，<strong>不按站点拆</strong>。彩色柱=本期，灰柱=${escapeHtml(
-          chart.yoyHint || "去年同期"
-        )}（同比）。柱顶数字：深色=本期，灰色=同比。</p>
+        )}</strong>展示。每日一根<strong>堆叠柱</strong>：蓝=60V、橙=72V，柱顶为合计。套餐购买金额 = C 端实付，<strong>不按站点拆</strong>。</p>
         ${renderBizChartCard(
           "套餐购买金额",
-          "C 端实付 · 含同比",
-          renderBizBarPlot(
-            chart.labels,
-            bizChartSeries("实付", C.rent, C.yoy, chart.rent, chart.rentYoy)
-          )
+          "C 端实付 · 按套餐电池型号堆叠",
+          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "rent", C.rent, C.orderNew))
         )}
         ${renderBizChartCard(
           "换电订单数",
-          "成功 + 失败 · 含同比",
-          renderBizBarPlot(
-            chart.labels,
-            bizChartSeries("换电订单", C.swap, C.yoy, chart.swaps, chart.swapsYoy)
-          )
+          "成功 + 失败 · 按电池型号堆叠",
+          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "swaps", C.swap, C.orderNew))
         )}
         ${renderBizChartCard(
           "活跃用户",
-          "去重骑手 · 含同比",
-          renderBizBarPlot(
-            chart.labels,
-            bizChartSeries("活跃用户", C.dau, C.yoy, chart.dau, chart.dauYoy)
-          )
+          "去重骑手 · 按持电/套餐型号堆叠",
+          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "dau", C.dau, C.orderNew))
         )}
         ${renderBizChartCard(
           "套餐新购",
-          "新购订单 · 含同比",
-          renderBizBarPlot(
-            chart.labels,
-            bizChartSeries("新购订单", C.orderNew, C.yoy, chart.orderNew, chart.orderNewYoy)
-          )
+          "新购订单 · 按套餐型号堆叠",
+          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "orderNew", C.orderValid, C.orderNew))
         )}
         ${renderBizChartCard(
           "新增用户",
-          "去重新增 · 含同比",
-          renderBizBarPlot(
-            chart.labels,
-            bizChartSeries("新增用户", C.newUser, C.yoy, chart.newUser, chart.newUserYoy)
-          )
+          "去重新增 · 按开通套餐型号堆叠",
+          renderBizStackedPlot(chart.labels, voltChartSegments(chart, "newUser", C.newUser, C.orderNew))
         )}`;
     } else {
       const scopeHint =
@@ -5096,11 +5149,35 @@
           </div>`;
         })
         .join("");
+      const mix =
+        g.id === "bat" && g.modelShare && g.modelShare.length
+          ? `<div class="bat-model-mix">
+              <div class="bat-model-mix-hd">型号占比 · 总数 ${g.modelShare.reduce(
+                (s, r) => s + r.count,
+                0
+              )} 块</div>
+              <div class="bat-model-mix-bar">${g.modelShare
+                .map(
+                  (r) =>
+                    `<i style="width:${r.pct}%;background:${r.color}" title="${escapeAttr(
+                      r.id + " " + r.count + "块 " + r.pct + "%"
+                    )}"></i>`
+                )
+                .join("")}</div>
+              <div class="bat-model-mix-legend">${g.modelShare
+                .map(
+                  (r) =>
+                    `<span><i style="background:${r.color}"></i>${escapeHtml(r.id)} ${r.count}块 ${r.pct}%</span>`
+                )
+                .join("")}</div>
+            </div>`
+          : "";
       return `<section class="devstat-sec">
         <div class="devstat-hd">
           <strong>${escapeHtml(g.title)}</strong>
         </div>
         <div class="devstat-grid${gridCls}">${cells}</div>
+        ${mix}
       </section>`;
     }).join("");
     const sites = OpsStats.DEVICE_BY_SITE.map(
@@ -5139,7 +5216,7 @@
   }
 
   function renderUserList() {
-    const list = AppUsers.filterUsers(state.users.kw);
+    const list = AppUsers.filterUsers(state.users.kw, state.users.model);
     const cards =
       list.length === 0
         ? `<div class="empty-full"><div class="icon">👤</div>暂无用户</div>`
@@ -5196,6 +5273,9 @@
             )}</span></div>
             <div class="user-sec-hd">权益信息</div>
             <div class="lease-row"><span class="lk">个人套餐</span><span class="lv user-pkg">${pkgHtml}</span></div>
+            <div class="lease-row"><span class="lk">套餐SKU</span><span class="lv">${escapeHtml(
+              u.sku || u.pkg || "—"
+            )}</span></div>
             <div class="lease-row"><span class="lk">渠道额度</span><span class="lv">${escapeHtml(
               AppUsers.dash(u.quota)
             )}</span></div>
@@ -5208,6 +5288,8 @@
     return `
       <div class="sites-page">
         ${opsHeader("用户管理")}
+        <p class="ops-hint" style="margin:0 14px 8px">型号人数=当前生效套餐对应电压的去重用户。列表展示套餐 SKU。</p>
+        ${renderModelPeopleChips("users", state.users.model || "all")}
         <div class="sites-filters">
           <div class="sites-search-row">
             <input id="user-kw" type="search" value="${escapeAttr(
@@ -7633,9 +7715,20 @@
         case "open-today-drill":
           e.stopPropagation();
           state.dataStats.drill = t.dataset.kind || null;
+          state.dataStats.model = "all";
           track("today_drill_open", { kind: state.dataStats.drill });
           render();
           break;
+        case "model-filter": {
+          const scope = t.dataset.scope || "";
+          const model = t.dataset.model || "all";
+          if (scope === "pkg") state.packageOrders.model = model;
+          else if (scope === "users") state.users.model = model;
+          else if (scope === "drill") state.dataStats.model = model;
+          track("model_filter", { scope, model });
+          render();
+          break;
+        }
         case "back-today-drill":
           state.dataStats.drill = null;
           state.screen = "dataStats";

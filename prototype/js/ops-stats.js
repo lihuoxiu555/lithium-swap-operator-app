@@ -285,13 +285,42 @@
     };
   }
 
+  /** 将总量拆成 60V / 72V，日间比例略变，合计仍等于原值 */
+  function splitVoltSeries(values) {
+    const v60 = [];
+    const v72 = [];
+    (values || []).forEach((v, i) => {
+      const n = Number(v) || 0;
+      const p60 = 0.38 + ((i * 7) % 13) / 100;
+      const a = Math.round(n * p60);
+      v60.push(a);
+      v72.push(Math.max(0, n - a));
+    });
+    return { v60, v72 };
+  }
+
+  function withVoltMix(chart) {
+    const keys = ["rent", "swaps", "dau", "orderNew", "newUser"];
+    const extra = {};
+    keys.forEach((k) => {
+      const parts = splitVoltSeries(chart[k]);
+      extra[k + "60"] = parts.v60;
+      extra[k + "72"] = parts.v72;
+    });
+    return Object.assign({}, chart, extra);
+  }
+
   function bizCharts(mode, year, month) {
     const chartMode = mode || "7d";
-    if (chartMode === "today") return withYoy(TODAY_PRESET);
-    if (chartMode === "7d") return withYoy(SEVEN_DAY_PRESET);
-    const y = Number(year) || DEMO_TODAY.year;
-    const m = Number(month) || DEMO_TODAY.month;
-    return withYoy(buildMonthChart(y, m));
+    let chart;
+    if (chartMode === "today") chart = TODAY_PRESET;
+    else if (chartMode === "7d") chart = SEVEN_DAY_PRESET;
+    else {
+      const y = Number(year) || DEMO_TODAY.year;
+      const m = Number(month) || DEMO_TODAY.month;
+      chart = buildMonthChart(y, m);
+    }
+    return withVoltMix(withYoy(chart));
   }
 
   /**
@@ -317,19 +346,25 @@
   const TODAY_FUND = TODAY_FUND_NEW;
 
   /** 今日数据可下钻明细（人 / 站点） */
+  /** 购买对应电压套餐的去重用户数（主体累计 Mock） */
+  const MODEL_USER_STATS = [
+    { id: "60V", people: 34, color: "#3b82f6" },
+    { id: "72V", people: 45, color: "#f59e0b" },
+  ];
+
   const TODAY_DRILL = {
     "new-pay": [
-      { name: "车贵益", phone: "15995582833", amount: 299, time: "今天 09:12", site: "浦东骑手驿站", note: "包月30天·新购" },
-      { name: "李新骑", phone: "13821010088", amount: 299, time: "今天 10:06", site: "世博换电服务点", note: "包月30天·新购" },
+      { name: "车贵益", phone: "15995582833", amount: 299, time: "今天 09:12", site: "浦东骑手驿站", note: "包月30天·新购", sku: "60V 60AH · 包月30天", voltage: "60V" },
+      { name: "李新骑", phone: "13821010088", amount: 299, time: "今天 10:06", site: "世博换电服务点", note: "包月30天·新购", sku: "72V 60AH · 包月30天", voltage: "72V" },
     ],
     "new-refund": [],
     "old-pay": [
-      { name: "史建国", phone: "18915821617", amount: 199, time: "今天 08:41", site: "溧阳运营", note: "续费" },
-      { name: "王骑手", phone: "13821010001", amount: 99, time: "今天 11:02", site: "浦东骑手驿站", note: "次卡" },
-      { name: "赵师傅", phone: "13700001122", amount: 138, time: "今天 11:28", site: "京东物流专属站", note: "续费" },
+      { name: "史建国", phone: "18915821617", amount: 199, time: "今天 08:41", site: "溧阳运营", note: "续费", sku: "60V 60AH · 包月30天", voltage: "60V" },
+      { name: "王骑手", phone: "13821010001", amount: 99, time: "今天 11:02", site: "浦东骑手驿站", note: "次卡", sku: "72V 20AH · 次卡", voltage: "72V" },
+      { name: "赵师傅", phone: "13700001122", amount: 138, time: "今天 11:28", site: "京东物流专属站", note: "续费", sku: "60V 60AH · 包月30天", voltage: "60V" },
     ],
     "old-refund": [
-      { name: "周骑手", phone: "13655556666", amount: 299, time: "今天 10:18", site: "浦东骑手驿站", note: "套餐退租·不含押金" },
+      { name: "周骑手", phone: "13655556666", amount: 299, time: "今天 10:18", site: "浦东骑手驿站", note: "套餐退租·不含押金", sku: "60V 60AH · 包月30天", voltage: "60V" },
     ],
     "active-sites": [
       { id: "ST-SH-01", name: "浦东骑手驿站", swaps: 22, riders: 9 },
@@ -338,8 +373,10 @@
     ],
   };
 
-  function todayDrill(kind) {
-    return TODAY_DRILL[kind] ? TODAY_DRILL[kind].slice() : [];
+  function todayDrill(kind, model) {
+    const list = TODAY_DRILL[kind] ? TODAY_DRILL[kind].slice() : [];
+    if (!model || model === "all") return list;
+    return list.filter((r) => r.voltage === model);
   }
 
   const TODAY_DRILL_META = {
@@ -449,6 +486,10 @@
         { key: "batHeld", label: "柜外-用户", value: 1 },
         { key: "batOut", label: "柜外", value: 3 },
       ],
+      modelShare: [
+        { id: "60V", count: 7, pct: 58, color: "#3b82f6" },
+        { id: "72V", count: 5, pct: 42, color: "#f59e0b" },
+      ],
     },
     {
       id: "site",
@@ -494,6 +535,7 @@
     TODAY_FUND_NEW,
     TODAY_FUND_OLD,
     TODAY_DRILL_META,
+    MODEL_USER_STATS,
     todayDrill,
     slotUtil,
     busyLevel,

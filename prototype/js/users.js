@@ -23,7 +23,9 @@
       idAuth: "已认证",
       authWay: "自动通过",
       kyc: "done",
-      pkg: "包月30天",
+      pkg: "60V 60AH · 包月30天",
+      sku: "60V 60AH · 包月30天",
+      voltage: "60V",
       realName: "已实名",
       serviceStatus: "服务中",
       depositWay: "实付（¥99）",
@@ -42,6 +44,9 @@
       idAuth: "已认证",
       authWay: "自动通过",
       kyc: "done",
+      pkg: "60V 60AH · 包月30天",
+      sku: "60V 60AH · 包月30天",
+      voltage: "60V",
       realName: "已实名",
       serviceStatus: "服务中",
       depositWay: "实付",
@@ -96,6 +101,9 @@
       idAuth: "已认证",
       authWay: "自动通过",
       kyc: "done",
+      pkg: "72V 20AH · 次卡",
+      sku: "72V 20AH · 次卡",
+      voltage: "72V",
       realName: "已实名",
       serviceStatus: "服务中",
       depositWay: "渠道担保（顺丰同城）",
@@ -375,9 +383,12 @@
       global.OperatorAppDaypool && global.OperatorAppDaypool.DAYPOOL_ORDERS,
       u.phone
     );
-    let pkg = u.pkg || "";
+    let pkg = u.sku || u.pkg || "";
     let pkgOn = false;
-    if (lease && lease.status && lease.status !== "ended") {
+    if (u.sku) {
+      pkg = u.sku;
+      pkgOn = true;
+    } else if (lease && lease.status && lease.status !== "ended") {
       pkg = lease.modelLabel || lease.model || pkg;
       pkgOn = true;
     } else if (pkg) {
@@ -403,17 +414,19 @@
     } else if (holdDp) {
       batterySn = dp.batteryNo;
     }
-    return Object.assign({}, u, { pkg, pkgOn, quota, batterySn });
+    return Object.assign({}, u, { pkg, pkgOn, quota, batterySn, sku: u.sku || pkg, voltage: u.voltage || "" });
   }
 
-  function filterUsers(kw) {
+  function filterUsers(kw, model) {
     const q = (kw || "").trim();
     return USERS.filter((u) => {
+      if (model && model !== "all" && u.voltage !== model) return false;
       if (!q) return true;
       return (
         (u.name || "").includes(q) ||
         (u.phone || "").includes(q) ||
-        (u.id || "").includes(q)
+        (u.id || "").includes(q) ||
+        (u.sku || u.pkg || "").includes(q)
       );
     }).map(enrichUser);
   }

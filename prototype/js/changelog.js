@@ -17,6 +17,16 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.141",
+      date: "2026-11-25 09:52",
+      title: "套餐/用户/收付按电池型号看人数",
+      items: [
+        "套餐订单、用户管理、新/老用户收入（及有数据的退租）增加 60V（34人）/ 72V（45人）筛选",
+        "用户管理与收付明细增加套餐 SKU",
+        "资产统计·电池展示 60V/72V 块数占比；经营图表每日柱按型号堆叠",
+      ],
+    },
+    {
       version: "V1.140",
       date: "2026-11-20 14:19",
       title: "收付卡单位上移、过万缩写",
