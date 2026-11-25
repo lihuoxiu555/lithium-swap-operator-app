@@ -3193,6 +3193,10 @@ button.btn-mock.offcab-btn {
   color: var(--muted, #888);
   margin-top: 2px;
 }
+.user-pkg-tabs .sites-tab {
+  font-size: 12px;
+  padding: 6px 9px;
+}
 .sites-tabs-scroll {
   flex-wrap: nowrap;
   overflow-x: auto;

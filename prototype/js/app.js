@@ -142,7 +142,7 @@
       smsKw: "",
       payKw: "",
       payTab: "success",
-      model: "all",
+      model: "active",
     },
     employees: Employees ? Employees.defaultState() : { view: "list", kw: "", cityFilter: "全部", editId: null },
     packageOrders: {
@@ -5276,8 +5276,21 @@
     });
   }
 
+  function renderUserListTabs(selected) {
+    const tabs = (AppUsers && AppUsers.USER_TABS) || [];
+    const sel = selected || "active";
+    return `<div class="sites-tabs sites-tabs-scroll user-pkg-tabs" role="tablist">${tabs
+      .map((t) => {
+        const on = sel === t.id ? " active" : "";
+        return `<button type="button" class="sites-tab${on}" data-action="model-filter" data-scope="users" data-model="${escapeAttr(
+          t.id
+        )}">${escapeHtml(t.label)}（${t.people}人）</button>`;
+      })
+      .join("")}</div>`;
+  }
+
   function renderUserList() {
-    const list = AppUsers.filterUsers(state.users.kw, state.users.model);
+    const list = AppUsers.filterUsers(state.users.kw, state.users.model || "active");
     const cards =
       list.length === 0
         ? `<div class="empty-full"><div class="icon">👤</div>暂无用户</div>`
@@ -5349,8 +5362,8 @@
     return `
       <div class="sites-page">
         ${opsHeader("用户管理")}
-        <p class="ops-hint" style="margin:0 14px 8px">型号人数=当前生效套餐对应电压的去重用户。列表展示套餐 SKU。</p>
-        ${renderModelPeopleChips("users", state.users.model || "all")}
+        <p class="ops-hint" style="margin:0 14px 8px">默认「套餐有效」。人数为累计去重 Mock；列表为样例。展示套餐 SKU。</p>
+        ${renderUserListTabs(state.users.model || "active")}
         <div class="sites-filters">
           <div class="sites-search-row">
             <input id="user-kw" type="search" value="${escapeAttr(

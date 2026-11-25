@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.143",
+      date: "2026-11-25 10:18",
+      title: "用户管理默认套餐有效 Tab",
+      items: [
+        "Tab：套餐有效（56人）、60V（34人）、72V（45人）、全部（234人）",
+        "进页默认「套餐有效」",
+      ],
+    },
+    {
       version: "V1.142",
       date: "2026-11-25 10:15",
       title: "经营图表恢复浅色同比柱",

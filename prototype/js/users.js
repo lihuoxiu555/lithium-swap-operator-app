@@ -9,6 +9,14 @@
     { id: "refund", label: "退款" },
   ];
 
+  /** 用户管理 Tab · 人数为累计 Mock */
+  const USER_TABS = [
+    { id: "active", label: "套餐有效", people: 56 },
+    { id: "60V", label: "60V", people: 34 },
+    { id: "72V", label: "72V", people: 45 },
+    { id: "all", label: "全部", people: 234 },
+  ];
+
   const USERS = [
     {
       id: "xur2609161444522034893",
@@ -419,8 +427,13 @@
 
   function filterUsers(kw, model) {
     const q = (kw || "").trim();
-    return USERS.filter((u) => {
-      if (model && model !== "all" && u.voltage !== model) return false;
+    const tab = model || "active";
+    return USERS.map(enrichUser).filter((u) => {
+      if (tab === "active") {
+        if (!u.pkgOn) return false;
+      } else if (tab !== "all") {
+        if (u.voltage !== tab) return false;
+      }
       if (!q) return true;
       return (
         (u.name || "").includes(q) ||
@@ -428,7 +441,7 @@
         (u.id || "").includes(q) ||
         (u.sku || u.pkg || "").includes(q)
       );
-    }).map(enrichUser);
+    });
   }
 
   function maskIdNo(idNo) {
@@ -469,6 +482,7 @@
 
   global.OperatorAppUsers = {
     PAY_TABS,
+    USER_TABS,
     USERS,
     SMS,
     PAYMENTS,
