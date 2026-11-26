@@ -3555,6 +3555,14 @@ button.btn-mock.offcab-btn {
   font-size: 10px;
   color: #f59e0b;
 }
+.ops-kpi-mix {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
 .ops-subtabs {
   display: flex;
   gap: 0;

@@ -17,6 +17,15 @@
   /** @type {Array<{ version: string, date: string, title: string, items: string[], decisions?: string[] }>} */
   const ENTRIES = [
     {
+      version: "V1.145",
+      date: "2026-11-26 18:29",
+      title: "经营 KPI 按型号拆在线电池与有效个人",
+      items: [
+        "在线电池：60V 6块 · 72V 4块",
+        "有效个人用户：按套餐型号 60V 3人 · 72V 2人",
+      ],
+    },
+    {
       version: "V1.144",
       date: "2026-11-25 10:21",
       title: "撤回经营图表今日改动",

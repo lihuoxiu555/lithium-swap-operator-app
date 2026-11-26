@@ -5011,22 +5011,38 @@
     const kpis = [
       { label: "在线站点", value: kpi.sitesOnline, unit: "个" },
       { label: "在线电柜", value: kpi.cabOnline, unit: "台" },
-      { label: "在线电池", value: kpi.batOnline, unit: "块" },
+      {
+        label: "在线电池",
+        value: kpi.batOnline,
+        unit: "块",
+        mix: kpi.batOnlineByModel,
+        mixUnit: "块",
+        mixTitle: "按电池型号",
+      },
       {
         label: "有效个人用户",
         value: kpi.personalUsers,
         unit: "人",
         hint: "（冻结中：" + kpi.personalFrozen + "人）",
+        mix: kpi.personalByPkg,
+        mixUnit: "人",
+        mixTitle: "按套餐型号",
       },
       { label: "有效渠道用户", value: kpi.channelUsers, unit: "人" },
     ]
-      .map(
-        (k) => `<div class="ops-kpi"><span>${escapeHtml(k.label)}</span><strong>${k.value}<small>${escapeHtml(
-          k.unit
-        )}</small></strong>${
+      .map((k) => {
+        const mixHtml =
+          k.mix && k.mix.length
+            ? `<div class="ops-kpi-mix" title="${escapeAttr(k.mixTitle || "")}">${k.mix
+                .map((m) => `${escapeHtml(m.id)} ${m.n}${escapeHtml(k.mixUnit || "")}`)
+                .join(" · ")}</div>`
+            : "";
+        return `<div class="ops-kpi${k.mix ? " has-mix" : ""}"><span>${escapeHtml(
+          k.label
+        )}</span><strong>${k.value}<small>${escapeHtml(k.unit)}</small></strong>${
           k.hint ? `<em>${escapeHtml(k.hint)}</em>` : ""
-        }</div>`
-      )
+        }${mixHtml}</div>`;
+      })
       .join("");
     const tabBar = OpsStats.BIZ_TABS.map((t) => {
       const on = tab === t.id ? " active" : "";

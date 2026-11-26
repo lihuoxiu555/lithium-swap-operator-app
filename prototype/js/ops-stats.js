@@ -12,8 +12,16 @@
     sitesOnline: 4,
     cabOnline: 3,
     batOnline: 10,
+    batOnlineByModel: [
+      { id: "60V", n: 6 },
+      { id: "72V", n: 4 },
+    ],
     personalUsers: 5,
     personalFrozen: 1,
+    personalByPkg: [
+      { id: "60V", n: 3 },
+      { id: "72V", n: 2 },
+    ],
     channelUsers: 5,
   };
 
